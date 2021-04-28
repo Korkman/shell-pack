@@ -31,7 +31,8 @@ function qssh -d \
 	
 	# NOTE: background job spamming own pid - seems fixed in fish 3.1.2
 	
-	if [ ! -d "~/.ssh" ]
+	# create .ssh if missing
+	if ! [ -d "~/.ssh" ]
 		mkdir ~/.ssh
 	end
 	
