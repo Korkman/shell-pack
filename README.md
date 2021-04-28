@@ -1,10 +1,5 @@
 # shell-pack
-All your shell are belong to us
-
-TODO: insert awesome screenshot here
-
-## Introduction
-shell-pack is a Fish shell toolkit and theme with emphasis on easy installation, seamless integration and well-thought CLI interaction. It also comes with a small set of tools to make the life of a sysadmin easier.
+A shell preset with many quality of life improvements for sysadmins.
 
 ## Features
  * vibrant colors
@@ -50,19 +45,12 @@ tmux
 * shows a nice blue bar on the bottom
 * for a full list, read [.tmux.conf](config/.tmux.conf)
 
-## Easy installation
+## Installation
 Installation targets Linux and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be installed by the user:
  * [fish](https://fishshell.com/) >= 3.1 (currently no auto-installer included)
  * tmux / screen (recommended, some features require tmux)
-
-These dependencies are installed automatically:
- * skim (installs to $HOME/.local/share/shell-pack/bin/sk)
- * ripgrep (installs to $HOME/.local/share/shell-pack/bin/rg)
-
-These are expected to be present everywhere:
- * POSIX-compliant shell (/bin/sh)
 
 Installing shell-pack via ```curl|sh```:
 ```
@@ -76,8 +64,17 @@ Installing shell-pack manually via download and extract:
  * Check README.md ended up here: $HOME/.local/share/shell-pack/src/README.md
  * Follow the steps in $HOME/.local/share/shell-pack/src/get.sh
 
-## Seamless integration
-Introducing LC_NERDLEVEL, a variable that represents whether your terminal should run fish at all, and if so, whether powerline or nerdfonts are installed. LC_* prefixed as it is, this variable will likely be passed on to ssh hosts.
+### Other dependencies
+
+Installed automatically:
+ * skim (installs to $HOME/.local/share/shell-pack/bin/sk)
+ * ripgrep (installs to $HOME/.local/share/shell-pack/bin/rg)
+
+These are expected to be present everywhere:
+ * POSIX-compliant shell (/bin/sh)
+
+## Nerdlevel
+Introducing LC_NERDLEVEL, a variable that represents whether your session should run fish at all, and if so, whether powerline or nerdfonts are installed in your terminal. The LC_ prefix was chosen because it is accepted by most ssh server configs. The intention is to have bash, zsh or any other POSIX-compliant shell set as default, and only crank the nerdlevel up when connecting with a properly set up terminal.
 
 |LC_NERDLEVEL|Effect     |
 |-----------:|-----------|
@@ -117,9 +114,7 @@ Enable reporting modifiers using CSI and set left option key to send Esc+ (now a
 This is how it looks, why, and what features it has (run command "cheat")
 
 ## Updating
-```
-upgrade-shell-pack
-```
+Retrieving the newest version is as simple as running ```upgrade-shell-pack```. If any dependencies need to be upgraded as well, shell-pack will say so on startup once a day.
 
 ## Development
 
