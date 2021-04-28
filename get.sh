@@ -141,6 +141,8 @@ done
 if [ "${NERDLEVELED}" != "yes" ]; then
 	echo "Please add the following line to your profile: "
 	echo "${NERDLEVEL_DOT_PROFILE_LINE}"
+else
+	echo "All systems go. Happy fishing!"
 fi
 
 
