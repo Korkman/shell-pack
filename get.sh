@@ -7,9 +7,8 @@ exit 1
 # wrapping in curly braces to protect against http disconnect and
 # other modification during runtime
 
-# Unofficial bash strict mode, engage!
-# http://redsymbol.net/articles/unofficial-bash-strict-mode/
-set -euo pipefail
+# be more strict about errors
+set -eu
 IFS=$'\n\t'
 
 # this will be the location where shell-pack code, config and deps will be installed to
@@ -23,33 +22,6 @@ NERDLEVEL_DOT_PROFILE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.
 # this is the location config.fish which will be modified
 TARGET_FISH_CONFIG_DIR="${HOME}/.config/fish"
 TARGET_FISH_CONFIG="${TARGET_FISH_CONFIG_DIR}/config.fish"
-
-# ---------------------------------------------
-# Download
-# ---------------------------------------------
-
-SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
-
-DOWNLOAD_FILENAME="korkman-shell-pack-latest.tar.gz"
-PRE_DOWNLOADED=n
-if [ -e "$DOWNLOAD_FILENAME" ]; then
-	echo "Pre-downloaded file detected, use for installation? (y/N)"
-	read answer
-	if [ "$answer" = "y" ]; then
-		PRE_DOWNLOADED=y
-	fi
-fi
-
-if [ "$PRE_DOWNLOADED" = "n" ]; then
-	curl "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "$DOWNLOAD_FILENAME"
-fi
-tar -xzf "$DOWNLOAD_FILENAME" -C "$SHELL_PACK_SRCDIR"
-
-# sanity check: if README.md does not manifest in src dir, something failed
-if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
-	echo "ERROR: ${SHELL_PACK_SRCDIR}/README.md does not exist!"
-	exit 57
-fi
 
 # detect OS and machine type
 MACHINE="$(uname -m)" # x86_64 / i386 / ...
@@ -88,11 +60,44 @@ if ! command -v fish &> /dev/null; then
 fi
 
 # ---------------------------------------------
+# Download shell-pack
+# ---------------------------------------------
+
+SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
+
+DOWNLOAD_FILENAME="korkman-shell-pack-latest.tar.gz"
+PRE_DOWNLOADED=n
+if [ -t 0 -a -e "$DOWNLOAD_FILENAME" ]; then
+	# when in terminal, ask whether to re-use downloaded file
+	echo "Pre-downloaded file detected, use for installation? (y/N)"
+	read answer
+	if [ "$answer" = "y" ]; then
+		PRE_DOWNLOADED=y
+	fi
+fi
+
+if [ "$PRE_DOWNLOADED" = "n" ]; then
+	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "$DOWNLOAD_FILENAME"
+fi
+tar -xzf "$DOWNLOAD_FILENAME" -C "$SHELL_PACK_SRCDIR"
+
+# sanity check: if README.md does not manifest in src dir, something failed
+if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
+	echo "ERROR: ${SHELL_PACK_SRCDIR}/README.md does not exist!"
+	exit 57
+fi
+
+# ---------------------------------------------
 # Symlink stuff
 # ---------------------------------------------
 
+# slightly defensive here: if any links pre-exist, they won't be changed
+
 # the main fish config
-ln -s "src/config" "${SHELL_PACK_BASEDIR}/config"
+if [ ! -e "${SHELL_PACK_BASEDIR}/config" ]; then
+	echo "Linking ${SHELL_PACK_BASEDIR}/config → src/config"
+	ln -s "src/config" "${SHELL_PACK_BASEDIR}/config"
+fi
 
 # this directory will hold ripgrep, skim and maybe more in the future
 # it is added to the PATH in shell-pack and can also be added to PATH
