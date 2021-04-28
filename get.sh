@@ -45,7 +45,7 @@ esac
 # ---------------------------------------------
 if ! command -v fish > /dev/null; then
 	echo "Fish is not installed"
-	if [ "$META_DISTRO" = "macos" ]; then
+	if [ "${META_DISTRO}" = "macos" ]; then
 		echo "Recommeded for macOS:"
 		echo " - brew install fish"
 		echo " - or see https://fishshell.com/"
@@ -61,10 +61,11 @@ fi
 # ---------------------------------------------
 
 SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
+mkdir -p "${SHELL_PACK_SRCDIR}"
 
 DOWNLOAD_FILENAME="korkman-shell-pack-latest.tar.gz"
 PRE_DOWNLOADED=n
-if [ -t 0 -a -e "$DOWNLOAD_FILENAME" ]; then
+if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
 	# when in terminal, ask whether to re-use downloaded file
 	echo "Pre-downloaded file detected, use for installation? (y/N)"
 	read answer
@@ -73,10 +74,10 @@ if [ -t 0 -a -e "$DOWNLOAD_FILENAME" ]; then
 	fi
 fi
 
-if [ "$PRE_DOWNLOADED" = "n" ]; then
-	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "$DOWNLOAD_FILENAME"
+if [ "${PRE_DOWNLOADED}" = "n" ]; then
+	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "${DOWNLOAD_FILENAME}"
 fi
-tar --strip-components=1 -xzf "$DOWNLOAD_FILENAME" -C "$SHELL_PACK_SRCDIR"
+tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
 
 # sanity check: if README.md does not manifest in src dir, something failed
 if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
