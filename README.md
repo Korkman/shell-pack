@@ -29,6 +29,26 @@ shell-pack is a Fish shell toolkit and theme with emphasis on easy installation,
 ## Preferences
 For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (reinstall-shell-pack-prefs).
 
+mc
+* is dark themed for better readability
+* has ctrl-c, ctrl-v, ctrl-x, ctrl-z, ctrl-y, ctrl-s mapped to copy, paste, cut, undo, redo and save
+* has ctrl-f, ctrl-g, ctrl-h mapped to search, search again and replace
+* has ctrl-l & alt-l mapped to "go to line"
+* has confirm execute toggled on
+* has tabs, displayed as three spaces, set for indenting
+* for a full list, read [mc/ini](mc/ini) and [mc/mc.keymap](mc/mc.keymap)
+
+htop
+* displays memory usage as dedicated numbers
+* displays cpu usage as unified chart
+
+tmux
+* allows ctrl-a and ctrl-b for control sequence
+* has several keys added to be more friendly for screen users
+* uses - and | for splitting windows
+* shows a nice blue bar on the bottom
+* for a full list, read [.tmux.conf](config/.tmux.conf)
+
 ## Easy installation
 Installation targets Linux and macOS, and should work for other \*nix as well.
 
@@ -41,7 +61,7 @@ These dependencies are installed automatically:
  * ripgrep (installs to $HOME/.local/share/shell-pack/bin/rg)
 
 These are expected to be present everywhere:
- * POSIX-compliant shell (/bin/sh, expected to be present everywhere)
+ * POSIX-compliant shell (/bin/sh)
 
 Installing shell-pack via ```curl|sh```:
 ```
