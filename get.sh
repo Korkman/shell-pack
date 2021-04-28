@@ -9,7 +9,7 @@ set -eu
 IFS=$'\n\t'
 
 # optional argument to download specific tag
-DOWNLOAD_TAG="${1:latest}"
+DOWNLOAD_TAG="${1:-latest}"
 
 # this will be the location where shell-pack code, config and deps will be installed to
 SHELL_PACK_BASEDIR_STR='$HOME/.local/share/shell-pack' # NOTE: do not use {brackets} so the path is fish compatible
