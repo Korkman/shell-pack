@@ -1,0 +1,77 @@
+[main]
+
+[main:xmap]
+
+[panel]
+
+[dialog]
+# NOTE: removing ctrl-g here will not work (as of debian buster)
+#Cancel = f10; esc; ctrl-g
+
+[input]
+
+[listbox]
+
+[tree]
+
+[help]
+
+[editor]
+Store = ctrl-c; alt-w
+Paste = ctrl-v
+Cut = ctrl-x
+Undo = ctrl-z; ctrl-u
+Redo = ctrl-y; alt-r
+# removed ctrl-y here
+DeleteLine =
+# TODO: make ctrl-backspace work
+#DeleteToWordBegin = alt-backspace; ctrl-backspace
+Save = ctrl-s; f2
+SaveAs = ctrl-f2; f12
+Close = ctrl-w
+# grabbing alt-shift-n to suggest searching with reverse checked
+Search = ctrl-f; f7; alt-shift-n
+# Free ctrl-n
+#EditNew = ctrl-n
+# Free alt-n
+ShowNumbers = alt-shift-l
+# NOTE: not working anywhere: ctrl-g (cancel), ctrl-j (newline?)
+SearchContinue = alt-n; f17
+# NOTE: "SearchBackwardContinue" does not exist in editor, unfortunately
+Replace = ctrl-h; f4
+ReplaceContinue = f14
+# this is "Save selection as ..."
+BlockSave = ctrl-b
+SyntaxOnOff = alt-s
+SyntaxChoose = alt-shift-s
+Goto = ctrl-l; alt-l
+# removed ctrl-z
+WordLeft = ctrl-left
+# removed ctrl-y
+WordRight = ctrl-right
+# NOTE: alt-tab = esc + tab
+# NOTE2: tab is not a modifyable key, so can't make shift-tab work
+BlockShiftLeft = alt-tab
+BlockShiftRight = tab
+# NOTE: bookmark keys, should alternatives be searched for?
+#Bookmark = alt-k
+#BookmarkFlush = alt-o
+#BookmarkNext = alt-j
+#BookmarkPrev = alt-i
+
+[viewer]
+Goto = ctrl-l; alt-l; f5
+Search = ctrl-f; f7
+SearchContinue = f17; ctrl-g; n
+SearchForwardContinue = n; alt-n
+SearchBackwardContinue = N; alt-shift-n
+
+[viewer:hex]
+Goto = ctrl-l; alt-l; f5
+Save = ctrl-s; f6
+Search = ctrl-f; f7
+SearchContinue = f17; ctrl-g; n
+SearchForwardContinue = n
+SearchBackwardContinue = N
+
+[diffviewer]

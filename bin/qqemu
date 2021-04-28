@@ -1,0 +1,128 @@
+#! /bin/bash
+{
+
+# quick qemu demoboot
+# test boot in a qemu instance (disks snapshotted, no network)
+# ~pbeck 2020
+
+if [ "$1" == "" ]; then
+	echo "Usage: qqemu DISK"
+	echo "  - Starts qemu with a copy-on-write snapshotted version of DISK."
+	echo "  - Provides VNC screen access on port 127.0.0.1:5907"
+	echo "  - Machine starts suspended until you type 'c' to boot"
+	echo "  - Use to debug Bootloader problems"
+	echo
+	echo "Environment variables and their defaults:"
+	echo "  KEYBOARD='de'"
+	echo "  MEMORY='1024'"
+	echo "  ENABLE_KVM='no'"
+	echo "  VNC_DISPLAY='127.0.0.1:7' (note how display 7 = port 5907)"
+	echo "  DISK2='' (secondary disk, e.g. for raid)"
+	echo "  DRIVE_TYPE='ide-hd' (change to 'virtio-blk-pci' if supported by guest)"
+	echo ""
+	echo "Prepend environment variables to launch with custom values:"
+	echo "  MEMORY=4096 ENABLE_KVM=yes qqemu DISK"
+	echo
+	exit 0
+fi
+
+memory=${MEMORY:-1024}
+vnc_display=${VNC_DISPLAY:-"127.0.0.1:7"}
+drive_type=${DRIVE_TYPE:-"ide-hd"} # virtio-blk-pci
+keyboard=${KEYBOARD:-"-k de"}
+
+# TODO: detect KVM availability
+if [ "$ENABLE_KVM" == "yes" ]; then
+	enable_kvm="-enable-kvm"
+	accel_kvm=",accel=kvm"
+else
+	enable_kvm=""
+	accel_kvm=""
+fi
+
+# check primary disk exists
+vdisk="$1"
+if [ ! -e "$vdisk" ]; then
+	vdisk="/dev/$vdisk"
+fi
+if [ ! -e "$vdisk" ]; then
+	echo "Disk does not exist"
+	exit 1
+fi
+if [ "$drive_type" == "ide-hd" ]; then
+	vdisk_cmd="\
+		-drive file=${vdisk},format=raw,if=none,id=drive-disk0,snapshot=on \
+		-device ide-hd,bus=ide.0,unit=0,drive=drive-disk0,id=ide0-0-0,bootindex=1 \
+	"
+else
+	vdisk_cmd="\
+		-drive file=${vdisk},format=raw,if=none,id=drive-disk0,snapshot=on \
+		-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x7,drive=drive-disk0,id=virtio-disk0,bootindex=1 \
+	"
+fi
+
+# add secondary disk
+vdisk2="${DISK2}"
+vdisk_cmd2=""
+if [ "$DISK2" != "" ]; then
+	if [ ! -e "$vdisk2" ]; then
+		vdisk2="/dev/$vdisk2"
+	fi
+	if [ ! -e "$vdisk2" ]; then
+		echo "Disk 2 does not exist"
+		exit 2
+	fi
+	
+	if [ "$drive_type" == "ide-hd" ]; then
+		vdisk_cmd2="\
+			-drive file=${vdisk2},format=raw,if=none,id=drive-disk1,snapshot=on \
+			-device ide-hd,bus=ide.0,unit=1,drive=drive-disk1,id=ide0-0-1,bootindex=2 \
+		"
+	else
+		vdisk_cmd2="\
+			-drive file=${vdisk2},format=raw,if=none,id=drive-disk1,snapshot=on \
+			-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x7,drive=drive-disk1,id=virtio-disk1,bootindex=2 \
+		"
+	fi
+fi
+
+# for modifications to be visible to the started guest on subsequent reboots,
+# sync and cache clear is necessary
+sync
+echo 1 > /proc/sys/vm/drop_caches
+
+echo "Launching virtual machine with snapshotted disks"
+echo "VNC Display is: ${vnc_display}"
+echo "VM will start suspended, type 'c' in CLI monitor to boot, 'q' to turn off"
+qemu-system-x86_64 \
+	${enable_kvm} \
+	-name demoboot \
+	-S \
+	-machine pc-i440fx-2.1${accel_kvm},usb=off \
+	-cpu qemu64 \
+	-m ${memory} \
+	-realtime mlock=off \
+	-no-user-config \
+	-nodefaults \
+	-monitor stdio \
+	-rtc base=utc,driftfix=slew \
+	-global kvm-pit.lost_tick_policy=discard \
+	-no-hpet \
+	-no-shutdown \
+	-global PIIX4_PM.disable_s3=1 \
+	-global PIIX4_PM.disable_s4=1 \
+	-boot menu=on,strict=on \
+	${vdisk_cmd} \
+	${vdisk_cmd2} \
+	-device ich9-usb-ehci1,id=usb,bus=pci.0,addr=0x5.0x7 \
+	-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,bus=pci.0,multifunction=on,addr=0x5 \
+	-device ich9-usb-uhci2,masterbus=usb.0,firstport=2,bus=pci.0,addr=0x5.0x1 \
+	-device ich9-usb-uhci3,masterbus=usb.0,firstport=4,bus=pci.0,addr=0x5.0x2 \
+	-device usb-tablet,id=input0 \
+	-vnc ${vnc_display} \
+	${keyboard} \
+	-device qxl-vga,id=video0,ram_size=67108864,vram_size=67108864,bus=pci.0,addr=0x2 \
+	-device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x8 \
+	-msg timestamp=on
+exit
+}

@@ -1,0 +1,33 @@
+# Don't display the copyright page
+startup_message off
+
+# Enable native scrollback in supporting terminals(, and mouse in putty? ":XT")
+termcapinfo xterm|xterm-*|xterms|xs|rxvt ti@:te@
+
+# increase scrollback buffer ALOT for it is incredibly useful
+defscrollback 10000
+
+# learning:
+# turn on mouse tracking. click to switch split windows, yay!
+# but also: ALWAYS have to use shift to select text :-/
+#mousetrack on
+#defmousetrack on
+
+# learning:
+# default "term screen" is fine, anything else is a bug in mc
+# the "term $TERM" or "term xterm" hacks are strongly discouraged
+#term screen
+
+# learning 2:
+# on debian-jessie, screen does not report screen-256color, which
+# is needed for proper color support
+term screen-256color
+
+# nice caption, always visible
+caption always
+caption string "%{Wb}[%H%020</%S%025<] %-Lw%{= Wb}%50>%n%f* %t%{-}%+Lw%< %= Load %l %= %c %Y-%m-%d"
+
+# open three empty screens for a start
+screen 2
+screen 1
+screen 0
