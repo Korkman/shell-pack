@@ -31,7 +31,7 @@ mc
 * has ctrl-l & alt-l mapped to "go to line"
 * has confirm execute toggled on
 * has tabs, displayed as three spaces, set for indenting
-* for a full list, read [mc/ini](mc/ini) and [mc/mc.keymap](mc/mc.keymap)
+* for a full list, read [config/mc/ini](config/mc/ini) and [config/mc/mc.keymap](config/mc/mc.keymap)
 
 htop
 * displays memory usage as dedicated numbers
