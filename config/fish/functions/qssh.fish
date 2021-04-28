@@ -31,6 +31,10 @@ function qssh -d \
 	
 	# NOTE: background job spamming own pid - seems fixed in fish 3.1.2
 	
+	if [ ! -d "~/.ssh" ]
+		mkdir ~/.ssh
+	end
+	
 	set -x __qssh_tmp_host_file ~/.ssh/temporary_known_hosts
 	set -x __qssh_db_mru_file ~/.ssh/qssh_mru.list
 	set -x __qssh_db_autocomplete_cache_file ~/.ssh/qssh_autocomplete.list
@@ -78,10 +82,8 @@ function qssh -d \
 		end
 		
 		if contains -- --qssh-update-cache $argv
-			touch "$__qssh_db_autocomplete_cache_file"
 			__qssh_db_mru_table __qssh_mru_autocomplete_host_table_cb | flock "$__qssh_db_autocomplete_cache_file" sh -c "cat > '$__qssh_db_autocomplete_cache_file'"
 			set -x cnt_control_persist_checks 0
-			touch "$__qssh_db_skim_cache_file"
 			__qssh_db_mru_table __qssh_mru_pick_table_cb | flock "$__qssh_db_skim_cache_file" sh -c "cat > '$__qssh_db_skim_cache_file'"
 			return
 		else if contains -- --qssh-self-launch $argv
@@ -789,7 +791,6 @@ function __qssh_db_mru_write --no-scope-shadowing -d \
 		set -l sep \t
 	end
 	# lock file before writing to it (closes #23)
-	touch "$__qssh_db_mru_file"
 	echo "$line" | flock "$__qssh_db_mru_file" sh -c "cat >> '$__qssh_db_mru_file'"
 end
 
@@ -929,7 +930,6 @@ function __qssh_db_mru_consolidate -d \
 	end
 	__qssh_echo_interactive -n " [dump]"
 	# NOTE: reverse output order with tac!
-	touch "$__qssh_db_mru_file_new"
 	__qssh_db_mru_table __qssh_mru_export_table_cb | tac | flock "$__qssh_db_mru_file_new" sh -c "cat > '$__qssh_db_mru_file_new'"
 	__qssh_echo_interactive -n " [rm .bak]"
 	rm -f "$__qssh_db_mru_file_bak"
