@@ -78,8 +78,10 @@ if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
 fi
 
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
+	echo "Downloading ${DOWNLOAD_FILENAME} ..."
 	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz" > "${DOWNLOAD_FILENAME}"
 fi
+echo "Extracting ${DOWNLOAD_FILENAME} ..."
 tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
 rm "${DOWNLOAD_FILENAME}"
 
@@ -99,6 +101,8 @@ fi
 if [ ! -e "${SHELL_PACK_BASEDIR}/config" ]; then
 	echo "Linking ${SHELL_PACK_BASEDIR}/config → src/config"
 	ln -s "src/config" "${SHELL_PACK_BASEDIR}/config"
+else
+	echo "Skipping present ${SHELL_PACK_BASEDIR}/config"
 fi
 
 # this directory will hold ripgrep, skim and maybe more in the future
@@ -114,6 +118,8 @@ for item in "${SHELL_PACK_SRCDIR}/bin/"*; do
 	if [ ! -e "${SHELL_PACK_BINDIR}/${item}" ]; then
 		echo "Linking ${SHELL_PACK_BINDIR}/${item} → ../src/bin/${item}"
 		ln -s "../src/bin/${item}" "${SHELL_PACK_BINDIR}/${item}"
+	else
+		echo "Skipping present ${SHELL_PACK_BINDIR}/${item}"
 	fi
 done
 
@@ -125,7 +131,7 @@ if ! [ -f "${TARGET_FISH_CONFIG}" ] || ! grep -Fxq "${SHELL_PACK_FISH_SOURCE_LIN
 	echo "Adding shell-pack to ${TARGET_FISH_CONFIG}"
 	echo "${SHELL_PACK_FISH_SOURCE_LINE}" >> "${TARGET_FISH_CONFIG}"
 else
-	echo "Shell-Pack already installed, leaving ${TARGET_FISH_CONFIG_DIR} untouched"
+	echo "Not modifying already modified ${TARGET_FISH_CONFIG}"
 fi
 
 # ---------------------------------------------
@@ -137,6 +143,8 @@ for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; d
 		if ! grep -Fxq "${NERDLEVEL_DOT_PROFILE_LINE}" "${PROFILE}" ; then
 			echo "Added nerdlevel to ${PROFILE}"
 			echo "${NERDLEVEL_DOT_PROFILE_LINE}" >> "${PROFILE}"
+		else
+			echo "Not modifying already modified ${PROFILE}"
 		fi
 		# if already present, mark nerdleveled
 		NERDLEVELED=yes
