@@ -1,9 +1,6 @@
 #! /usr/bin/env sh
 {
 
-echo "Untested."
-exit 1
-
 # wrapping in curly braces to protect against http disconnect and
 # other modification during runtime
 
@@ -46,7 +43,7 @@ esac
 # ---------------------------------------------
 # Check if fish is installed and give advice if not
 # ---------------------------------------------
-if ! command -v fish &> /dev/null; then
+if ! command -v fish > /dev/null; then
 	echo "Fish is not installed"
 	if [ "$META_DISTRO" = "macos" ]; then
 		echo "Recommeded for macOS:"
@@ -118,7 +115,7 @@ done
 # ---------------------------------------------
 # Add Shell-Pack to user's config.fish
 # ---------------------------------------------
-if [ ! -f ${TARGET_FISH_CONFIG} ] || ! grep -Fxq "${SHELL_PACK_FISH_SOURCE_LINE}" "${TARGET_FISH_CONFIG}" ; then
+if ! [ -f "${TARGET_FISH_CONFIG}" ] || ! grep -Fxq "${SHELL_PACK_FISH_SOURCE_LINE}" "${TARGET_FISH_CONFIG}" ; then
 	mkdir -p ${TARGET_FISH_CONFIG_DIR}
 	echo "Adding shell-pack to ${TARGET_FISH_CONFIG}"
 	echo "${SHELL_PACK_FISH_SOURCE_LINE}" >> "${TARGET_FISH_CONFIG}"
