@@ -21,8 +21,10 @@ function reinstall-shell-pack-prefs \
 	ln -s "$__sp_config_dir/.screenrc" ~/.screenrc
 	
 	# files that are easily edited by accident get copied
+	mkdir -p ~/.config/htop
 	rm -f ~/.config/htop/htoprc
 	cp "$__sp_config_dir/htop/htoprc" ~/.config/htop/htoprc
+	mkdir -p ~/.config/mc
 	rm -f ~/.config/mc/ini
 	cp "$__sp_config_dir/mc/ini" ~/.config/mc/ini
 	rm -f ~/.config/mc/mc.keymap
