@@ -1,4 +1,4 @@
-#! /usr/bin/fish
+#! /usr/bin/env fish
 
 # wrapper to execute a fish alias outside of fish
 set -l myargs $argv
