@@ -1,6 +1,16 @@
 function shell-pack-check-deps -d \
 	"Test if dependencies are up-to-date"
 	
+	if ! set -q __sp_first_startup_done
+		echo "This seems to be your first time using shell-pack."
+		echo "Installing dependencies ..."
+		shell-pack-deps install skim
+		shell-pack-deps install ripgrep
+		reinstall-shell-pack-prefs
+		set --universal __sp_first_startup_done 1
+		return
+	end	
+	
 	set __shp_outdated_deps ""
 	
 	function test_version_min
