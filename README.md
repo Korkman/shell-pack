@@ -2,8 +2,9 @@
 A shell preset with many quality of life improvements for sysadmins.
 
 ## Features
- * vibrant colors
- * execution time, exit status and pipe status control
+ * vibrant colors, nice icons
+ * execution time, exit status and pipe status visibility
+ * background job execution time, exit status, PID visibility
  * advanced directory navigation
   * alt + arrow keys navigates history back, forward, dir up and dive with menu
   * bookmarks with tagdir, untagdir, d
