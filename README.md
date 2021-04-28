@@ -23,7 +23,7 @@ These are expected to be present everywhere:
 Installing shell-pack via ```curl|sh```:
 ```
 # NOTE: this script will not execute partially when disconnected
-curl https://github.com/Korkman/shell-pack/raw/latest/get.sh | sh
+curl -s -L https://github.com/Korkman/shell-pack/raw/latest/get.sh | sh
 ```
 
 Installing shell-pack manually via download and extract:
