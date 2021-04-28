@@ -76,7 +76,7 @@ fi
 if [ "$PRE_DOWNLOADED" = "n" ]; then
 	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "$DOWNLOAD_FILENAME"
 fi
-tar -xzf "$DOWNLOAD_FILENAME" -C "$SHELL_PACK_SRCDIR"
+tar --strip-components=1 -xzf "$DOWNLOAD_FILENAME" -C "$SHELL_PACK_SRCDIR"
 
 # sanity check: if README.md does not manifest in src dir, something failed
 if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
