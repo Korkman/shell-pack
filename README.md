@@ -6,7 +6,30 @@ TODO: insert awesome screenshot here
 ## Introduction
 shell-pack is a Fish shell toolkit and theme with emphasis on easy installation, seamless integration and well-thought CLI interaction. It also comes with a small set of tools to make the life of a sysadmin easier.
 
-## Easy installation (under construction)
+## Features
+ * vibrant colors
+ * execution time, exit status and pipe status control
+ * advanced directory navigation
+  * alt + arrow keys navigates history back, forward, dir up and dive with menu
+  * bookmarks with tagdir, untagdir, d
+ * improved history navigation, deletion, private mode
+ * recursive search for filenames with alt-f, file content with ggrep
+ * tab title control with tag, untag
+ * tmux shortcuts, including exclusive session "one" for shared access
+ * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
+
+## Tools
+ * qssh: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
+ * lsports: list open ports in compact manner
+ * lsnet: list active network connections in compact manner
+ * (Linux only) ddstat: a dstat wrapper with "sticky" arguments (requires dstat)
+ * (Linux only) qmount: mount a partition to /run/q/name
+ * (Linux only) qchroot: enter a Linux chroot, mounting all the necessities of modern Linux life
+
+## Preferences
+For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (reinstall-shell-pack-prefs).
+
+## Easy installation
 Installation targets Linux and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be installed by the user:
@@ -71,3 +94,14 @@ Enable reporting modifiers using CSI and set left option key to send Esc+ (now a
 ## Well-thought CLI interaction
 (coming soon)
 This is how it looks, why, and what features it has (run command "cheat")
+
+## Updating
+```
+upgrade-shell-pack
+```
+
+## Development
+
+Install as usual. Clone git repo into a dedicated directory. Symlink the following locations to destinations in your development directory:
+ * ~/.local/share/shell-pack/bin
+ * ~/.local/share/shell-pack/config
