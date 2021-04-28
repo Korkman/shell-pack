@@ -10,8 +10,8 @@ function fish_greeting -d "shell-pack says hello"
 	
 	# check dependencies once a day
 	set -l thisdate (date +%Y%m%d)
-	if test "$__shp_last_date_check_deps" != "$thisdate"
+	if test "$__sp_last_date_check_deps" != "$thisdate"
 		shell-pack-check-deps
-		set --universal __shp_last_date_check_deps "$thisdate"
+		set --universal __sp_last_date_check_deps "$thisdate"
 	end
 end
