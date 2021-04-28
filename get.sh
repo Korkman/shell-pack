@@ -117,7 +117,7 @@ done
 # Add Shell-Pack to user's config.fish
 # ---------------------------------------------
 if ! [ -f "${TARGET_FISH_CONFIG}" ] || ! grep -Fxq "${SHELL_PACK_FISH_SOURCE_LINE}" "${TARGET_FISH_CONFIG}" ; then
-	mkdir -p ${TARGET_FISH_CONFIG_DIR}
+	mkdir -p "${TARGET_FISH_CONFIG_DIR}"
 	echo "Adding shell-pack to ${TARGET_FISH_CONFIG}"
 	echo "${SHELL_PACK_FISH_SOURCE_LINE}" >> "${TARGET_FISH_CONFIG}"
 else
