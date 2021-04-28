@@ -8,6 +8,9 @@
 set -eu
 IFS=$'\n\t'
 
+# optional argument to download specific tag
+DOWNLOAD_TAG="${1:latest}"
+
 # this will be the location where shell-pack code, config and deps will be installed to
 SHELL_PACK_BASEDIR_STR='$HOME/.local/share/shell-pack' # NOTE: do not use {brackets} so the path is fish compatible
 SHELL_PACK_BASEDIR="${HOME}/.local/share/shell-pack"
@@ -63,7 +66,7 @@ fi
 SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
 mkdir -p "${SHELL_PACK_SRCDIR}"
 
-DOWNLOAD_FILENAME="korkman-shell-pack-latest.tar.gz"
+DOWNLOAD_FILENAME="korkman-shell-pack-${DOWNLOAD_TAG}.tar.gz"
 PRE_DOWNLOADED=n
 if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
 	# when in terminal, ask whether to re-use downloaded file
@@ -75,7 +78,7 @@ if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
 fi
 
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
-	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz" > "${DOWNLOAD_FILENAME}"
+	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz" > "${DOWNLOAD_FILENAME}"
 fi
 tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
 rm "${DOWNLOAD_FILENAME}"
