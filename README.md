@@ -46,6 +46,7 @@ tmux
 * allows ctrl-a and ctrl-b for control sequence
 * has several keys added to be more friendly for screen users
 * uses - and | for splitting windows
+* handles ssh agent forwarding properly (environment updates on attach)
 * shows a nice blue bar on the bottom
 * for a full list, read [.tmux.conf](config/.tmux.conf)
 
