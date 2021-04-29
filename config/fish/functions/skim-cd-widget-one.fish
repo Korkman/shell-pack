@@ -16,7 +16,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	set -l dir '.'
 	set -l skim_query ''
 
-	set -l skim_binds "left:execute(echo //prev)+accept,right:execute(echo //next)+accept,alt-left:execute(echo //prev)+accept,alt-right:execute(echo //next)+accept"
+	set -l skim_binds "shift-left:execute(echo //prev)+accept,shift-right:execute(echo //next)+accept,alt-left:execute(echo //prev)+accept,alt-right:execute(echo //next)+accept"
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find -L \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
@@ -25,7 +25,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
-		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'browse directories with enter and mouse. esc when done. left+right for history back and forward.'" -m --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
+		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'browse directories with enter and mouse. esc when done. shift+left/+right for history back and forward.'" -m --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]
