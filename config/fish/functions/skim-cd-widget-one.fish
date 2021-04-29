@@ -20,6 +20,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 
 	set -l skim_binds (printf %s \
 	"enter:execute(echo //final:{})+accept,"\
+	"alt-l:execute(echo //list:{})+accept,"\
 	"ctrl-v:execute(echo //paste:{})+accept,"\
 	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
 	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
@@ -27,7 +28,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	"shift-down:accept,alt-down:accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help "change directory | esc:cancel enter:done c-v:paste shift-up/-down:navigate shift-left/-right:history"
+	set -l skim_help "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find -L \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
@@ -74,6 +75,12 @@ function skim-cd-widget-one -d "Change directory without changing command"
 					echo -en '\033[1A'
 					break
 				end
+			else if string match -q --regex '^//list:' -- "$result"
+				# list result
+				set result (string replace --regex '^//list:' '' -- "$result")
+				ll --color=auto "$result" | less
+				set cd_success 0
+				continue
 			else
 				cd "$result"
 				set cd_success $status

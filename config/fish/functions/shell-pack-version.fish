@@ -4,5 +4,5 @@ function shell-pack-version \
 	# advantage: new shell-pack-releases that don't touch config.fish
 	# won't cause reloads anymore!
 	
-	echo '2.2'
+	echo '2.3'
 end

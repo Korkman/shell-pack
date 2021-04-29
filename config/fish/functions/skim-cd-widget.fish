@@ -17,13 +17,14 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	
 	set -l skim_binds (printf %s \
 	"ctrl-v:execute(echo //paste:{})+accept,"\
+	"alt-l:execute(echo //list:{})+accept,"\
 	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
 	"shift-down:execute(echo //down:{})+accept,alt-down:execute(echo //down:{})+accept,"\
 	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
 	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help 'cd recursive | esc:cancel enter:done shift-up/-down:navigate c-v:paste shift-left/-right:history'
+	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list'
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find -L \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
@@ -56,9 +57,13 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 					set result (realpath "$result")
 				end
 				commandline --insert (string escape -- "$result")
-				#commandline --cursor 9999
 				cd "$original_dir"
 				break
+			else if string match -q --regex '^//list:' -- "$result"
+				# list result
+				set result (string replace --regex '^//list:' '' -- "$result")
+				ll --color=auto "$result" | less
+				continue
 			else
 				# cd to result
 				cd "$result"
