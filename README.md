@@ -27,6 +27,13 @@ A shell preset with many quality of life improvements for sysadmins.
    * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
 
 ## Preferences
+
+### shell-pack
+Set the universal variable $\_\_multiplexer\_names to a space separated list of aliases you want to use for referencing tmux sessions. Recommended: your username, shortened. Avoid conflicts with existing command names.
+
+Example: `set -U __multiplexer_names 'me me2'`
+
+### other tools
 For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (or use ```reinstall-shell-pack-prefs```).
 
 mc
