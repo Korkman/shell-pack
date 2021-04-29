@@ -21,7 +21,7 @@ Search args history           Alt-.
 Change directory
 ----------------
 cd ..                         Alt-Up
-Navigate into subdirectory    Alt-Down          Alt-X
+Change directory              Alt-Down          Alt-X
 ... excluding dotfiles        Alt-Shift-Down    Alt-Shift-X
 ... recursive                 Alt-C
 ... recursive - dotfiles      Alt-Shift-C

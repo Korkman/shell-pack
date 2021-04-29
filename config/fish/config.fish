@@ -223,13 +223,15 @@ bind \eF 'quick_search'
 # ctrl-j for juicessh FAILED: mc does not start subshell when ctrl-j is bound (why?!?)
 #bind \cj 'quick_search --dotfiles'
 
-# alt-up, ctrl-up to cd ..
+# alt-up, ctrl-up, shift-up to cd ..
 bind \e\[1\;3A "quick_dir_up"
 bind \e\[1\;5A "quick_dir_up"
+bind -k sr "quick_dir_up"
 
 # alt-down to cd one level, shift skips dotfiles
 bind \e\[1\;3B "skim-cd-widget-one --dotfiles"
 bind \e\[1\;4B "skim-cd-widget-one"
+bind -k sf "skim-cd-widget-one --dotfiles"
 
 # alt-d skim_cdtagdir
 bind \ed 'skim-cdtagdir'
