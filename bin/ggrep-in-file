@@ -1,0 +1,25 @@
+#! /usr/bin/env fish
+
+# wrapper to execute a fish alias outside of fish
+set -l myargs $argv
+set -l funcname (basename (status filename))
+if [ "$funcname" = "fishcall" ]
+	if [ (count $myargs) -eq 0 ]
+		echo "Usage:"
+		echo "Either create a symlink to this file to proxy bash scripts into fish functions"
+		echo "or call with function name as first argument, followed by function arguments"
+		exit 1
+	else
+		set funcname $myargs[1]
+		# shift
+		set -e myargs[1]
+	end
+end
+
+if functions -q $funcname
+	$funcname $myargs
+else
+	echo "Fish function does not exist: $funcname"
+	exit 1
+end
+
