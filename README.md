@@ -22,6 +22,7 @@ A shell preset with many quality of life improvements for sysadmins.
  * (Linux only) ```ddstat```: a dstat wrapper with "sticky" arguments (requires dstat)
  * (Linux only) ```qmount```: mount a partition to /run/q/name
  * (Linux only) ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
+ * (Linux only) ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
 
 ## Preferences
 For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (or use ```reinstall-shell-pack-prefs```).
