@@ -8,29 +8,29 @@ A shell preset with many quality of life improvements for sysadmins.
  * a cheat sheet for itself, ```cheat```, and a test for your terminal, ```cheat --glyphs```
  * advanced directory navigation
   * alt + arrow keys navigates history back, forward, dir up and dive with menu
-  * bookmarks with tagdir, untagdir, d
- * improved history navigation, deletion, private mode
- * recursive search for filenames with alt-f, file content with ggrep
- * tab title control with tag, untag
- * tmux shortcuts, including exclusive session "one" for shared access
+  * bookmarks with ```tagdir```, ```untagdir```, ```d```
+ * improved history navigation, deletion, private mode ```private```
+ * recursive search for filenames with ```alt-f```, file content with ggrep
+ * tab title control with ```tag```, ```untag```
+ * tmux shortcuts, including exclusive session ```one``` for shared access
  * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
 
 ## Tools
- * qssh: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
- * lsports: list open ports in compact manner
- * lsnet: list active network connections in compact manner
- * (Linux only) ddstat: a dstat wrapper with "sticky" arguments (requires dstat)
- * (Linux only) qmount: mount a partition to /run/q/name
- * (Linux only) qchroot: enter a Linux chroot, mounting all the necessities of modern Linux life
+ * ```qssh```: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
+ * ```lsports```: list open ports in compact manner
+ * ```lsnet```: list active network connections in compact manner
+ * (Linux only) ```ddstat```: a dstat wrapper with "sticky" arguments (requires dstat)
+ * (Linux only) ```qmount```: mount a partition to /run/q/name
+ * (Linux only) ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
 
 ## Preferences
-For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (reinstall-shell-pack-prefs).
+For mc, htop, tmux (and screen) a biased preset of preferences is included and offered to install on first startup (or use ```reinstall-shell-pack-prefs```).
 
 mc
 * is dark themed for better readability
-* has ctrl-c, ctrl-v, ctrl-x, ctrl-z, ctrl-y, ctrl-s mapped to copy, paste, cut, undo, redo and save
-* has ctrl-f, ctrl-g, ctrl-h mapped to search, search again and replace
-* has ctrl-l & alt-l mapped to "go to line"
+* has ```ctrl-c```, ```ctrl-v```, ```ctrl-x```, ```ctrl-z```, ```ctrl-y```, ```ctrl-s``` mapped to copy, paste, cut, undo, redo and save
+* has ```ctrl-f```, ```ctrl-g```, ```ctrl-h``` mapped to search, search again and replace
+* has ```ctrl-l``` & ```alt-l``` mapped to "go to line"
 * has confirm execute toggled on
 * has tabs, displayed as three spaces, set for indenting
 * for a full list, read [config/mc/ini](config/mc/ini) and [config/mc/mc.keymap](config/mc/mc.keymap)
@@ -40,9 +40,9 @@ htop
 * displays cpu usage as unified chart
 
 tmux
-* allows ctrl-a and ctrl-b for control sequence
+* allows ```ctrl-a``` and ```ctrl-b``` for control sequence
 * has several keys added to be more friendly for screen users
-* uses - and | for splitting windows
+* uses ```-``` and ```|``` for splitting windows
 * handles ssh agent forwarding properly (environment updates on attach)
 * shows a nice blue bar on the bottom
 * for a full list, read [.tmux.conf](config/.tmux.conf)
