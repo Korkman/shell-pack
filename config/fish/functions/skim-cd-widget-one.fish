@@ -1,5 +1,10 @@
-function skim-cd-widget-one -d "Change directory one level"
-	set -e __skim_cd_widget_one_dotfiles_arg
+function skim-cd-widget-one -d "Change directory without changing command"
+	# NOTE: the behavior is very different from the original skim-cd-widget-one
+	# - it does not substitute the last token of the command with the
+	#   arrival directory, nor does it search for it
+	# - it allows travelling multiple levels up and down
+	# - the commandline stays untouched, so you can chdir without ctrl-c
+
 	if [ "$argv[1]" = "--dotfiles" ]
 		set dotfiles_arg "--dotfiles"
 		skim-dotfiles yes
@@ -7,41 +12,55 @@ function skim-cd-widget-one -d "Change directory one level"
 		set dotfiles_arg ""
 		skim-dotfiles no
 	end
-	set -l commandline (__skim_parse_commandline)
-	set -l dir $commandline[1]
-	set -l skim_query $commandline[2]
+	
+	set -l dir '.'
+	set -l skim_query ''
+
+	set -l skim_binds "left:execute(echo //prev)+accept,right:execute(echo //next)+accept,alt-left:execute(echo //prev)+accept,alt-right:execute(echo //next)+accept"
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find -L \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
 	-o -type d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \"..\"} {print \$0}' | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
-	begin
+	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
-		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'browse directories with enter and mouse. esc when done.'" -m --query "'$skim_query'"' | read -l result
+		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'browse directories with enter and mouse. esc when done. left+right for history back and forward.'" -m --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 
 		if [ -n "$result" ]
-			cd "$result"
-			
-			## Remove last token from commandline.
-			#commandline -t ""
-			
-			# move cursor up
-			echo -en '\033[1A'
-			
-			set -g __skim_cd_widget_one_dotfiles_arg "$dotfiles_arg"
-			# this prevents nesting (recursion) and makes the prompt notice chdir
-			function recurse-skim-cd-widget-one --no-scope-shadowing --on-event fish_prompt
-				functions -e recurse-skim-cd-widget-one
-				skim-cd-widget-one $__skim_cd_widget_one_dotfiles_arg
+			if [ "$result" = "//prev" ]
+				quick_dir_prev
+				set cd_success $status
+			else if [ "$result" = "//next" ]
+				quick_dir_next
+				set cd_success $status
+			else
+				cd "$result"
+				set cd_success $status
+			end
+			if test $cd_success
+				set skim_query ""
+				
+				# move cursor up
+				echo -en '\033[1A'
+				# move cursor to pos1
+				echo -en '\r'
+				# clear line
+				echo -en (string repeat -n $COLUMNS ' ')
+				# move cursor up
+				echo -en '\033[1A'
+				# draw prompt
+				fish_prompt
+				# draw cmdline
+				echo -n (commandline)
+			else
+				#echo "cd failed."
 			end
 			
-			commandline --current-buffer --replace ""
-			commandline -f repaint
-			commandline -f execute
 		else
 			# move cursor up
 			echo -en '\033[1A'
+			break
 		end
 	end
 
