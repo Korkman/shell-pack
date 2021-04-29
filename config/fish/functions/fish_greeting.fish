@@ -8,10 +8,12 @@ function fish_greeting -d "shell-pack says hello"
 	end
 	echo -nes "Welcome to FISH $FISH_VERSION + shell-pack "(shell-pack-version) $theme_greeting_add "\n"
 	
-	# check dependencies once a day
-	set -l thisdate (date +%Y%m%d)
-	if test "$__sp_last_date_check_deps" != "$thisdate"
-		shell-pack-check-deps
-		set --universal __sp_last_date_check_deps "$thisdate"
+	if [ "$UPGRADE_SHELLPACK" != "no" ]
+		# check dependencies once a day
+		set -l thisdate (date +%Y%m%d)
+		if test "$__sp_last_date_check_deps" != "$thisdate"
+			shell-pack-check-deps
+			set --universal __sp_last_date_check_deps "$thisdate"
+		end
 	end
 end
