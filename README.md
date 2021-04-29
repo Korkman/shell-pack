@@ -5,6 +5,7 @@ A shell preset with many quality of life improvements for sysadmins.
  * vibrant colors, nice icons
  * execution time, exit status and pipe status visibility
  * background job execution time, exit status, PID visibility
+ * a cheat sheet for itself, ```cheat```, and a test for your terminal, ```cheat --glyphs```
  * advanced directory navigation
   * alt + arrow keys navigates history back, forward, dir up and dive with menu
   * bookmarks with tagdir, untagdir, d
