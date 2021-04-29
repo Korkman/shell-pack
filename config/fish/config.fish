@@ -138,7 +138,12 @@ end
 if ! contains -- "$fish_complete_path" "$__sp_config_fish_dir/completions"
 	set -g --prepend fish_complete_path "$__sp_config_fish_dir/completions"
 end
-fish_add_path --path --global --prepend -- "$__sp_dir/bin"
+# unqoted path is converted to space separated list, compatible to contains
+if ! contains -- $PATH "$__sp_dir/bin"
+	set -g --prepend PATH "$__sp_dir/bin"
+end
+# this is only available as of fish 3.2
+#fish_add_path --path --global --prepend -- "$__sp_dir/bin"
 
 # reduce hostname calls
 set -g short_hostname (hostname -s)
