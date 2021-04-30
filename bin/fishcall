@@ -1,5 +1,9 @@
 #! /usr/bin/env fish
 
+# loading shell-pack as a library
+# this does not load keybinds for non-interactive cases
+load_shell_pack
+
 # wrapper to execute a fish alias outside of fish
 set -l myargs $argv
 set -l funcname (basename (status filename))

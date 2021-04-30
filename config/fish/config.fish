@@ -1,20 +1,31 @@
 # main config.fish
 
-# load config only when interactive
-if test (status --is-interactive) -o (set -q __sp_force_config)
+# load main config only when interactive
+if ! set -q __sp_load
+	if status --is-interactive
+		set __sp_load "yes"
+	end
+end
+if ! set -q __sp_load_keybinds
+	if status --is-interactive
+		set __sp_load_keybinds "yes"
+	end
+end
+
+function load_shell_pack -d "Load shell-pack"
 
 	# unexport variables meant only for reload
 	if set -q disable_autoupdate
-		set -u disable_autoupdate $disable_autoupdate
+		set -gu disable_autoupdate $disable_autoupdate
 	end
 	if set -q __session_tag
-		set -u __session_tag $__session_tag
+		set -gu __session_tag $__session_tag
 	end
 
 	# disable autoupdate in mc subshell until transfer of patched 
 	# fish_prompt & fish_prompt_mc is implemented
 	if set -q MC_SID
-		set disable_autoupdate yes
+		set -g disable_autoupdate yes
 	end
 
 	# detect OS capabilities
@@ -47,7 +58,7 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 	if $__cap_env_has_null
 		# only Linux versions of "env" have --null
 		# backup initial environment
-		set initial_env (\
+		set -g initial_env (\
 			# env: switch to NUL delimited output so we can work with newline values
 			env --null | \
 			# sed: replace newlines with custom escape sequence
@@ -56,7 +67,7 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 			sed 's/\\o0/\n/g' \
 		)
 		# decrease SHLVL to offset the increment which already happened
-		set initial_env $initial_env SHLVL=(math $SHLVL - 1)
+		set -g initial_env $initial_env SHLVL=(math $SHLVL - 1)
 		function reload -d "Reset environment (mostly)"
 			if set -q MC_SID
 				# TODO: new instance needs to:
@@ -67,19 +78,19 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 			end
 			# pass thru these specific variables
 			if [ "disable_autoupdate" = "yes" ]
-				set initial_env $initial_env disable_autoupdate=$disable_autoupdate
+				set -g initial_env $initial_env disable_autoupdate=$disable_autoupdate
 			end
 			if set -q __session_tag
-				set initial_env $initial_env __session_tag=$__session_tag
+				set -g initial_env $initial_env __session_tag=$__session_tag
 			end
 			if set -q fish_private_mode
-				set initial_env $initial_env fish_private_mode=$fish_private_mode
+				set -g initial_env $initial_env fish_private_mode=$fish_private_mode
 			end
 			if set -q fish_history
-				set initial_env $initial_env fish_history=$fish_history
+				set -g initial_env $initial_env fish_history=$fish_history
 			end
 			# escape all list entries for use in eval, replace custom escape sequence with newline escape sequence
-			set initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
+			set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
 			# create a function using eval to execute the pre-escaped string as-is
 			eval function the_end \n exec env --ignore-environment $initial_env fish -l \n end
 			# run the function
@@ -208,90 +219,90 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 		source $__sp_config_fish_dir/iterm2_shell_integration.fish
 	end
 
+	if [ "$__sp_load_keybinds" = "yes" ]
+		# KEYBINDS
+		
+		# NOTE: alt key does not work on juicessh at all - it is used to compose characters
+		#       this might affect mac users as well.
+		# NOTE2: ctrl bindings may hit control characters, as observed with ctrl-j and ctrl-h
 
-	# KEYBINDS
+		# ctrl-t to find file, alt-c to cd, ctrl-r to search history
+		bind \ct skim-file-widget
+		bind \cr skim-history-widget
+		bind \ec skim-cd-widget
 
-	# NOTE: alt key does not work on juicessh at all - it is used to compose characters
-	#       this might affect mac users as well.
-	# NOTE2: ctrl bindings may hit control characters, as observed with ctrl-j and ctrl-h
+		if bind -M insert > /dev/null 2>&1
+			bind -M insert \ct skim-file-widget
+			bind -M insert \cr skim-history-widget
+			bind -M insert \ec skim-cd-widget
+		end
 
-	# ctrl-t to find file, alt-c to cd, ctrl-r to search history
-	bind \ct skim-file-widget
-	bind \cr skim-history-widget
-	bind \ec skim-cd-widget
+		# ctrl-f / alt-f to search in pager / search for files
+		bind \cf 'quick_search --dotfiles'
+		bind \ef 'quick_search --dotfiles'
+		# ctrl-shift-* does not exist, using alt-shift-f instead
+		bind \eF 'quick_search'
 
-	if bind -M insert > /dev/null 2>&1
-		bind -M insert \ct skim-file-widget
-		bind -M insert \cr skim-history-widget
-		bind -M insert \ec skim-cd-widget
+		# ctrl-j for juicessh FAILED: mc does not start subshell when ctrl-j is bound (why?!?)
+		#bind \cj 'quick_search --dotfiles'
+
+		# alt-up, ctrl-up, shift-up to cd ..
+		bind \e\[1\;3A "quick_dir_up"
+		bind \e\[1\;5A "quick_dir_up"
+		# shift up in tmux
+		bind \e\[1\;2A "quick_dir_up"
+
+		# alt-down to cd one level, shift skips dotfiles
+		bind \e\[1\;3B "skim-cd-widget-one --dotfiles"
+		bind \e\[1\;4B "skim-cd-widget-one"
+		# shift down in tmux
+		bind \e\[1\;2B "skim-cd-widget-one --dotfiles"
+
+		# alt-d skim_cdtagdir
+		bind \ed 'skim-cdtagdir'
+
+		# alt-x / alt-X for virt-manager console, juicessh, ...
+		bind \ex "skim-cd-widget-one --dotfiles"
+		bind \eX "skim-cd-widget-one"
+
+		# re-assigning alt-left and alt-right to ignore commandline status (use ctrl-left and ctrl-right for word-wise cursor positioning!)
+		bind \e\[1\;3D "quick_dir_prev"
+		bind \e\[1\;3C "quick_dir_next"
+
+		# alt-y / alt-Y for virt-manager console
+		bind \ey "quick_dir_prev"
+		bind \eY "quick_dir_next"
+
+		# alt-shift skips dotfiles
+		bind \et "skim-file-widget --dotfiles"
+		bind \eT "skim-file-widget"
+		bind \ec "skim-cd-widget --dotfiles"
+		bind \eC "skim-cd-widget"
+
+		# alt-space for argument history search (copy alt-.)
+		bind \e\x20 "history-token-search-backward"
+		# alt-comma for argument history search forward (reverse alt-.)
+		bind \e, "history-token-search-forward"
+
+		#bind \cl "commandline -f repaint"
+
+		# fast and visual grep using ripgrep and skim
+		bind \cg "commandline --cursor 0; commandline --insert 'ggrep '"
+
+		# reserved binds
+		# DO NOT BIND CTRL-J, breaks mc
+		# DO NOT BIND CTRL-H, breaks mc
+		bind \ej "echo -e '\n4 Reserved for jumping to bookmarks'; commandline -f repaint"
+
+		# custom event: sp-submit-commandline
+		bind \r "emit sp-submit-commandline; commandline -f execute"
+
+		# did something stupid? arrow-up to the command, hit f8 to delete
+		bind -k f8 "__history_delete_commandline"
 	end
-
-	# ctrl-f / alt-f to search in pager / search for files
-	bind \cf 'quick_search --dotfiles'
-	bind \ef 'quick_search --dotfiles'
-	# ctrl-shift-* does not exist, using alt-shift-f instead
-	bind \eF 'quick_search'
-
-	# ctrl-j for juicessh FAILED: mc does not start subshell when ctrl-j is bound (why?!?)
-	#bind \cj 'quick_search --dotfiles'
-
-	# alt-up, ctrl-up, shift-up to cd ..
-	bind \e\[1\;3A "quick_dir_up"
-	bind \e\[1\;5A "quick_dir_up"
-	# shift up in tmux
-	bind \e\[1\;2A "quick_dir_up"
-
-	# alt-down to cd one level, shift skips dotfiles
-	bind \e\[1\;3B "skim-cd-widget-one --dotfiles"
-	bind \e\[1\;4B "skim-cd-widget-one"
-	# shift down in tmux
-	bind \e\[1\;2B "skim-cd-widget-one --dotfiles"
-
-	# alt-d skim_cdtagdir
-	bind \ed 'skim-cdtagdir'
-
-	# alt-x / alt-X for virt-manager console, juicessh, ...
-	bind \ex "skim-cd-widget-one --dotfiles"
-	bind \eX "skim-cd-widget-one"
-
-	# re-assigning alt-left and alt-right to ignore commandline status (use ctrl-left and ctrl-right for word-wise cursor positioning!)
-	bind \e\[1\;3D "quick_dir_prev"
-	bind \e\[1\;3C "quick_dir_next"
-
-	# alt-y / alt-Y for virt-manager console
-	bind \ey "quick_dir_prev"
-	bind \eY "quick_dir_next"
-
-	# alt-shift skips dotfiles
-	bind \et "skim-file-widget --dotfiles"
-	bind \eT "skim-file-widget"
-	bind \ec "skim-cd-widget --dotfiles"
-	bind \eC "skim-cd-widget"
-
-	# alt-space for argument history search (copy alt-.)
-	bind \e\x20 "history-token-search-backward"
-	# alt-comma for argument history search forward (reverse alt-.)
-	bind \e, "history-token-search-forward"
-
-	#bind \cl "commandline -f repaint"
-
-	# fast and visual grep using ripgrep and skim
-	bind \cg "commandline --cursor 0; commandline --insert 'ggrep '"
-
-	# reserved binds
-	# DO NOT BIND CTRL-J, breaks mc
-	# DO NOT BIND CTRL-H, breaks mc
-	bind \ej "echo -e '\n4 Reserved for jumping to bookmarks'; commandline -f repaint"
-
-	# custom event: sp-submit-commandline
-	bind \r "emit sp-submit-commandline; commandline -f execute"
-
-	# did something stupid? arrow-up to the command, hit f8 to delete
-	bind -k f8 "__history_delete_commandline"
-
+	
 	complete -c cdtagdir --no-files -d "(lsdirtags | cut -d : -f 2)" -a "(lsdirtags | sed 's/:/\t/')"
 	alias d cdtagdir
-
 
 	# actual preferences
 
@@ -311,8 +322,7 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 	set -g fish_color_command '00ff87'
 	set -g fish_color_autosuggestion '9e9e9e'
 
-	set __right_prompt_pid_once ""
-
+	set -g __right_prompt_pid_once ""
 
 	# SCREEN / TMUX HANDLING
 
@@ -323,5 +333,8 @@ if test (status --is-interactive) -o (set -q __sp_force_config)
 
 	# set --universal __multiplexer_names to a list of tmux / screen session names
 	set -q __multiplexer_names || set --universal __multiplexer_names pb rbeck
+end
 
+if [ "$__sp_load" = "yes" ]
+	load_shell_pack
 end

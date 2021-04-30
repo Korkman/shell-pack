@@ -1156,7 +1156,7 @@ function __qssh_mru_pick -d \
 				--reverse \
 				--ansi \
 				--print-query \
-				--preview "echo qssh --qssh-preview {1} | fish" \
+				--preview "export __sp_load=yes; echo qssh --qssh-preview {1} | fish" \
 				--preview-window "right:50%:wrap" \
 				--with-nth 2,1,3 \
 				--nth 2,3 \
@@ -1455,7 +1455,7 @@ function __qssh_multipick -d \
 					--reverse \
 					--ansi \
 					--print-query \
-					--preview "echo qssh --qssh-multipick-preview {1} | fish" \
+					--preview "export __sp_load=yes; echo qssh --qssh-multipick-preview {1} | fish" \
 					--preview-window "right:50%:wrap" \
 					--with-nth 2,1,3 \
 					--nth 2,3 \
