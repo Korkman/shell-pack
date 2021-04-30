@@ -126,10 +126,16 @@ Enable reporting modifiers using CSI and set left option key to send Esc+ (now a
 This is how it looks, why, and what features it has (run command "cheat")
 
 ## Updating
-Retrieving the newest version is as simple as running ```upgrade-shell-pack```. If any dependencies need to be upgraded as well, shell-pack will say so on startup once a day.
+Retrieving the latest version is as simple as running ```upgrade-shell-pack```. If any dependencies need to be upgraded as well, shell-pack will say so.
 
 ## Development
 
 Install as usual. Clone git repo into a dedicated directory. Symlink the following locations to destinations in your development directory:
  * ~/.local/share/shell-pack/bin
  * ~/.local/share/shell-pack/config
+
+Installing a specific version:
+```
+# NOTE: this script will not execute partially when disconnected
+curl -s -L https://github.com/Korkman/shell-pack/raw/v2.2/get.sh | sh -s v2.2
+```
