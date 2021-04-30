@@ -36,6 +36,9 @@ function qssh -d \
 		mkdir ~/.ssh
 	end
 	
+	# have all fish subshells load shell-pack
+	set -x __sp_load yes
+	
 	set -x __qssh_tmp_host_file ~/.ssh/temporary_known_hosts
 	set -x __qssh_db_mru_file ~/.ssh/qssh_mru.list
 	set -x __qssh_db_autocomplete_cache_file ~/.ssh/qssh_autocomplete.list
