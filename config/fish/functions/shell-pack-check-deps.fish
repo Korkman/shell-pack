@@ -1,5 +1,9 @@
 function shell-pack-check-deps -d \
 	"Test if dependencies are up-to-date"
+	if [ "$UPGRADE_SHELLPACK" = "no" ]
+		echo "Upgrade functions disabled"
+		return 1
+	end
 	
 	if ! set -q __sp_first_startup_done
 		echo "This seems to be your first time using shell-pack."
