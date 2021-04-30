@@ -34,23 +34,26 @@ Attach to or create a screen / tmux session SESSION.
 			set -g __term_muxer "none"
 		end
 		
-		function __mmux_tmux_update_shell_env --on-event fish_preexec
-			if set -q TMUX
-				# inside TMUX, grab environment update
-				for v in (tmux show-environment)
-					if [ (string sub --start 1 --length 1 -- $v) = "-" ]
-						set -l v (string sub --start 2 -- $v)
-						if contains -- $v $__mmux_imported_environment && set -q $v
-							#echo "tmux: unset $v"
-							set -e $v
-						end
-					else
-						set -l v (string split --max 1 "=" -- $v)
-						set -l vname "$v[1]"
-						set -l vval "$v[2]"
-						if contains -- $vname $__mmux_imported_environment && [ "$$vname" != "$vval" ]
-							#echo "tmux: set $vname=$vval"
-							set -g $vname $vval
+		if ! set -q MC_SID
+			# do not update environment inside mc
+			function __mmux_tmux_update_shell_env --on-event fish_preexec
+				if set -q TMUX
+					# inside TMUX, grab environment update
+					for v in (tmux show-environment)
+						if [ (string sub --start 1 --length 1 -- $v) = "-" ]
+							set -l v (string sub --start 2 -- $v)
+							if contains -- $v $__mmux_imported_environment && set -q $v
+								#echo "tmux: unset $v"
+								set -e $v
+							end
+						else
+							set -l v (string split --max 1 "=" -- $v)
+							set -l vname "$v[1]"
+							set -l vval "$v[2]"
+							if contains -- $vname $__mmux_imported_environment && [ "$$vname" != "$vval" ]
+								#echo "tmux: set $vname=$vval"
+								set -g $vname $vval
+							end
 						end
 					end
 				end
