@@ -115,7 +115,7 @@ function qssh -d \
 			set -g __qssh_second_iteration no
 			#set -eg __qssh_nested
 			function fish_prompt
-				commandline "__qssh_autorun"
+				commandline " __qssh_autorun"
 				commandline -f execute
 			end
 			function __qssh_autorun -V hack_argv -V __qssh_self_launch_instant_exit
