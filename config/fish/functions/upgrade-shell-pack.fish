@@ -7,7 +7,7 @@ function upgrade-shell-pack -d \
 	end
 	
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
-		curl -s -L "https://github.com/Korkman/shell-pack/raw/$tag/get.sh" | sh -s || return 1
+		curl -s -L "https://github.com/Korkman/shell-pack/raw/$tag/get.sh" | sh -s "$tag" || return 1
 		shell-pack-deps check
 		reload
 	else
