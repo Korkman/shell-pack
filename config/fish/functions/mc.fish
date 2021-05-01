@@ -1,8 +1,10 @@
 function mc \
 -d "Run midnight commander with $OLDSHELL subshell to stabilize it"
 	set --local --export SHELL $SHELL
-	if ! set -q __sp_brave_mc_subshell || [ "$__sp_brave_mc_subshell" = "0" ]
+	if [ "$__sp_brave_mc_subshell" = "no" ]
 		# not enabled
+		
+		# pass OLDSHELL as SHELL to mc
 		if test "$OLDSHELL" != ""
 			# newer versions of nerdlevel.sh pass the default SHELL in OLDSHELL
 			set SHELL $OLDSHELL
