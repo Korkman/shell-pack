@@ -3,6 +3,11 @@
 
 # nerdlevel > 0: upgrade to FISH shell
 nerdlevel() {
+	if [[ "" != "$MC_SID" ]]; then
+		# prevent launching inside midnight-commander - it has specific hooks
+		# that break when one shell changes into another
+		return
+	fi
 	export LC_NERDLEVEL=$1
 	if [[ "" != "$TMUX" ]]; then
 		echo "tmux note: new and existing windows will inherit new LC_NERDLEVEL"
@@ -15,7 +20,7 @@ nerdlevel() {
 	fi
 }
 
-if [[ "${LC_NERDLEVEL:-0}" -gt 0 ]] && which fish &> /dev/null; then
+if [[ "" == "$MC_SID" ]] && [[ "${LC_NERDLEVEL:-0}" -gt 0 ]] && which fish &> /dev/null; then
 	if [[ "${BASH_VERSION}" != "" ]]; then
 		# exec in .bashrc fails with su + bash 5
 		# workaround: run exec fish as prompt_command
