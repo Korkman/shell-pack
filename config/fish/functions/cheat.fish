@@ -4,7 +4,7 @@ function cheat
 		return
 	end
 	echo "
-VB enhanced FISH "(shell-pack-version)" Cheatsheet
+Fish & shell-pack "(shell-pack-version)" cheatsheet
 
 ========= Keymappings =========
 
