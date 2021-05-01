@@ -85,7 +85,7 @@ lines with context.
 		-v ln=(set_color green) \
 		# color reset
 		-v cr=(set_color normal) \
-		'BEGIN { OFS="" } { print i == l ? lh : ln, i, i == l ? ":" : "-", cr, "", $0; i++ }'
+		'BEGIN { OFS="" } { print (i == l ? lh : ln), i, (i == l ? ":" : "-"), cr, "", $0; i++ }'
 	end
 	
 	# header
