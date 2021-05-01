@@ -253,6 +253,11 @@ function __shellpack_erase_command_lines -d "Try to erase all lines a typed cmd 
 end
 
 function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from output"
+	if set -q MC_SID
+		# output from within mc subshell breaks navigation
+		return
+	end
+	
 	set -l __new_cmdline (echo "$argv[1]")
 	if [ (string length "$__new_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__new_cmdline") = " " -a (string sub -s 1 -l 2 "$__new_cmdline") != "  " ]
 		echo "$argv[1]" | __shellpack_erase_command_lines
@@ -468,7 +473,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				if [ "$theme_nerd_fonts" = "yes" ]
 					echo -n \ufb8f' '
 				end
-				echo "Dangerous cmd not stored in history"
+				echo "Dangerous cmd flushed from history"
 			else if [ (string length "$__saved_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__saved_cmdline") = " " ]
 				# reminder to clear history
 				#if [ "$theme_nerd_fonts" = "yes" ]
