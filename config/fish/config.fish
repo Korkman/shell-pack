@@ -268,6 +268,9 @@ function load_shell_pack -d "Load shell-pack"
 		# re-assigning alt-left and alt-right to ignore commandline status (use ctrl-left and ctrl-right for word-wise cursor positioning!)
 		bind \e\[1\;3D "quick_dir_prev"
 		bind \e\[1\;3C "quick_dir_next"
+		# shift-left and -right in tmux
+		bind \e\[1\;2D "quick_dir_prev"
+		bind \e\[1\;2C "quick_dir_next"
 
 		# alt-y / alt-Y for virt-manager console
 		bind \ey "quick_dir_prev"
