@@ -20,13 +20,13 @@ Search args history           Alt-.
 
 Change directory
 ----------------
-cd ..                         Alt-Up
-Change directory              Alt-Down          Alt-X
+cd ..                         Shift-Up
+Change directory              Shift-Down        Alt-X
 ... excluding dotfiles        Alt-Shift-Down    Alt-Shift-X
 ... recursive                 Alt-C
 ... recursive - dotfiles      Alt-Shift-C
-Navigate back                 Alt-Left          Alt-Y
-Navigate forward              Alt-Right         Alt-Shift-Y
+Navigate back                 Shift-Left        Alt-Y
+Navigate forward              Shift-Right       Alt-Shift-Y
 List tagged dirs              Alt-D
 
 Search files
@@ -107,6 +107,7 @@ function __cheat_glyphs
 	set -l pl_a1 (set_color 711)""(set_color -b 711)" "(set_color normal; set_color 711)""(set_color normal)
 	set -l pl_a2 (set_color 171)""(set_color -b 171)" "(set_color normal; set_color 171)""(set_color normal)
 	set -l pl_a3 (set_color yellow)""(set_color -b yellow)" "(set_color normal; set_color yellow)""(set_color normal)
+	set -l policeline (set_color ff0)"    "(set_color normal)
 	echo "For Nerdlevel 3, here's the Glyphs that your
 terminal should display properly:
 
@@ -114,12 +115,14 @@ terminal should display properly:
   │ Powerline Solid Arrow    └── This line is solid! (mc)
   │ Powerline Hollow Arrow
   │ Read-only lock
+  │ Bookmark
+  │ Home
   │ Debian Swirl Logo
   │ Exit OK
   │ Exit Error            Powerlines: $pl_a1 $pl_a2 $pl_a3
   │ Hourglass End         Fine lines in-between? Try font size.
   │ Calendar
-  │ Walking man
+  │ Walking man           Policeline: $policeline
  ↓ │ Arrow Down (mc)
  ✕ │ Close X (mc)
 ───┘   
