@@ -2,6 +2,18 @@ function fish_prompt -d "powerline-go like prompt"
 	if [ (status function) = "fish_prompt_mc" ]
 		# this function was copied and renamed by mc to fish_prompt_mc
 		
+		# test if the command 'kill' is available. if not, improvise!
+		# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
+		# since kill is not a builtin (yet), we depend on it here to be a command
+		# this can happen in docker images or similar minimalistic containers.
+		# mc will hang whatever we do, so this polyfill will kill using the hopefully
+		# built-in of another installed shell ...
+		if ! command -q kill and ! builtin -q kill
+			function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
+				/usr/bin/env sh -c "kill $argv"
+			end
+		end
+
 		# terrible bug in Debian Stretch: an additional prompt line!
 		# lets remove it
 		set -l wrapped_prompt
@@ -498,6 +510,8 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	if [ "$__sp_config_fish_file" = "" ] || [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
 		if [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
 			# auto-update
+			echo "Your most recent cmd:"
+			echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
 			policeline "new fish config loaded - env reset"
 			reload
 		else
