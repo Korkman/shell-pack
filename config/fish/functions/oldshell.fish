@@ -11,5 +11,6 @@ function oldshell \
 	end
 	set --local --export SHELL "$OLDSHELL"
 	# changing LC_NERDLEVEL without triggering event
-	env LC_NERDLEVEL=0 $OLDSHELL $argv
+	# cut TMUX connection in case oldshell has support for importing tmux env
+	env LC_NERDLEVEL=0 TMUX= $OLDSHELL $argv
 end
