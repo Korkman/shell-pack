@@ -12,7 +12,7 @@ confirm_delete=1
 confirm_overwrite=1
 confirm_execute=1
 confirm_history_cleanup=1
-confirm_exit=1
+confirm_exit=0
 confirm_directory_hotlist_delete=1
 safe_delete=0
 mouse_repeat_rate=100
@@ -108,7 +108,7 @@ clipboard_paste=
 [Colors]
 base_color=
 xterm=
-color_terminals=
+color_terminals=screen-256color,tmux-256color,xterm-256color
 
 [Panels]
 show_mini_info=true
@@ -136,3 +136,4 @@ Find *.orig after patching=find . -name \\*.orig -print
 Find SUID and SGID programs=find . \\( \\( -perm -04000 -a -perm +011 \\) -o \\( -perm -02000 -a -perm +01 \\) \\) -print
 Find rejects after patching=find . -name \\*.rej -print
 Modified git files=git ls-files --modified
+
