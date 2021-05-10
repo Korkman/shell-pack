@@ -36,9 +36,12 @@ function fish_prompt -d "powerline-go like prompt"
 		end
 	end
 	
-	# begin silent updates (no policeline)
+	# begin silent updates (avoid reload)
+	# from time to time, upgraded shells can be live patched here until a config.fish
+	# upgrade becomes necessary, at which point stuff gets copied over
 	
 	# improvise OLDSHELL if not set - 2021 (*guess*)
+	# NOTE: this is already handled in a better way in config.fish!
 	if ! set -q OLDSHELL
 		# TODO: if getent is available, ask system for default shell, use if not fish?
 		if set -g OLDSHELL (which bash)
