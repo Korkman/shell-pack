@@ -16,6 +16,7 @@ function __update_glyphs -S -d "Sets glyphs in the scope of the calling function
 	set white_black_backward_block \uE0BE' '
 	set black_white_backward_block \uE0B8' '
 	set home_glyph \uF7DD
+	set deleted_glyph 'ﰸ'
 
 	if [ "$theme_powerline_fonts" = "no" ]
 		set right_black_arrow_glyph  ''
@@ -33,5 +34,6 @@ function __update_glyphs -S -d "Sets glyphs in the scope of the calling function
 		set black_white_backward_block '  '
 		set bookmark_glyph ''
 		set home_glyph '~'
+		set deleted_glyph '🛇'
 	end
 end
