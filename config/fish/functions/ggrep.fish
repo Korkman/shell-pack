@@ -52,8 +52,8 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 			--bind \
 				'ctrl-p:toggle-preview,'\
 				'ctrl-v:execute(nullerror vi +{2} {1}),'\
-				'f3:execute(nullerror mcview {1}),'\
-				'f4:execute(nullerror mcedit {1}:{2}),'\
+				'f3:execute(nullerror fishcall mcview {1}),'\
+				'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
 				'ctrl-l:execute(clear; nullerror less +{2}g {1}),'\
 				'ctrl-h:execute(ggrep-help),'\
 				'ctrl-q:abort,'\
