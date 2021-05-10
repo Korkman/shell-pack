@@ -36,7 +36,21 @@ function fish_prompt -d "powerline-go like prompt"
 		end
 	end
 	
-
+	# begin silent updates (no policeline)
+	
+	# improvise OLDSHELL if not set - 2021 (*guess*)
+	if ! set -q OLDSHELL
+		# TODO: if getent is available, ask system for default shell, use if not fish?
+		if set -g OLDSHELL (which bash)
+		else if set -g OLDSHELL (which zsh)
+		else
+			# last resort, sh
+			set -g OLDSHELL (which sh)
+		end
+	end
+	
+	# end silent updates
+	
 	if set -q __skip_prompt
 		set -e __skip_prompt
 		return
