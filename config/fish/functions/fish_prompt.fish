@@ -491,24 +491,24 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				__shell_pack_clear_status
 			end
 			
-			if [ (string sub -s 1 -l 2 "$__saved_cmdline") = "  " ]
+			if [ (string sub -s 1 -l 3 "$__saved_cmdline") = "   " ]
+				# feature: triple-space prefix to not save history without any comment
+				# (single 'up' history not cleared)
+			else if [ (string sub -s 1 -l 2 "$__saved_cmdline") = "  " ]
 				# feature: double-space prefix to prevent both in-memory and persistant history
-				if [ $__saved_status -ne 0 ]
-					__shell_pack_clear_status
-				else
-					commandline --replace " "
-					commandline -f execute
-				end
+				# execute a single space to clear the history item
+				commandline --replace " "
+				commandline -f execute
+				
 				if [ "$theme_nerd_fonts" = "yes" ]
-					echo -n \ufb8f' '
+					echo -n (set_color black; set_color -b ff0)' '\ufb8f' '(set_color ff0; set_color -b black;)\uE0B0(set_color normal)' '
+				else
+					echo -n (set_color black; set_color -b bryellow)'!'(set_color normal)
 				end
-				echo "Dangerous cmd flushed from history"
+				echo "Double-space prefix: Potentially harmful cmd flushed from history"
 			else if [ (string length "$__saved_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__saved_cmdline") = " " ]
 				# reminder to clear history
-				#if [ "$theme_nerd_fonts" = "yes" ]
-				#	echo -n \ufaf8' '
-				#end
-				#echo "Private history: 'up' to edit. Solo space or other cmd clears."
+				# moved to dedicated function __shellpack_confidential
 			end
 		end
 	else
