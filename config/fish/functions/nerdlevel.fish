@@ -13,13 +13,13 @@ function nerdlevel
 		tmux set-env LC_NERDLEVEL $argv[1]
 	end
 	if [ "$LC_NERDLEVEL" = "0" ]
-		set -g SHELL /bin/bash
+		set -g SHELL "$OLDSHELL"
 		if set -q TMUX
 			echo "tmux note: new windows will start at LC_NERDLEVEL 0, existing will downgrade to 1"
 			tmux set-env LC_NERDLEVEL 0
-			tmux set-env SHELL /bin/bash
+			tmux set-env SHELL "$OLDSHELL"
 		end
-		exec bash -l
+		exec "$OLDSHELL" -l
 	end
 
 	# old concept: protect LC_NERDLEVEL from tmux env updates
