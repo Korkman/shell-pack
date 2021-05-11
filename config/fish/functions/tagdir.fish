@@ -27,4 +27,6 @@ function tagdir -d "tag cwd to shorten name"
 	set --universal __tagged_dirs $__tagged_dirs (count x $__tagged_dirs)
 	set --universal __tagged_dirs_path_list $__tagged_dirs_path_list $tagged_dir
 	set --universal __tagged_dirs_name_list $__tagged_dirs_name_list $tagged_name
+
+	__sp_sync_tagdir_mc_hotlist
 end

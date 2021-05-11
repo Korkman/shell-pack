@@ -1,6 +1,13 @@
+# NOTE: main is renamed to filemanager in later mc versions (4.8.26 and up)
 [main]
+HotList = alt-d; ctrl-\\
+[filemanager]
+HotList = alt-d; ctrl-\\
 
+
+# NOTE: main:xmap is renamed to filemanager:xmap in later mc versions (4.8.26 and up)
 [main:xmap]
+[filemanager:xmap]
 
 [panel]
 
