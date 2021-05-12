@@ -19,8 +19,8 @@ then
 	do_build=yes
 fi
 
-BUILD_FROM="$1"
-case "$1" in
+BUILD_FROM="${1:-debian:buster}"
+case "$BUILD_FROM" in
 	'debian:buster')
 		tagname='debian-buster'
 		dockerfile="Dockerfile-Debian"
@@ -69,7 +69,7 @@ echo "Packaging ${srcdir}"
 cp -f "$srcdir/get.sh" "$tmpdir/get.sh"
 
 # create caching directory
-cachedir="$whereiam/cache/$tagname"
+cachedir="$HOME/.cache/shell-pack-devel/docker/$tagname"
 mkdir -p "$cachedir"
 
 # copy over cached rg, sk, if present
@@ -103,7 +103,7 @@ then
 fi
 
 # clean-up
-#rm -rf "$tmpdir"
+rm -rf "$tmpdir"
 
 exit
 }
