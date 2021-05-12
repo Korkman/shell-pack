@@ -67,14 +67,20 @@ SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
 mkdir -p "${SHELL_PACK_SRCDIR}"
 
 DOWNLOAD_FILENAME="korkman-shell-pack-${DOWNLOAD_TAG}.tar.gz"
-PRE_DOWNLOADED=n
-if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
-	# when in terminal, ask whether to re-use downloaded file
-	echo "Pre-downloaded file detected, use for installation? (y/N)"
-	read answer
-	if [ "$answer" = "y" ]; then
-		PRE_DOWNLOADED=y
+
+if [ "${FORCE_PRE_DOWNLOADED:-n}" = "n" ]
+then
+	PRE_DOWNLOADED=n
+	if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
+		# when in terminal, ask whether to re-use downloaded file
+		echo "Pre-downloaded file detected, use for installation? (y/N)"
+		read answer
+		if [ "$answer" = "y" ]; then
+			PRE_DOWNLOADED=y
+		fi
 	fi
+else
+	PRE_DOWNLOADED=y
 fi
 
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
