@@ -45,7 +45,8 @@ ShowNumbers = alt-shift-l
 # NOTE: not working anywhere: ctrl-g (cancel), ctrl-j (newline?)
 SearchContinue = alt-n; f17
 # NOTE: "SearchBackwardContinue" does not exist in editor, unfortunately
-Replace = ctrl-h; f4
+# NOTE: ctrl-h cannot work, it is the escape for backspace
+Replace = f4
 ReplaceContinue = f14
 # this is "Save selection as ..."
 BlockSave = ctrl-b
