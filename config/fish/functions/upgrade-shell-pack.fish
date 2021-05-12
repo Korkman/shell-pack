@@ -9,6 +9,7 @@ function upgrade-shell-pack -d \
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
 		curl -s -L "https://github.com/Korkman/shell-pack/raw/$tag/get.sh" | sh -s "$tag" || return 1
 		shell-pack-deps check
+		reinstall-shell-pack-prefs
 		reload
 	else
 		echo "upgrade-shell-pack disabled"
