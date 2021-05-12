@@ -1,5 +1,16 @@
 function reinstall-shell-pack-prefs \
 -d "Reinstalls mc, htop, tmux, screen preferences"
+	
+	if  cmp --silent -- "$__sp_config_dir/.tmux.conf" ~/.tmux.conf
+	and cmp --silent -- "$__sp_config_dir/.screenrc" ~/.screenrc
+	and cmp --silent -- "$__sp_config_dir/htop/htoprc" ~/.config/htop/htoprc
+	and cmp --silent -- "$__sp_config_dir/mc/ini" ~/.config/mc/ini
+	and cmp --silent -- "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
+	and cmp --silent -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
+		echo "Your preferences are up-to-date"
+		return
+	end
+	
 	echo "Overwrite preferences for"
 	echo " - tmux"
 	echo " - screen"
