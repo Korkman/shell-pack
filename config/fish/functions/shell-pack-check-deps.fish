@@ -8,8 +8,16 @@ function shell-pack-check-deps -d \
 	if ! set -q __sp_first_startup_done
 		echo "This seems to be your first time using shell-pack."
 		echo "Installing dependencies ..."
-		shell-pack-deps install skim
-		shell-pack-deps install ripgrep
+		if command -q sk
+			echo "Skim pre-installed, skipping ..."
+		else
+			shell-pack-deps install skim
+		end
+		if command -q rg
+			echo "Ripgrep pre-installed, skipping ..."
+		else
+			shell-pack-deps install ripgrep
+		end
 		reinstall-shell-pack-prefs
 		set --universal __sp_first_startup_done 1
 		return
