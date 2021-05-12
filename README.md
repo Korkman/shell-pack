@@ -13,7 +13,6 @@ A shell preset with many quality of life improvements for sysadmins.
  * improved `ctrl-r` history navigation and deletion
  * private mode alias `private`
  * recursive search for filenames with `alt-f`
- * ripgrep file content search with preview, alias `ggrep` (`alt-g`)
  * tab title control with ```tag```, ```untag```
  * tmux shortcuts, including exclusive session ```one``` for shared access
  * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
@@ -22,6 +21,7 @@ A shell preset with many quality of life improvements for sysadmins.
  * ```qssh```: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * ```lsports```: list open ports in compact manner
  * ```lsnet```: list active network connections in compact manner
+ * `ggrep` (`alt-g`), an easy to use ripgrep file content search with preview
  * Linux only
    * ```ddstat```: a dstat wrapper with "sticky" arguments (requires dstat)
    * ```qmount```: mount a partition to /run/q/name (skip /dev/)
