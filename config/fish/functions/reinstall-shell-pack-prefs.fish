@@ -5,7 +5,12 @@ function reinstall-shell-pack-prefs \
 	echo " - screen"
 	echo " - htop"
 	echo " - mc"
-	read -n1 -P '? (Y/n) ' answer
+	if [ "$FORCE_INSTALL_SP_PREFS" = "y" ]
+		set answer y
+		set -ge FORCE_INSTALL_SP_PREFS
+	else
+		read -n1 -P '? (Y/n) ' answer
+	end
 	if [ "$answer" != "" ] && [ "$answer" != "y" ] && [ "$answer" != 'Y' ]
 		echo "Skipping preferences."
 		echo "run "(status "function")" any time if you change your mind"
