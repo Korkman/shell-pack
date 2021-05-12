@@ -1,13 +1,14 @@
 function shell-pack-check-upgrade -d \
 	"Check for an upgrade to shell-pack"
-	set result (curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/latest/config/fish/functions/shell-pack-version.fish" | string match --regex 'echo.*([0-9](\.[0-9])+)')
-	#set result (curl -sL "https://nxdomain.local" | string match --regex 'echo.*([0-9](\.[0-9])+)')
+	# download latest shell-pack-version.fish and grep the version from there
+	set result (curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/latest/config/fish/functions/shell-pack-version.fish" | string match --regex 'echo.*([0-9]+(\.[0-9]+)+)')
 	if test $status -eq 0
-		set current_version (shell-pack-version)
-		if test "$current_version" != "$result[2]"
-			echo "New version: run 'upgrade-shell-pack' to upgrade to $result[2]!"
+		set installed_version (shell-pack-version)
+		set latest_version "$result[2]"
+		if test "$installed_version" != "$latest_version"
+			echo "Update: run 'upgrade-shell-pack' to upgrade from "$installed_version" to "$latest_version"!"
 		end
 	else
-		echo "NOTE: Unable to contact server for upgrade notification"
+		echo "NOTE: Unable to check for latest shell-pack version (offline?)"
 	end
 end
