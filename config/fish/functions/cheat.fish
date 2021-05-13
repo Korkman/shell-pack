@@ -53,7 +53,7 @@ Show this cheatsheet          cheat
 Launch POSIX-compliant shell  oldshell
 
 Change LC_NERDLEVEL           nerdlevel LEVEL
-  0 No fish (launch bash)
+  0 No fish (run $OLDSHELL)
   1 No font
   2 Powerline font
   3 Nerdfont
@@ -83,6 +83,8 @@ Execute cmd in private,
 ... and don't allow edit      SPACE SPACE cmd
 
 Toggle full private mode      private
+- no history read / written
+- toggle again to exit shell
 
 ========== for admins ==========
 
