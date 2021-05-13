@@ -135,7 +135,7 @@ function load_shell_pack -d "Load shell-pack"
 			gdate +%s%N
 		else
 			# TODO: check if this is bugged because time does not incorporate leap seconds while datetime does?
-			python -c 'import datetime; import time; print str(int(time.time())) + datetime.datetime.now().strftime("%f") + "000"'
+			python -c 'import datetime; import time; print(str(int(time.time())) + datetime.datetime.now().strftime("%f") + "000")'
 		end
 	end
 
