@@ -562,7 +562,7 @@ function __qssh_master_connect
 					end
 			end
 			return $sshExit
-		else if string match -q -- "*Permission denied (*password*)*" "$sshErrors"
+		else if string match -q --regex -- "Permission denied \(.*(password|keyboard-interactive).*\).*" "$sshErrors"
 			__qssh_echo_interactive "Password required ..."
 			set -x __qssh_nobatch yes
 			__qssh_master_connect $hostdef
@@ -578,7 +578,7 @@ function __qssh_master_connect
 			__qssh_fingerprint
 			# using ssh for host key confirmation, as we don't know how to edit known_hosts safely yet
 			# keeping true stdin with echo ""
-			echo "" | ssh $addOpt $opt_ip46 -o BatchMode=no -o ControlPath=none -l $hostdef_user -p $hostdef_port $hostdef_hostname /bin/true
+			echo "" | ssh $addOpt $opt_ip46 -o BatchMode=no -o ControlPath=none -l $hostdef_user -p $hostdef_port $hostdef_hostname /bin/cat
 			set confirm_status $status
 			if [ $confirm_status -eq 0 ]
 				__qssh_master_connect $hostdef
