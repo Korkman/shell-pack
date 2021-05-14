@@ -6,7 +6,7 @@ function qssh -d \
 	
 	# non-standard dependencies:
 	# - requires "fish" (tested with 3.1.2)
-	# - requires skim ("sk")
+	# - requires fuzzy ("fzf")
 	# standard dependencies:
 	# - requires openssh ("ssh", "ssh-keygen", "ssh-copy-id")
 	# - requires netcat ("nc")
@@ -244,8 +244,8 @@ function qssh -d \
 			
 			echo "Connection:"
 			echo "$hostdef"
-			if [ "$mru_nickname" != "" ]
-				echo "\"$mru_nickname\""
+			if [ "$mru_nickname" != "" -a "$mru_nickname" != "''" ]
+				echo "\""(string unescape -- $mru_nickname)"\""
 			end
 			echo
 			echo "Connection settings:"
@@ -1051,8 +1051,8 @@ function __qssh_mru_pick_table_cb --no-scope-shadowing
 	__qssh_mru_pick_tag
 	
 	echo -ne "\t"
-	if [ "$mru_nickname" != "" ]
-		echo -n "\"$mru_nickname\""
+	if [ "$mru_nickname" != "" -a "$mru_nickname" != "''" ]
+		echo -n "\""(string unescape -- $mru_nickname)"\""
 	end
 	echo
 end
