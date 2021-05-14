@@ -8,16 +8,21 @@ function shell-pack-check-deps -d \
 	if ! set -q __sp_first_startup_done
 		echo "This seems to be your first time using shell-pack."
 		echo "Installing dependencies ..."
-		if command -q sk
+		if command -q fzf
 			echo "Skim pre-installed, skipping ..."
 		else
-			shell-pack-deps install skim
+			shell-pack-deps install fzf
 		end
 		if command -q rg
 			echo "Ripgrep pre-installed, skipping ..."
 		else
 			shell-pack-deps install ripgrep
 		end
+		#if command -q sk
+		#	echo "Skim pre-installed, skipping ..."
+		#else
+		#	shell-pack-deps install skim
+		#end
 		reinstall-shell-pack-prefs
 		set --universal __sp_first_startup_done 1
 		return
@@ -65,8 +70,9 @@ function shell-pack-check-deps -d \
 	end
 	
 	test_version_min "ripgrep" "12.1.1" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
-	test_version_min "skim"    "0.9.4"  "sk --version"       "Run: shell-pack-deps install skim \$minver"
+	test_version_min "fzf"     "0.27.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
 	test_version_min "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
+	#test_version_min "skim"    "0.9.4"  "sk --version"       "Run: shell-pack-deps install skim \$minver"
 	
 	functions -e test_version_min
 	functions -e get_hex_from_version

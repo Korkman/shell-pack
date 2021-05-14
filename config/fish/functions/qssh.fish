@@ -221,6 +221,7 @@ function qssh -d \
 			__qssh_cache_update
 			return 0
 		else if contains -- --qssh-preview $argv
+			set_color white
 			# preview pane for skim
 			set -e argv[(contains --index -- --qssh-preview $argv)]
 			# NOTE: qssh-preview should be called with the hostdef as a single arg
@@ -342,7 +343,7 @@ function __qssh_mru_pick_help
 	echo
 	echo "Keyboard shortcuts:"
 	echo "F1: Display this help (q to exit)"
-	echo "Enter: Connect / Create"
+	echo "Enter: Connect"
 	echo "Alt-N: New connection"
 	echo "F3: SFTP with mc"
 	echo "F4: Edit connection"
@@ -1042,6 +1043,7 @@ function __qssh_mru_pick_tag --no-scope-shadowing
 end
 
 function __qssh_mru_pick_table_cb --no-scope-shadowing
+	set_color white
 	echo -n "-- "
 	echo -n (string escape -- $hostdef)
 	echo -ne "\t"
@@ -1122,39 +1124,46 @@ function __qssh_mru_pick -d \
 			set opt_sort cat
 		end
 		
+		set -l skim_cmd (__skimcmd)
+		set -l skim_binds (printf %s \
+			'enter:execute(echo {q}; echo {1})+abort,'\
+			'alt-n:execute(echo {q}; echo --new)+abort,'\
+			'f1:execute(echo {q}; echo --help)+abort,'\
+			'f3:execute(echo {q}; echo --scp {1})+abort,'\
+			'f4:execute(echo {q}; echo --edit {1})+abort,'\
+			'f5:execute(echo {q}; echo --duplicate {1})+abort,'\
+			'f6:execute(echo {q}; echo --nickname {1})+abort,'\
+			'f8:execute(echo {q}; echo --remove {1})+abort,'\
+			'alt-a:execute(echo {q}; echo --agent-connect {1})+abort,'\
+			'alt-x:execute(echo {q}; echo --exit {1})+abort,'\
+			'alt-k:execute(echo {q}; echo --clear-keys {1})+abort,'\
+			'alt-t:execute(echo {q}; echo --toggle-key-check {1})+abort,'\
+			'alt-m:execute(echo {q}; echo --multipick {1})+abort,'\
+			'alt-p:execute(echo {q}; echo --toggle-persist {1})+abort,'\
+			'alt-s:execute(echo {q}; echo --sort)+abort,'\
+			'ctrl-r:execute(echo {q}; echo --reload)+abort,'\
+			'ctrl-o:execute(echo {q}; echo --local-shell)+abort,'\
+			'alt-q:execute(echo ""; echo --quit)+abort,'\
+			'ctrl-c:execute(echo ""; echo --quit)+abort,'\
+			'ctrl-d:execute(echo ""; echo --quit)+abort,'\
+			'esc:cancel,'\
+			'f10:execute(echo ""; echo --quit)+abort'\
+		)
+		# not fzf compatible:
+		#	'enter:if-non-matched(execute:echo {q}; echo --instant-new+abort)+execute(echo {q}; echo {1})+abort,'\
+		#	'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
+		
+		#	tee /tmp/debug_shellpack_skimlist | \
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
-			sk \
+			$skim_cmd \
 				$opt_query \
 				--no-multi \
-				--bind \
-					'enter:if-non-matched(execute:echo {q}; echo --instant-new+abort)+execute(echo {q}; echo {1})+abort,'\
-					'alt-n:execute(echo {q}; echo --new)+abort,'\
-					'f1:execute(echo {q}; echo --help)+abort,'\
-					'f3:execute(echo {q}; echo --scp {1})+abort,'\
-					'f4:execute(echo {q}; echo --edit {1})+abort,'\
-					'f5:execute(echo {q}; echo --duplicate {1})+abort,'\
-					'f6:execute(echo {q}; echo --nickname {1})+abort,'\
-					'f8:execute(echo {q}; echo --remove {1})+abort,'\
-					'alt-a:execute(echo {q}; echo --agent-connect {1})+abort,'\
-					'alt-x:execute(echo {q}; echo --exit {1})+abort,'\
-					'alt-k:execute(echo {q}; echo --clear-keys {1})+abort,'\
-					'alt-t:execute(echo {q}; echo --toggle-key-check {1})+abort,'\
-					'alt-m:execute(echo {q}; echo --multipick {1})+abort,'\
-					'alt-p:execute(echo {q}; echo --toggle-persist {1})+abort,'\
-					'alt-s:execute(echo {q}; echo --sort)+abort,'\
-					'ctrl-r:execute(echo {q}; echo --reload)+abort,'\
-					'ctrl-o:execute(echo {q}; echo --local-shell)+abort,'\
-					\
-					'alt-q:execute(echo ""; echo --quit)+abort,'\
-					'ctrl-c:execute(echo ""; echo --quit)+abort,'\
-					'ctrl-d:execute(echo ""; echo --quit)+abort,'\
-					'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
-					'f10:execute(echo ""; echo --quit)+abort,'\
+				--bind "$skim_binds" \
 				--delimiter '\t' \
 				--header \
-					'F1:Help Ctrl-N:New F10:Quit' \
+					'F1:Help Alt-N:New F10:Quit' \
 				--prompt "Search / New SSH: " \
 				--reverse \
 				--ansi \
@@ -1193,7 +1202,7 @@ function __qssh_mru_pick -d \
 		#return 1
 		
 		if [ "$answer" = "" ]
-			continue
+			break
 		end
 		
 		__qssh_exec $answer
@@ -1437,20 +1446,25 @@ function __qssh_multipick -d \
 			else
 				set opt_sort cat
 			end
+			set -l skim_cmd (__skimcmd)
+			set -l skim_binds (printf %s \
+				'f1:execute(echo {q}; echo --help)+abort,'\
+				'esc:cancel,'\
+				'f10:execute(echo ""; echo --quit)+abort,'\
+				'alt-m:execute(echo --mirror-keyboard)+accept,'\
+				'alt-o:execute(echo --one-window)+accept,'\
+				'alt-s:execute(echo --sort)+accept'\
+			)
+			# not fzf compatible
+			#	'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
 			set skim_answer (\
 				__qssh_mru_pick_data | \
 				$opt_sort | \
-				sk \
+				$skim_cmd \
 					$opt_query \
 					--multi \
-					--color=header:\#ff0000,selected:\#ffff00 \
-					--bind \
-						'f1:execute(echo {q}; echo --help)+abort,'\
-						'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
-						'f10:execute(echo ""; echo --quit)+abort,'\
-						'alt-m:execute(echo --mirror-keyboard)+accept,'\
-						'alt-o:execute(echo --one-window)+accept,'\
-						'alt-s:execute(echo --sort)+accept,'\
+					--color=header:\#ff0000 \
+					--bind "$skim_binds" \
 					--delimiter '\t' \
 					--header \
 						'Multipick Mode! F1:Help' \
@@ -1463,6 +1477,8 @@ function __qssh_multipick -d \
 					--with-nth 2,1,3 \
 					--nth 2,3 \
 			)
+			# not fzf compatible
+			# ,selected:\#ffff00
 			set sk_exit $status
 			
 			if string match -q -- '--sort' $skim_answer[1]

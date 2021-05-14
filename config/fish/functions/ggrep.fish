@@ -25,6 +25,22 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 	# export query
 	set -x query $query
 	
+	set -l skim_cmd (__skimcmd)
+	set -l skim_binds (printf %s \
+		'ctrl-p:toggle-preview,'\
+		'ctrl-v:execute(nullerror vi +{2} {1}),'\
+		'f3:execute(nullerror fishcall mcview {1}),'\
+		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
+		'ctrl-l:execute(clear; nullerror less +{2}g {1}),'\
+		'ctrl-h:execute(ggrep-help),'\
+		'ctrl-q:abort,'\
+		'f10:abort,'\
+		'esc:cancel,'\
+		'enter:execute(ggrep-in-file -f {1} -l {2} -- $query)'
+	)
+	# not fzf compatible
+	#	'shift-left:preview-left,shift-right:preview-right'
+	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
 	# mcview caused escape sequence mess at times
@@ -47,18 +63,9 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 			2> /dev/null \
 		| rg --no-config --line-buffered ":" 2> /dev/null \
 		| head -n 100000 2> /dev/null \
-		| sk \
+		| $skim_cmd \
 			--no-multi \
-			--bind \
-				'ctrl-p:toggle-preview,'\
-				'ctrl-v:execute(nullerror vi +{2} {1}),'\
-				'f3:execute(nullerror fishcall mcview {1}),'\
-				'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
-				'ctrl-l:execute(clear; nullerror less +{2}g {1}),'\
-				'ctrl-h:execute(ggrep-help),'\
-				'ctrl-q:abort,'\
-				'enter:execute(ggrep-in-file -f {1} -l {2} -- $query),'\
-				'shift-left:preview-left,shift-right:preview-right,'\
+			--bind "$skim_binds" \
 			--preview \
 				'clear; ggrep-in-file -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:right:80%' \

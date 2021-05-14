@@ -26,18 +26,21 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
 	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
 	"shift-down:accept,alt-down:accept,"\
-	"ctrl-q:abort"
+	"ctrl-q:abort,"\
+	"esc:cancel"
 	)
 	set -l skim_help "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
-
+	
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find -L \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
-	-o -type d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@^\./@@'"
+	-o -type d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
+	#set SKIM_ALT_C_COMMAND "LC_ALL=C.UTF-8 ls -A -1 --color=always"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
-		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
+		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
+		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --ansi --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]
@@ -68,17 +71,27 @@ function skim-cd-widget-one -d "Change directory without changing command"
 				if [ "$result" != '.' ]
 					cd "$result"
 					# move cursor up
-					echo -en '\033[1A'
+					#echo -en '\033[1A'
 					break
 				else
 					# move cursor up
-					echo -en '\033[1A'
+					#echo -en '\033[1A'
 					break
 				end
 			else if string match -q --regex '^//list:' -- "$result"
 				# list result
 				set result (string replace --regex '^//list:' '' -- "$result")
-				ll --color=auto "$result" | less
+				set -l listing "$PWD/$result"
+				set -al listing (ls -al --color=auto "$result")
+				for litem in $listing; echo $litem; end | less
+				set cd_success 0
+				continue
+			else if string match -q --regex '^//preview:' -- "$result"
+				if test "$preview_window" = "hidden"
+					set preview_window default
+				else
+					set preview_window hidden
+				end
 				set cd_success 0
 				continue
 			else
@@ -89,6 +102,8 @@ function skim-cd-widget-one -d "Change directory without changing command"
 			if test $cd_success
 				set skim_query ""
 				
+				# move cursor down (fzf)
+				echo -en '\033[1B'
 				__force_redraw_prompt
 			else
 				#echo "cd failed."
@@ -97,7 +112,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 		else
 			cd "$original_dir"
 			# move cursor up
-			echo -en '\033[1A'
+			#echo -en '\033[1A'
 			break
 		end
 	end

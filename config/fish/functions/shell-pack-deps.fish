@@ -5,6 +5,8 @@ function shell-pack-deps -d \
 	else if test "$argv[1]" = "install"
 		if test "$argv[2]" = "skim"
 			shell-pack-deps-install-skim $argv[3]
+		else if test "$argv[2]" = "fzf"
+			shell-pack-deps-install-fzf $argv[3]
 		else if test "$argv[2]" = "ripgrep"
 			shell-pack-deps-install-ripgrep $argv[3]
 		else
@@ -15,6 +17,68 @@ function shell-pack-deps -d \
 		echo "Invalid argument"
 		return 1
 	end
+end
+
+function shell-pack-deps-install-fzf
+	echo "Project website: https://github.com/junegunn/fzf"
+	set pversion "$argv[1]"
+	if test "$pversion" = ""
+		set pversion "0.27.0"
+	end
+	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv7.tar.gz"
+	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-darwin_amd64.zip"
+	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_amd64.tar.gz"
+	
+	set initial_dir "$PWD"
+	
+	if test (uname -m) = "x86_64"
+		if test (uname -s) = "Darwin"
+			set url "$tpl_x86_64_apple_darwin"
+		else
+			set url "$tpl_x86_64_linux"
+		end
+	else if test (uname -m) = "armv7l"
+		set url "$tpl_arm_v7"
+	else
+		echo "No matching architecture found, please try downloading yourself"
+		return 1
+	end
+	
+	read -P "OK to download and execute release file? (Y/n)" answer
+	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
+		return 1
+	end
+	
+	set dldir ~/.cache/shell-pack-downloads
+	mkdir -p "$dldir" || return 2
+	cd "$dldir" || return 2
+	set url (string replace --all 'VERSION' "$pversion" -- "$url")
+	
+	rm -f fzf.tar.gz
+	
+	echo "Downloading $url ..."
+	curl --silent --location "$url" > fzf.tar.gz || return 3
+	
+	tar -xzf fzf.tar.gz || return 4
+	
+	echo "Installing to ""$__sp_dir""/bin/fzf ..."
+	cp "fzf" "$__sp_dir/bin/fzf" || return 5
+	
+	set new_pversion (fzf --version | string replace --regex -- '([0-9\.]+).+' '$1') || return 6
+	
+	echo "Installed version: $new_version"
+	
+	if ! string match "$pversion" -- "$new_pversion"
+		echo "Unexpected result, please investigate"
+		return 7
+	end
+	
+	echo "Cleaning up ..."
+	cd "$initial_dir"
+	rm -f "$dldir/fzf.tar.gz" || return 8
+	rm -f "$dldir/fzf" || return 9
+	
+	echo "Complete"
 end
 
 function shell-pack-deps-install-skim
@@ -68,7 +132,8 @@ function shell-pack-deps-install-skim
 	echo "Installed version: $new_version"
 	
 	if ! string match "$pversion" -- "$new_pversion"
-		echo "Unexpected result, please investigate" || return 7
+		echo "Unexpected result, please investigate"
+		return 7
 	end
 	
 	echo "Cleaning up ..."
@@ -130,7 +195,8 @@ function shell-pack-deps-install-ripgrep
 	echo "Installed version: $new_version"
 	
 	if ! string match "*$pversion*" -- "$new_pversion"
-		echo "Unexpected result, please investigate" || return 7
+		echo "Unexpected result, please investigate"
+		return 7
 	end
 	
 	echo "Cleaning up ..."

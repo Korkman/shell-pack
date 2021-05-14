@@ -37,6 +37,7 @@ function skim-file-widget -d "List files and folders"
 	while true
 		set -e result
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_CTRL_T_OPTS"
+		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
 		eval "$SKIM_CTRL_T_COMMAND | "(__skimcmd)' -m --query "'$skim_query'"' \
 		--header "'$skim_help'" \
 		--bind "'$skim_binds'" \

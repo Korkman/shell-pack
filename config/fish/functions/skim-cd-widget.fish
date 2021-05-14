@@ -33,6 +33,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
+		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
 		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 		
 		if [ -n "$result" ]
