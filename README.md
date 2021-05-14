@@ -18,8 +18,9 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
 
 ## Tools
- * `qssh`: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
+ * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `ggrep` (`alt-g`), an easy to use ripgrep file content search with preview
+ * `ggit`, quicky review changes, add files to the commit
  * Linux only
    * ```lsports```: list open ports in compact manner
    * ```lsnet```: list active network connections in compact manner
@@ -85,7 +86,7 @@ Installing shell-pack manually via download and extract:
 ### Other dependencies
 
 Installed automatically:
- * skim (installs to $HOME/.local/share/shell-pack/bin/sk)
+ * Fuzzy finder (installs to $HOME/.local/share/shell-pack/bin/fzf)
  * ripgrep (installs to $HOME/.local/share/shell-pack/bin/rg)
 
 These are expected to be present everywhere:
