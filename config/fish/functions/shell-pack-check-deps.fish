@@ -9,7 +9,7 @@ function shell-pack-check-deps -d \
 		echo "This seems to be your first time using shell-pack."
 		echo "Installing dependencies ..."
 		if command -q fzf
-			echo "Skim pre-installed, skipping ..."
+			echo "Fzf pre-installed, skipping ..."
 		else
 			shell-pack-deps install fzf
 		end
