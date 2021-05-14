@@ -25,6 +25,7 @@ function shell-pack-deps-install-fzf
 	if test "$pversion" = ""
 		set pversion "0.27.0"
 	end
+	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv6.tar.gz"
 	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv7.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-darwin_amd64.zip"
 	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_amd64.tar.gz"
@@ -39,6 +40,8 @@ function shell-pack-deps-install-fzf
 		end
 	else if test (uname -m) = "armv7l"
 		set url "$tpl_arm_v7"
+	else if test (uname -m) = "armv6l"
+		set url "$tpl_arm_v6"
 	else
 		echo "No matching architecture found, please try downloading yourself"
 		return 1
@@ -162,6 +165,8 @@ function shell-pack-deps-install-ripgrep
 		else
 			set url "$tpl_x86_64_linux"
 		end
+	else if test (uname -m) = "armv6l"
+		set url "$tpl_arm_other"
 	else if test (uname -m) = "armv7l"
 		set url "$tpl_arm_other"
 	else
