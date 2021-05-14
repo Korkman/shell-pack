@@ -1201,6 +1201,10 @@ function __qssh_mru_pick -d \
 		#read -P "debug"
 		#return 1
 		
+		if [ "$answer" = "" -a "$query" != "" ]
+			set answer "$query"
+		end
+		
 		if [ "$answer" = "" ]
 			break
 		end
