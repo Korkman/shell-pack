@@ -44,7 +44,7 @@ function ggit -d \
 			--height 90% \
 			--disabled \
 			--prompt "Commit message (enter appends): " \
-			--preview "ggit diff_preview {} '$msg_filename'" \
+			--preview "fishcall ggit diff_preview {} '$msg_filename'" \
 			--preview-window down \
 		| while read -l line; set -a results "$line"; end
 		
