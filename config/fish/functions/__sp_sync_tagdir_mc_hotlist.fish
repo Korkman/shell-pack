@@ -29,6 +29,7 @@ function __sp_sync_tagdir_mc_hotlist -d \
 
 	set spGroupFound no
 	set parsePos 1
+	set i 1
 	set parseMax (count $hotlistLines)
 	for i in (seq $parsePos $parseMax)
 		set line "$hotlistLines[$i]"

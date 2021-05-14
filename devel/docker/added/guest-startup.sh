@@ -12,6 +12,10 @@ if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
 	then
 		cp ~/Downloads/rg /usr/local/bin/rg
 	fi
+	if [ -e ~/Downloads/fzf ]
+	then
+		cp ~/Downloads/fzf /usr/local/bin/fzf
+	fi
 	if [ -e ~/Downloads/sk ]
 	then
 		cp ~/Downloads/sk /usr/local/bin/sk
@@ -27,6 +31,11 @@ if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
 	then
 		#echo "Caching rg ..."
 		cp ~/.local/share/shell-pack/bin/rg ~/Downloads/rg
+	fi
+	if [ -e ~/.local/share/shell-pack/bin/fzf ]
+	then
+		#echo "Caching fzf .."
+		cp ~/.local/share/shell-pack/bin/fzf ~/Downloads/fzf
 	fi
 	if [ -e ~/.local/share/shell-pack/bin/sk ]
 	then

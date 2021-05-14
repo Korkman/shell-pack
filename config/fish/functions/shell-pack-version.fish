@@ -5,5 +5,5 @@ function shell-pack-version \
 	# won't cause reloads anymore!
 	
 	# NOTE: the following line is parsed by shell-pack-check-upgrade!
-	echo '2.5'
+	echo '2.6'
 end

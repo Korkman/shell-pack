@@ -64,7 +64,7 @@ fi
 
 # package src
 echo "Packaging ${srcdir}"
-(cd "${srcdir}" && tar '--exclude=rg' '--exclude=sk' -czf "${tmpdir}/${download_file}" ".")
+(cd "${srcdir}" && tar '--exclude=rg' '--exclude=fzf' '--exclude=sk' -czf "${tmpdir}/${download_file}" ".")
 
 cp -f "$srcdir/get.sh" "$tmpdir/get.sh"
 
@@ -76,6 +76,10 @@ mkdir -p "$cachedir"
 if [ -e "$cachedir/rg" ]
 then
 	cp "$cachedir/rg" "$tmpdir/rg"
+fi
+if [ -e "$cachedir/fzf" ]
+then
+	cp "$cachedir/fzf" "$tmpdir/fzf"
 fi
 if [ -e "$cachedir/sk" ]
 then
@@ -95,6 +99,11 @@ if [ -e "$tmpdir/rg" -a ! -e "$cachedir/rg" ]
 then
 	echo "Caching downloaded rg ..."
 	cp "$tmpdir/rg" "$cachedir/rg"
+fi
+if [ -e "$tmpdir/fzf" -a ! -e "$cachedir/fzf" ]
+then
+	echo "Caching downloaded fzf ..."
+	cp "$tmpdir/fzf" "$cachedir/fzf"
 fi
 if [ -e "$tmpdir/sk" -a ! -e "$cachedir/sk" ]
 then
