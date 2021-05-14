@@ -36,8 +36,9 @@ screen 1
 #bind 0 select 10
 
 # arrow-right/-left: bump window right/left
-bindkey "^A^[OC" bumpright
-bindkey "^A^[OD" bumpleft
+# unavailable on debian jessie, activate if more recent OS is installed
+#bindkey "^A^[OC" bumpright
+#bindkey "^A^[OD" bumpleft
 
 # reload key
 # note that this opens one additional screen on every reload, sorry about that
