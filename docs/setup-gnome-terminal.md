@@ -36,3 +36,5 @@ font='DejaVuSansMono Nerd Font 11'
 ```
 dconf load /org/gnome/terminal/ < ~/gnome-terminal.dconf
 ```
+## The result
+![Result](images/setup-gnome-terminal-complete.png)
