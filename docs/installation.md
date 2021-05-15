@@ -91,7 +91,7 @@ Follow the setup guide for your terminal to install a Nerd Font (properly!):
 
 ![nerdlevel 3](images/nerdlevel-3.png)
 
-Your prompt should look gorgeus now.
+Congratulations! Your prompt should look gorgeus now.
 
 ## Other installation methods
 
