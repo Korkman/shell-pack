@@ -38,3 +38,7 @@ dconf load /org/gnome/terminal/ < ~/gnome-terminal.dconf
 ```
 ## The result
 ![Result](images/setup-gnome-terminal-complete.png)
+
+## Further reading
+ * [LC_NERDLEVEL](introducing-nerdlevel.md)
+ * [Preferences](preferences.md)
