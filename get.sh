@@ -17,7 +17,10 @@ SHELL_PACK_BASEDIR="${HOME}/.local/share/shell-pack"
 
 # these lines will be added to config.fish and POSIX shell config (.profile, .zprofile, .bash_profile) respectively
 SHELL_PACK_FISH_SOURCE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/fish/config.fish\""
-NERDLEVEL_DOT_PROFILE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
+NERDLEVEL_DOT_PROFILE_LINE=". \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
+
+# this is deprecated and will be removed if present
+NERDLEVEL_OLD_DOT_PROFILE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
 
 # this is the location config.fish which will be modified
 TARGET_FISH_CONFIG_DIR="${HOME}/.config/fish"
@@ -155,6 +158,19 @@ for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; d
 		fi
 		# if already present, mark nerdleveled
 		NERDLEVELED=yes
+	fi
+done
+
+# ---------------------------------------------
+# Remove deprecated source line if present
+# ---------------------------------------------
+for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; do
+	if [ -f "${PROFILE}" ]; then
+		if grep -Fxq "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" "${PROFILE}" ; then
+			cat "${PROFILE}" | grep -Fxq > "${PROFILE}.new"
+			cat "${PROFILE}.new" > "${PROFILE}"
+			rm "${PROFILE}.new"
+		fi
 	fi
 done
 
