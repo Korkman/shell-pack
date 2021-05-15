@@ -5,5 +5,6 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * [Installation](installation.md)
    * [Setup Gnome Terminal](setup-gnome-terminal.md)
    * [Setup iTerm2](setup-iterm2.md)
+   * [Setup other](setup-any-terminal.md)
  * [Introducing LC_NERDLEVEL](introducing-nerdlevel.md)
  * [Preferences](preferences.md)
