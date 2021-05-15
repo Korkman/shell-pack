@@ -88,8 +88,7 @@ Right now shell-pack is rather ugly, as it assumes you have neither a powerline 
 
 Follow the setup guide for your terminal to install a Nerd Font (properly!):
 
-| [Gnome Terminal](setup-gnome-terminal.md) | [iTerm2](setup-iterm2.md) |
-|---|---|
+[Gnome Terminal](setup-gnome-terminal.md) | [iTerm2](setup-iterm2.md) | [Other](setup-any-terminal.md)
 
 ![nerdlevel 3](images/nerdlevel-3.png)
 
