@@ -30,4 +30,4 @@ A fish shell environment with many quality of life improvements for sysadmins an
    * ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
    * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
 
-Hyped? See [the docs](https://korkman.github.io/shell-pack/) on [how to install shell-pack](https://korkman.github.io/shell-pack/installation).
+Hyped? See [the docs](docs/index.md) on [how to install shell-pack](docs/installation.md).
