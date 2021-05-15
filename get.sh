@@ -167,7 +167,7 @@ done
 for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; do
 	if [ -f "${PROFILE}" ]; then
 		if grep -Fxq "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" "${PROFILE}" ; then
-			cat "${PROFILE}" | grep -Fxqv "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" > "${PROFILE}.new"
+			cat "${PROFILE}" | grep -Fxv "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" > "${PROFILE}.new"
 			cat "${PROFILE}.new" > "${PROFILE}"
 			rm "${PROFILE}.new"
 		fi
