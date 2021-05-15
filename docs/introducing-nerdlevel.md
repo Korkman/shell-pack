@@ -1,4 +1,4 @@
-## LC_NERDLEVEL
+## Introducing LC_NERDLEVEL
 Introducing LC_NERDLEVEL, a variable which represents whether your session should run fish at all,
 and if so, which fonts are installed in your terminal. The LC_ prefix was chosen 
 because it is accepted by most ssh server configs. The intention is to have bash, zsh or any other
