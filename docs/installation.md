@@ -112,3 +112,11 @@ TAG="v2.6" curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/g
  * Extract to $HOME/.local/share/shell-pack/src
  * Verify README.md ended up in the correct place: $HOME/.local/share/shell-pack/src/README.md
  * Follow the steps in $HOME/.local/share/shell-pack/src/get.sh
+
+### Installing for development
+
+Install as usual. Clone git repo into a dedicated directory. Symlink the following locations to destinations in your development directory:
+ * ~/.local/share/shell-pack/bin
+ * ~/.local/share/shell-pack/config
+
+This will have your changes take immediate effect on the local installation and you will be able to create commits. Be aware that upgrade-shell-pack will overwrite your git directory - it should not be run on developer installations. Also, do not accidentially add the binaries rg, fzf or sk to the repo.
