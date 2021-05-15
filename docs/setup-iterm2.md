@@ -22,3 +22,4 @@
 ## Further reading
  * [LC_NERDLEVEL](introducing-nerdlevel.md)
  * [Preferences](preferences.md)
+ * [Return to index](index.md)
