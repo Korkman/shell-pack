@@ -3,7 +3,7 @@
 ## Nerd Font
 
  * Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansMono](https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DejaVuSansMono.zip)
- * Place your all \*.ttf files from the .zip file not named "Windows Compatible" in ~/.local/share/fonts/
+ * Place all \*.ttf files from the .zip file not named "Windows Compatible" in ~/.local/share/fonts/
 
 ## Gnome Terminal
  * Shift + Right-click > Preferences
@@ -14,7 +14,7 @@
   * On tab "Text", check custom font, select "DejaVuSansMono Nerd Font Mono", 11 point looks best (more on that later)
   * On tab "Command", check "Run a custom command", enter this:
 ```
-/usr/bin/env LC_NERDLEVEL=3 /bin/bash -l
+/usr/bin/env LC_NERDLEVEL=3 fish -l
 ```
   * Optionally make it default (click on triangle)
 
