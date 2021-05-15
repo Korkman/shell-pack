@@ -6,7 +6,6 @@
 
 # be more strict about errors
 set -eu
-IFS=$'\n\t'
 
 # optional argument to download specific tag
 DOWNLOAD_TAG="${1:-latest}"
@@ -74,7 +73,7 @@ DOWNLOAD_FILENAME="korkman-shell-pack-${DOWNLOAD_TAG}.tar.gz"
 if [ "${FORCE_PRE_DOWNLOADED:-n}" = "n" ]
 then
 	PRE_DOWNLOADED=n
-	if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
+	if [ -t 0 ] && [ -e "${DOWNLOAD_FILENAME}" ]; then
 		# when in terminal, ask whether to re-use downloaded file
 		echo "Pre-downloaded file detected, use for installation? (y/N)"
 		read answer
@@ -167,7 +166,7 @@ done
 for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; do
 	if [ -f "${PROFILE}" ]; then
 		if grep -Fxq "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" "${PROFILE}" ; then
-			cat "${PROFILE}" | grep -Fxv "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" > "${PROFILE}.new"
+			grep -Fxv "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" > "${PROFILE}.new" < "${PROFILE}"
 			cat "${PROFILE}.new" > "${PROFILE}"
 			rm "${PROFILE}.new"
 		fi
