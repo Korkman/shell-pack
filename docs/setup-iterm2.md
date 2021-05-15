@@ -17,7 +17,7 @@
  Note the iTerm2 fish integration script is included in shell-pack and automatically applied when iTerm2 is used.
 
 ## The result
-(screenshot soon)
+![setup iterm2 complete](images/setup-iterm2-complete.png)
  
 ## Further reading
  * [LC_NERDLEVEL](introducing-nerdlevel.md)
