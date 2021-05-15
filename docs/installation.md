@@ -13,28 +13,31 @@ These optional dependencies are highly recommended
 ### Step 1: Installing shell-pack via `curl|sh`
 
 Run
-```
+```bash
 curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/latest/get.sh | sh
 ```
 
-The script will download and extract into ~/.local/share/shell-pack and link everything together. It will also add a single line to your .profile to integrate nerdlevel into your default POSIX compliant shell, e.g. bash.
+The script will download and extract into ~/.local/share/shell-pack and link everything together. It will also add a single line to your .profile to integrate into your default POSIX compliant shell, e.g. bash.
 
-Output
-```
-Downloading korkman-shell-pack-latest.tar.gz ...
-Extracting korkman-shell-pack-latest.tar.gz ...
-Linking /home/your-name-here/.local/share/shell-pack/config → src/config
-Linking /home/your-name-here/.local/share/shell-pack/bin/ddstat → ../src/bin/ddstat
-(…)
-Adding shell-pack to /home/your-name-here/.config/fish/config.fish
-Added nerdlevel to /home/your-name-here/.profile
-All systems go. Happy fishing!
-```
+<details>
+  <summary>Example output</summary>
+ 
+  ```
+  Downloading korkman-shell-pack-latest.tar.gz ...
+  Extracting korkman-shell-pack-latest.tar.gz ...
+  Linking /home/your-name-here/.local/share/shell-pack/config → src/config
+  Linking /home/your-name-here/.local/share/shell-pack/bin/ddstat → ../src/bin/ddstat
+  (…)
+  Adding shell-pack to /home/your-name-here/.config/fish/config.fish
+  Added nerdlevel to /home/your-name-here/.profile
+  All systems go. Happy fishing!
+  ```
+</details>
 
 ### Step 2: First launch
 
 Run
-```
+```bash
 fish
 ```
 
@@ -42,7 +45,9 @@ On first launch, shell-pack will pull in further dependencies, currently fuzzy f
 
 Also, it will ask to overwrite preferences for several programs. You don't have to install the preferences, but shell-pack gives you a very good starting point for advanced tmux and mc usage.
 
-Output
+<details>
+<summary>Example output</summary>
+ 
 ```
 Welcome to FISH 3.2.1 + shell-pack 2.6
 This seems to be your first time using shell-pack.
@@ -70,6 +75,8 @@ Overwrite preferences for
  - mc
 ? (Y/n) 
 ```
+</details>
+
 
 Shell-pack is installed now.
 
@@ -77,19 +84,19 @@ Shell-pack is installed now.
 
 Right now shell-pack is rather ugly, as it assumes you have neither a powerline font nor a nerd font installed.
 
-!(nerdlevel 1)[images/nerdlevel-1.png]
+![nerdlevel 1](images/nerdlevel-1.png)
 
 Follow the setup guide for your terminal to install a Nerd Font (properly!):
- * (Gnome Terminal)[setup-gnome-terminal.md]
+ * [Gnome Terminal](setup-gnome-terminal.md)
 
-!(nerdlevel 3)[images/nerdlevel-3.png]
+![nerdlevel 3](images/nerdlevel-3.png)
 
-Your prompt should look like this now.
+Your prompt should look gorgeus now.
 
 ## Other installation methods
 
 ### Installing a specific tag, like "v2.6"
-```
+```bash
 TAG="v2.6" curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/get.sh" | sh -s "$TAG"
 ```
 
