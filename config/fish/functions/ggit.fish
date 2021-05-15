@@ -18,6 +18,7 @@ function ggit -d \
 	"double-click:ignore,"\
 	"alt-s:preview(git -c color.ui=always status),"\
 	"alt-c:execute(echo commit)+accept,"\
+	"alt-p:execute(echo commit_and_push)+accept,"\
 	"alt-a:execute(echo add)+accept,"\
 	"alt-d:execute(echo diff)+accept,"\
 	"alt-x:execute(echo reset)+accept,"\
@@ -27,7 +28,7 @@ function ggit -d \
 	"f10:abort,"\
 	"esc:cancel"
 	)
-	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-m:message alt-s:full-status f5:refresh esc:cancel"
+	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-s:full-status f5:refresh esc:cancel"
 
 	while true
 		set -l git_status (git status --porcelain)
@@ -51,7 +52,7 @@ function ggit -d \
 		switch "$results[1]"
 			case "refresh"
 				continue
-			case "commit"
+			case "commit" "commit_and_push"
 				if test ! -e "$msg_filename"
 					echo "No commit message yet!"
 					continue
@@ -64,7 +65,12 @@ function ggit -d \
 					git commit -F "$msg_filename"
 					if test $status -eq 0
 						rm -f "$msg_filename"
-						echo "Commit completed. Use git commit --amend to undo. git push to upload."
+						if test "$results[1]" = "commit_and_push"
+							echo "Commit completed. Pushing ..."
+							git push
+						else
+							echo "Commit completed. Use git commit --amend to undo. git push to upload."
+						end
 					end
 				else
 					echo "Aborted"
