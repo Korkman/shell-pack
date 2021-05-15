@@ -30,4 +30,8 @@ Modifier key combinations (alt, ctrl, shift) might fail to be recognized or fire
 * Test keys advertised in `cheat` and mentioned widgets
 * Try changing terminal settings if something doesn't work
 
-[Return to index](index.md)
+## Further reading
+ * [LC_NERDLEVEL](introducing-nerdlevel.md)
+ * [Preferences](preferences.md)
+ * [Return to index](index.md)
+
