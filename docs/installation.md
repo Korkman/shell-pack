@@ -104,7 +104,7 @@ Shell-pack will check for a new version once a day on login and suggest an upgra
 
 ### Installing a specific tag, like "v2.6"
 ```bash
-TAG="v2.6" curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/get.sh" | sh -s "$TAG"
+export TAG="v2.6"; curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/get.sh" | sh -s "$TAG"
 ```
 
 ### Installing shell-pack manually
