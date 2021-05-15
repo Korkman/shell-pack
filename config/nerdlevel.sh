@@ -3,30 +3,32 @@
 
 # nerdlevel > 0: upgrade to FISH shell
 nerdlevel() {
-	if [ "" != "$MC_SID" ]; then
+	if [ "${MC_SID:-}" != "" ]; then
 		# prevent launching inside midnight-commander - it has specific hooks
 		# that break when one shell changes into another
 		return
 	fi
-	export LC_NERDLEVEL=$1
-	if [ "" != "$TMUX" ]; then
+	export LC_NERDLEVEL="$1"
+	if [ "${TMUX:-}" != "" ]; then
 		echo "tmux note: new and existing windows will inherit new LC_NERDLEVEL"
-		tmux set-env LC_NERDLEVEL $1
+		tmux set-env LC_NERDLEVEL "$1"
 	fi
-	if [ "$LC_NERDLEVEL" -gt 0 ] && which fish > /dev/null; then
+	if [ "$LC_NERDLEVEL" -gt 0 ] && command -v fish > /dev/null; then
 		export OLDSHELL=$SHELL
-		export SHELL=$(which fish)
+		SHELL=$(command -v)
+		export SHELL
 		exec fish -l
 	fi
 }
 
-if [ "" = "$MC_SID" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && which fish > /dev/null; then
-	if [ "${BASH_VERSION}" != "" ]; then
+if [ "${MC_SID:-}" = "" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && command -v fish > /dev/null; then
+	if [ "${BASH_VERSION:-}" != "" ]; then
 		# exec in .bashrc fails with su + bash 5
 		# workaround: run exec fish as prompt_command
-		function __run_fish() {
+		__run_fish() {
 			export OLDSHELL=$SHELL
-			export SHELL=$(which fish)
+			SHELL=$(command -v)
+			export SHELL
 			unset PROMPT_COMMAND
 			exec fish -l
 		}
@@ -35,7 +37,8 @@ if [ "" = "$MC_SID" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && which fish > /dev/nul
 		return
 	else
 		export OLDSHELL=$SHELL
-		export SHELL=$(which fish)
+		SHELL=$(command -v)
+		export SHELL
 		exec fish -l
 	fi
 else
