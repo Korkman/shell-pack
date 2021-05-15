@@ -1,5 +1,5 @@
 ## Installation
-Installation targets Linux and macOS, and should work for other \*nix as well.
+Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
  * [fish shell](https://fishshell.com/) version 3.1 or higher (currently no auto-installer included)
