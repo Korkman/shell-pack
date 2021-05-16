@@ -37,7 +37,7 @@ function fish_prompt -d "powerline-go like prompt"
 				end
 				if string match --quiet "*echo (whoami)*" -- "$mc_line"
 					# fix the bad line
-					set mc_line (string replace --regex '.*echo \(whoami\)[^;]+;' '' -- "$mc_line")
+					set mc_line (string replace --regex 'echo \(whoami\)[^;]+;' '' -- "$mc_line")
 					set found_bugged yes
 				end
 				set -a filtered_mc_prompt "$mc_line;"
