@@ -304,7 +304,7 @@ function load_shell_pack -d "Load shell-pack"
 		bind -k f8 "__history_delete_commandline"
 	end
 	
-	complete -c cdtagdir --no-files -d "(lsdirtags | cut -d : -f 2)" -a "(lsdirtags | sed 's/:/\t/')"
+	# use d-tab to quickly navigate in tagged dirs
 	alias d cdtagdir
 
 	# actual preferences
