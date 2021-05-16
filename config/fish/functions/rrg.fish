@@ -1,5 +1,5 @@
 # fast grep using ripgrep, with visual picker for editing and preview
-function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binary files. Pipes unlimited, plain filenames. Displays rich skim frontend on terminal."
+function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary files. Pipes unlimited, plain filenames. Displays rich skim frontend on terminal."
 	__update_glyphs
 	if [ "$SHLVL" -gt 10 ]
 		echo "Shell level too deep. Are you sleeping on the Enter key?"
@@ -9,7 +9,7 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 	if [ "$argv" != "" ]
 		set query $argv
 	else
-		echo 'ggrep'
+		echo 'rrg'
 		echo
 		echo 'Uses ripgrep to search for content. Shows interactive results list.'
 		echo 'Will switch to pcre2 when necessary (auto-hybrid-regex).'
@@ -32,11 +32,11 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 		'f3:execute(nullerror fishcall mcview {1}),'\
 		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
 		'ctrl-l:execute(clear; nullerror less +{2}g {1}),'\
-		'ctrl-h:execute(ggrep-help),'\
+		'ctrl-h:execute(fishcall rrg-help),'\
 		'ctrl-q:abort,'\
 		'f10:abort,'\
 		'esc:cancel,'\
-		'enter:execute(ggrep-in-file -f {1} -l {2} -- $query)'
+		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query)'
 	)
 	# not fzf compatible
 	#	'shift-left:preview-left,shift-right:preview-right'
@@ -67,7 +67,7 @@ function ggrep -d "Search recursively for a pattern (ripgrep regex) in non-binar
 			--no-multi \
 			--bind "$skim_binds" \
 			--preview \
-				'clear; ggrep-in-file -f {1} -l {2} -t -- $query' \
+				'clear; rrg-in-file -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:right:80%' \
 			--delimiter ':' \
 			--header 'ctrl-h:help enter:results-in-file c-p:preview c-l:less c-v:vim f3:mcview f4:mcedit' \

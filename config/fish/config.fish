@@ -290,7 +290,8 @@ function load_shell_pack -d "Load shell-pack"
 		#bind \cl "commandline -f repaint"
 
 		# fast and visual grep using ripgrep and skim
-		bind \cg "commandline --cursor 0; commandline --insert 'ggrep '"
+		bind \cg "commandline --cursor 0; commandline --insert 'rrg '"
+		bind \eg "commandline --cursor 0; commandline --insert 'rrg '"
 
 		# reserved binds
 		# DO NOT BIND CTRL-J, breaks mc

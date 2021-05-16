@@ -132,6 +132,14 @@ for item in "${SHELL_PACK_SRCDIR}/bin/"*; do
 	fi
 done
 
+# remove deprecated symlinks from SHELL_PACK_BINDIR
+for item in 'ggrep' 'ggrep-in-file' 'ggrep-help'; do
+	if [ -e "${SHELL_PACK_BINDIR}/${item}" ]; then
+		echo "Removing ${SHELL_PACK_BINDIR}/${item}"
+		rm "${SHELL_PACK_BINDIR}/${item}"
+	fi
+done
+
 # ---------------------------------------------
 # Add Shell-Pack to user's config.fish
 # ---------------------------------------------

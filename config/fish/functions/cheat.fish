@@ -33,7 +33,7 @@ Search files
 ------------
 Search by filename            Alt-F             Ctrl-F
 ... excl. dotfiles            Alt-Shift-F       Ctrl-T
-Search by contents (regex)    Ctrl-G            'ggrep'
+Search by contents (regex)    Alt-G             Ctrl-G
 
 Other
 -----
@@ -49,6 +49,7 @@ What is word at cursor        Alt-W
 ========= Quick commands =========
 
 Show this cheatsheet          cheat
+Show glyphs cheatsheet        cheat --glyphs
 
 Launch POSIX-compliant shell  oldshell
 
@@ -68,8 +69,8 @@ Untag current directory       untagdir
 ... specified directory       untagdir [ NAME | PATH ]
 List tagged directories       lsdirtags
 
-Search files by content       ggrep REGEX
-Search in file by content     ggrep-in-file FILE REGEX
+Search files by content       rrg REGEX
+Search in file by content     rrg-in-file FILE REGEX
 
 (Re)open tmux / screen
   for user X                  $__multiplexer_names
