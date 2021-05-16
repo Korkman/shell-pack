@@ -16,7 +16,7 @@ function skim-cdtagdir -d \
 		end
 		lsdirtags | sort
 	end \
-	| $skim_cmd --ansi --no-multi --reverse --height 40% --header 'enter:cd  esc:abort' --prompt "cd tagged / history: " \
+	| $skim_cmd --ansi --no-multi --reverse --height 40% --bind 'esc:cancel' --header 'enter:cd  esc:abort' --prompt "cd tagged / history: " \
 	| read -l result
 	if [ -n "$result" ]
 		set dest (string replace --regex '.*?:' '' -- "$result")
