@@ -3,3 +3,5 @@ markdown: CommonMarkGhPages
 commonmark:
   options: ["SMART", "FOOTNOTES"]
   extensions: ["strikethrough", "autolink", "table", "tagfilter"]
+# Problem 1: Themes tend to break <details> collapsible usability
+# Problem 2: Themes don't include the "copy to clipboard" function for code blocks
