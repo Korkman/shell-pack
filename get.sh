@@ -6,7 +6,6 @@
 
 # be more strict about errors
 set -eu
-IFS=$'\n\t'
 
 # optional argument to download specific tag
 DOWNLOAD_TAG="${1:-latest}"
@@ -14,10 +13,14 @@ DOWNLOAD_TAG="${1:-latest}"
 # this will be the location where shell-pack code, config and deps will be installed to
 SHELL_PACK_BASEDIR_STR='$HOME/.local/share/shell-pack' # NOTE: do not use {brackets} so the path is fish compatible
 SHELL_PACK_BASEDIR="${HOME}/.local/share/shell-pack"
+SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
 
 # these lines will be added to config.fish and POSIX shell config (.profile, .zprofile, .bash_profile) respectively
 SHELL_PACK_FISH_SOURCE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/fish/config.fish\""
-NERDLEVEL_DOT_PROFILE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
+NERDLEVEL_DOT_PROFILE_LINE=". \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
+
+# this is deprecated and will be removed if present
+NERDLEVEL_OLD_DOT_PROFILE_LINE="source \"${SHELL_PACK_BASEDIR_STR}/config/nerdlevel.sh\""
 
 # this is the location config.fish which will be modified
 TARGET_FISH_CONFIG_DIR="${HOME}/.config/fish"
@@ -63,15 +66,19 @@ fi
 # Download shell-pack
 # ---------------------------------------------
 
-SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
-mkdir -p "${SHELL_PACK_SRCDIR}"
+if [ -d "${SHELL_PACK_SRCDIR}/.git" ]; then
+	echo "Detected .git directory in ${SHELL_PACK_SRCDIR}!"
+	echo "Are you a developer? Trying not to ruin your day, aborting."
+	echo "Use 'git pull' ;-)"
+	exit 1
+fi
 
 DOWNLOAD_FILENAME="korkman-shell-pack-${DOWNLOAD_TAG}.tar.gz"
 
 if [ "${FORCE_PRE_DOWNLOADED:-n}" = "n" ]
 then
 	PRE_DOWNLOADED=n
-	if [ -t 0 -a -e "${DOWNLOAD_FILENAME}" ]; then
+	if [ -t 0 ] && [ -e "${DOWNLOAD_FILENAME}" ]; then
 		# when in terminal, ask whether to re-use downloaded file
 		echo "Pre-downloaded file detected, use for installation? (y/N)"
 		read answer
@@ -87,7 +94,20 @@ if [ "${PRE_DOWNLOADED}" = "n" ]; then
 	echo "Downloading ${DOWNLOAD_FILENAME} ..."
 	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz" > "${DOWNLOAD_FILENAME}"
 fi
+
+echo "Verifying archive ${DOWNLOAD_FILENAME} ..."
+tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -O > /dev/null
+
 echo "Extracting ${DOWNLOAD_FILENAME} ..."
+
+# purging previous install if present
+if [ -d "${SHELL_PACK_SRCDIR}" ]; then
+	rm -rf "${SHELL_PACK_SRCDIR}"
+fi
+
+# creating install dir
+mkdir -p "${SHELL_PACK_SRCDIR}"
+
 tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
 
 # sanity check: if README.md does not manifest in src dir, something failed
@@ -130,6 +150,14 @@ for item in "${SHELL_PACK_SRCDIR}/bin/"*; do
 	fi
 done
 
+# remove deprecated symlinks from SHELL_PACK_BINDIR
+for item in 'ggrep' 'ggrep-in-file' 'ggrep-help'; do
+	if [ -e "${SHELL_PACK_BINDIR}/${item}" ]; then
+		echo "Removing ${SHELL_PACK_BINDIR}/${item}"
+		rm "${SHELL_PACK_BINDIR}/${item}"
+	fi
+done
+
 # ---------------------------------------------
 # Add Shell-Pack to user's config.fish
 # ---------------------------------------------
@@ -155,6 +183,19 @@ for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; d
 		fi
 		# if already present, mark nerdleveled
 		NERDLEVELED=yes
+	fi
+done
+
+# ---------------------------------------------
+# Remove deprecated source line if present
+# ---------------------------------------------
+for PROFILE in "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.profile"; do
+	if [ -f "${PROFILE}" ]; then
+		if grep -Fxq "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" "${PROFILE}" ; then
+			grep -Fxv "${NERDLEVEL_OLD_DOT_PROFILE_LINE}" > "${PROFILE}.new" < "${PROFILE}"
+			cat "${PROFILE}.new" > "${PROFILE}"
+			rm "${PROFILE}.new"
+		fi
 	fi
 done
 

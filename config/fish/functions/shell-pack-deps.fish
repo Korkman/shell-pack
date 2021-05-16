@@ -65,6 +65,7 @@ function shell-pack-deps-install-fzf
 	tar -xzf fzf.tar.gz || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/fzf ..."
+	rm -f "$__sp_dir/bin/fzf"
 	cp "fzf" "$__sp_dir/bin/fzf" || return 5
 	
 	set new_pversion (fzf --version | string replace --regex -- '([0-9\.]+).+' '$1') || return 6
@@ -128,6 +129,7 @@ function shell-pack-deps-install-skim
 	tar -xzf skim.tar.gz || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/sk ..."
+	rm -f "$__sp_dir/bin/sk"
 	cp "sk" "$__sp_dir/bin/sk" || return 5
 	
 	set new_pversion (sk --version) || return 6
@@ -193,6 +195,7 @@ function shell-pack-deps-install-ripgrep
 	
 	echo "Installing to ""$__sp_dir""/bin/rg ..."
 	cd "ripgrep-""$pversion""-"* || return 5
+	rm -f "$__sp_dir/bin/rg"
 	cp "rg" "$__sp_dir/bin/rg" || return 5
 	
 	set new_pversion (rg --version) || return 6

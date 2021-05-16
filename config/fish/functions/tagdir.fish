@@ -1,13 +1,33 @@
 # directory tagging section
 function tagdir -d "tag cwd to shorten name"
-	if [ (count $argv) -eq 1 ]
+	argparse 'h/help' -- $argv
+	
+	set -l tagged_dir
+	set -l tagged_name
+	if set -q _flag_help || [ (count $argv) -gt 2 ]
+		echo "Usage: tagdir [ DIRECTORY ] [ NAME ]"
+		return 1
+	else if [ (count $argv) -eq 0 ]
+		# no arguments: use fish prompt_pwd shortener to generate a tag
+		set tagged_dir "$PWD"
+		begin
+			set -lx fish_prompt_pwd_dir_length 1
+			set tagged_name (prompt_pwd)
+			# prophylactic: if fish ever comes up with color codes in prompt_pwd, strip them here
+			set tagged_name (string replace -ra '\e\[[^m]*m' '' "$tagged_name" | string replace -ra '[^[:print:]]' '')
+			# colons are not allowed, strip them as well
+			set tagged_name (string replace --all -- ':' '-' "$tagged_name")
+		end
+	else if [ (count $argv) -eq 1 ]
+		# one argument: is the tag to be used for the current dir
 		set tagged_dir "$PWD"
 		set tagged_name "$argv[1]"
 	else if [ (count $argv) -eq 2 ]
+		# two arguments: is directory first, then tag to be used
 		set tagged_dir "$argv[1]"
 		set tagged_name "$argv[2]"
 	else
-		echo "Usage: tagdir [ DIRECTORY ] NAME"
+		echo "this can't happen."
 		return 1
 	end
 	

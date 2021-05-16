@@ -8,9 +8,9 @@ function ggit -d \
 		return
 	end
 	
-	set __ggit_cache_dir "$HOME/.cache/shell-pack/ggit"
+	set -l __ggit_cache_dir "$HOME/.cache/shell-pack/ggit"
 	mkdir -p "$__ggit_cache_dir"
-	set msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
+	set -l msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
 	
 	set -l skim_cmd (__skimcmd)
 	set -l skim_binds (printf %s \
@@ -18,6 +18,7 @@ function ggit -d \
 	"double-click:ignore,"\
 	"alt-s:preview(git -c color.ui=always status),"\
 	"alt-c:execute(echo commit)+accept,"\
+	"alt-p:execute(echo commit_and_push)+accept,"\
 	"alt-a:execute(echo add)+accept,"\
 	"alt-d:execute(echo diff)+accept,"\
 	"alt-x:execute(echo reset)+accept,"\
@@ -27,7 +28,9 @@ function ggit -d \
 	"f10:abort,"\
 	"esc:cancel"
 	)
-	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-m:message alt-s:full-status f5:refresh esc:cancel"
+	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-s:full-status f5:refresh esc:cancel"
+	set -l results
+	set -l filename
 
 	while true
 		set -l git_status (git status --porcelain)
@@ -51,7 +54,7 @@ function ggit -d \
 		switch "$results[1]"
 			case "refresh"
 				continue
-			case "commit"
+			case "commit" "commit_and_push"
 				if test ! -e "$msg_filename"
 					echo "No commit message yet!"
 					continue
@@ -64,7 +67,12 @@ function ggit -d \
 					git commit -F "$msg_filename"
 					if test $status -eq 0
 						rm -f "$msg_filename"
-						echo "Commit completed. Use git commit --amend to undo. git push to upload."
+						if test "$results[1]" = "commit_and_push"
+							echo "Commit completed. Pushing ..."
+							git push
+						else
+							echo "Commit completed. Use git commit --amend to undo. git push to upload."
+						end
 					end
 				else
 					echo "Aborted"
@@ -99,15 +107,18 @@ end
 
 function __ggit_set_filename -S -d "Set variable filename from git status argv[1]"
 	set filename (echo "$argv[1]" | __ggit_file_from_status)
+	# file deleted in working tree? OK to be missing!
+	if test (string sub --start 2 --length 1 -- "$argv[1]") = "D"; return; end
 	if test ! -e "$filename"
-		echo "reset: error processing files"
+		echo "error: file does not exist ($filename)"
 		return 1
 	end
 end
 
 function __ggit_diff_preview -d "Show state of file and diff"
+	set -l filename
 	__ggit_set_filename "$argv[1]" || return
-	set msg_filename "$argv[2]"
+	set -l msg_filename "$argv[2]"
 	
 	# show commit message to this point
 	if [ -e "$msg_filename" ]
@@ -115,15 +126,15 @@ function __ggit_diff_preview -d "Show state of file and diff"
 		cat "$msg_filename"
 		echo
 	end
-	
+		
 	# grep two-symbol status
-	set gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
-	set index_status (echo "$gstatus" | string sub --start 1 --length 1)
-	set wtree_status (echo "$gstatus" | string sub --start 2 --length 1)
+	set -l gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
+	set -l index_status (echo "$gstatus" | string sub --start 1 --length 1)
+	set -l wtree_status (echo "$gstatus" | string sub --start 2 --length 1)
 	
 	# show a nice status
 	#echo "status: ["(set_color -b bryellow; set_color black)"$gstatus"(set_color normal)"]"
-	echo "status: index="(echo $index_status|string escape)" tree="(echo $wtree_status|string escape)
+	echo "status: index="(echo $index_status|string escape)" tree="(echo $wtree_status|string escape)" ($filename)"
 	switch "$gstatus"
 		case "\?\?"
 			echo "untracked file"
@@ -148,8 +159,10 @@ function __ggit_diff_preview -d "Show state of file and diff"
 		ls -A -1 --color=always "$filename"
 		return
 	end
-	
-	git diff --color=always "$filename"
+	# file: does still exist?
+	if [ -e "$filename" ]
+		git diff --color=always "$filename"
+	end
 end
 
 function __ggit_diff_full

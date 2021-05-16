@@ -146,14 +146,14 @@ function load_shell_pack -d "Load shell-pack"
 	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
 
 	# NOTE: as many distros come with pre-existing fish prompts, we override by *prepending*
-	if ! contains -- "$fish_function_path" "$__sp_config_fish_dir/functions"
+	if ! contains -- "$__sp_config_fish_dir/functions" $fish_function_path
 		set -g --prepend fish_function_path "$__sp_config_fish_dir/functions"
 	end
-	if ! contains -- "$fish_complete_path" "$__sp_config_fish_dir/completions"
+	if ! contains -- "$__sp_config_fish_dir/completions" $fish_complete_path
 		set -g --prepend fish_complete_path "$__sp_config_fish_dir/completions"
 	end
 	# unqoted path is converted to space separated list, compatible to contains
-	if ! contains -- $PATH "$__sp_dir/bin"
+	if ! contains -- "$__sp_dir/bin" $PATH
 		set -g --prepend PATH "$__sp_dir/bin"
 	end
 	# this is only available as of fish 3.2
@@ -243,9 +243,6 @@ function load_shell_pack -d "Load shell-pack"
 		# ctrl-shift-* does not exist, using alt-shift-f instead
 		bind \eF 'quick_search'
 
-		# ctrl-j for juicessh FAILED: mc does not start subshell when ctrl-j is bound (why?!?)
-		#bind \cj 'quick_search --dotfiles'
-
 		# alt-up, ctrl-up, shift-up to cd ..
 		bind \e\[1\;3A "quick_dir_up"
 		bind \e\[1\;5A "quick_dir_up"
@@ -290,12 +287,12 @@ function load_shell_pack -d "Load shell-pack"
 		#bind \cl "commandline -f repaint"
 
 		# fast and visual grep using ripgrep and skim
-		bind \cg "commandline --cursor 0; commandline --insert 'ggrep '"
+		bind \cg "commandline --cursor 0; commandline --insert 'rrg '"
+		bind \eg "commandline --cursor 0; commandline --insert 'rrg '"
 
 		# reserved binds
-		# DO NOT BIND CTRL-J, breaks mc
-		# DO NOT BIND CTRL-H, breaks mc
-		bind \ej "echo -e '\n4 Reserved for jumping to bookmarks'; commandline -f repaint"
+		# DO NOT BIND CTRL-J, breaks mc, is newline escape seq (10th in alphabet = 0x10)
+		# DO NOT BIND CTRL-H, breaks mc, is backspace escape seq (8th in alphabet = 0x8)
 
 		# custom event: sp-submit-commandline
 		bind \r "emit sp-submit-commandline; commandline -f execute"
@@ -304,7 +301,7 @@ function load_shell_pack -d "Load shell-pack"
 		bind -k f8 "__history_delete_commandline"
 	end
 	
-	complete -c cdtagdir --no-files -d "(lsdirtags | cut -d : -f 2)" -a "(lsdirtags | sed 's/:/\t/')"
+	# use d-tab to quickly navigate in tagged dirs
 	alias d cdtagdir
 
 	# actual preferences

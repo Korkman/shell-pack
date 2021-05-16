@@ -1,11 +1,11 @@
-function ggrep-in-file -d "ggrep in file and focus on matching lines."
-	argparse -n ggrep-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' -- $argv
+function rrg-in-file -d "rrg in file and focus on matching lines."
+	argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' -- $argv
 	and not set -q _flag_help
 	or begin
 		echo "\
-Usage: ggrep-in-file -f FILE [ --line N ] [ --truncate ] QUERY
+Usage: rrg-in-file -f FILE [ --line N ] [ --truncate ] QUERY
 
-Search for a regex in FILE with same parser as ggrep. Show matching
+Search for a regex in FILE with same parser as rrg. Show matching
 lines with context.
 
    -f/--file          File to parse.

@@ -1,8 +1,8 @@
-function ggrep-help
+function rrg-help
 	echo "
-=== ggrep usage ===
+=== rrg usage ===
 
-ggrep PATTERN
+rrg PATTERN
 
 Searches case-insensitive PATTERN in all non-binary files recursively.
 All matches are shown. Results are shown in skim, an interactive fuzzy
@@ -22,7 +22,7 @@ Skim fuzzy search in RESULTS LIST:
    | combines search strings with boolean OR
    ctrl-r toggles regular expression search indicated by "/RE"
 
-ggrep keybindings:
+rrg keybindings:
    exit                          ctrl-q        esc-esc
    toggle matches preview        ctrl-p
    start vim on matched line     ctrl-v           
@@ -35,14 +35,14 @@ ggrep keybindings:
 When piped, the limit of 100000 results is lifted and results are listed
 as filenames only for further processing.
 
-=== ggrep-in-file usage ===
+=== rrg-in-file usage ===
 
-ggrep-in-file -f FILE PATTERN
+rrg-in-file -f FILE PATTERN
 
-Same search engine as ggrep, but shows all matches in specified file.
+Same search engine as rrg, but shows all matches in specified file.
 
 For more help, see
-   ggrep-in-file --help
+   rrg-in-file --help
 
 " | less --clear-screen
 end
