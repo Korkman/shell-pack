@@ -5,23 +5,21 @@ ARG BUILD_FROM
 
 # upgrade from LC_ALL "C" to add utf-8 support (prompt does not display glyphs otherwise)
 ENV LC_ALL C.UTF-8
-ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install -y \
-	lsb-release gettext-base man-db xz-utils \
+RUN yum makecache
+
+# for htop on centos:
+RUN yum -y install epel-release || echo
+
+RUN yum install -y \
+	man-db \
 	htop tmux procps mc screen curl \
 	less sudo
+RUN yum install -y \
+	redhat-lsb-core xz gettext
 
-RUN apt-get install -y gpg || echo
-RUN apt-get install -y libncurses6 || echo
-RUN apt-get install -y software-properties-common || echo
 # NOTE: use cache to run more apt-get lines during development, then
 #       move them to the combined line above.
-
-# procps is required for 'kill', which is used inside fish mc subshell
-
-# actually, keep lists in container for now
-#RUN rm -rf /var/lib/apt/lists/*
 
 COPY added/fish-installer.sh /fish-installer.sh
 RUN /fish-installer.sh

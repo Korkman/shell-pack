@@ -20,18 +20,22 @@ then
 fi
 
 BUILD_FROM="${1:-debian:buster}"
+tagname=$(echo "$BUILD_FROM" | sed 's/:/-/')
 case "$BUILD_FROM" in
-	'debian:buster')
-		tagname='debian-buster'
+	'debian:jessie')
 		dockerfile="Dockerfile-Debian"
 		;;
-	'debian:stretch')
-		tagname='debian-stretch'
+	'debian:'*)
 		dockerfile="Dockerfile-Debian"
 		;;
-	'ubuntu:xenial')
-		tagname='ubuntu-xenial'
+	ubuntu:*)
 		dockerfile="Dockerfile-Debian"
+		;;
+	fedora:*)
+		dockerfile="Dockerfile-Redhat"
+		;;
+	centos:*)
+		dockerfile="Dockerfile-Redhat"
 		;;
 	*)
 		echo "Please provide distro name"
@@ -64,7 +68,7 @@ fi
 
 # package src
 echo "Packaging ${srcdir}"
-(cd "${srcdir}" && tar '--exclude=rg' '--exclude=fzf' '--exclude=sk' -czf "${tmpdir}/${download_file}" ".")
+(cd "${srcdir}" && tar '--exclude=.git' '--exclude=rg' '--exclude=fzf' '--exclude=sk' -czf "${tmpdir}/${download_file}" ".")
 
 cp -f "$srcdir/get.sh" "$tmpdir/get.sh"
 
