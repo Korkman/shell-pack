@@ -162,16 +162,32 @@ function load_shell_pack -d "Load shell-pack"
 	# reduce hostname calls
 	set -g short_hostname (hostname -s)
 
-	# backwards-compatible $OLDSHELL support
-	# $OLDSHELL is supposed to contain /bin/bash or a similar POSIX-compliant startup
-	# shell, which should switch to fish & shell-pack using 'nerdlevel.sh'.
-	# on systems where it is missing, we will fill it with the users default shell
-	# from /etc/passwd
+	# normalize starting fish -l without nerdlevel.sh
+	# all subshells should be fish from here
+	set -gx SHELL (status fish-path)
+	# fill-in $OLDSHELL with information from getent / passwd
 	if test "$OLDSHELL" = ""
 		if $__cap_getent
+			# for Linux
 			set -g OLDSHELL (getent passwd $USER | cut -f 7 -d ":")
+		else if $__cap_finger
+			# for macOS
+			set -g OLDSHELL (finger $USER | grep 'Shell:*' | cut -f3 -d ":" | string trim)
 		else
+			# for others
 			set -g OLDSHELL (grep -E "^$USER:" < /etc/passwd | cut -f 7 -d ":")
+		end
+	end
+	if test "$OLDSHELL" = "$SHELL" || test "$OLDSHELL" = ""
+		# so the user has chsh to fish, what is oldshell supposed to do?
+		# or the passwd shell was not found
+		# test if bash, zsh, tcsh is available, use that as "oldshell"
+		if command -q bash
+			set -g OLDSHELL (command -s bash)
+		else if command -q zsh
+			set -g OLDSHELL (command -s zsh)
+		else if command -q tcsh
+			set -g OLDSHELL (command -s tcsh)
 		end
 	end
 
