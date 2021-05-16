@@ -2,37 +2,50 @@ function fish_prompt -d "powerline-go like prompt"
 	if [ (status function) = "fish_prompt_mc" ]
 		# this function was copied and renamed by mc to fish_prompt_mc
 		
-		# test if the command 'kill' is available. if not, improvise!
-		# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
-		# since kill is not a builtin (yet), we depend on it here to be a command
-		# this can happen in docker images or similar minimalistic containers.
-		# mc will hang whatever we do, so this polyfill will kill using the hopefully
-		# built-in of another installed shell ...
-		if ! command -q kill and ! builtin -q kill
-			function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
-				/usr/bin/env sh -c "kill $argv"
-			end
-		end
-
-		# terrible bug in Debian Stretch: an additional prompt line!
-		# lets remove it
-		set -l wrapped_prompt
-		begin
-			set -l IFS ''
-			set wrapped_prompt (functions fish_prompt)
-		end
-		
-		# detect if the new fish_prompt contains the bugged line
-		if string match --quiet "*echo (whoami)*" -- $wrapped_prompt
-			set -l new_prompt (string replace --regex '.*echo \(whoami\)[^;]+' '' -- $wrapped_prompt)
-			eval $new_prompt
-		end
-		
-		# also, it is likely mc spammed the history, so we erase it immediately
+		# it is likely mc spammed the history, so we erase it immediately
 		# (Debian Jessie and Stretch affected, fixed in Buster)
 		if ! set -q __mc_history_cleared
 			set -g __mc_history_cleared yes
 			echo "all" | history delete --prefix "if not functions -q fish_prompt_mc;" &> /dev/null
+		end
+
+		# some hotfixing for the mc prompt
+		if ! set -q mc_prompt_fixed
+			set -g mc_prompt_fixed yes
+
+			# test if the command 'kill' is available. if not, improvise!
+			# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
+			# since kill is not a builtin (yet), we depend on it here to be a command
+			# this can happen in docker images or similar minimalistic containers.
+			# mc will hang whatever we do, so this polyfill will kill using the hopefully
+			# built-in of another installed shell ...
+			if ! command -q kill and ! builtin -q kill
+				function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
+					/usr/bin/env sh -c "kill $argv"
+				end
+			end
+
+			# terrible bug in Debian Stretch: an additional prompt line!
+			# lets remove it
+			set -l mc_prompt (functions fish_prompt)
+			set -l filtered_mc_prompt
+			set -l found_bugged no
+			for mc_line in $mc_prompt
+				if string trim -- "$mc_line" | string match -q "#*"
+					# comment lines must be filtered or eval will not work!
+					continue
+				end
+				if string match --quiet "*echo (whoami)*" -- "$mc_line"
+					# fix the bad line
+					set mc_line (string replace --regex '.*echo \(whoami\)[^;]+;' '' -- "$mc_line")
+					set found_bugged yes
+				end
+				set -a filtered_mc_prompt "$mc_line;"
+			end
+			# redefine fish_prompt when fix necessary
+			if test "$found_bugged" = "yes"
+				eval "$filtered_mc_prompt"
+			end
 		end
 	end
 	
