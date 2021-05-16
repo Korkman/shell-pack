@@ -15,7 +15,7 @@ nerdlevel() {
 	fi
 	if [ "$LC_NERDLEVEL" -gt 0 ] && command -v fish > /dev/null; then
 		export OLDSHELL=$SHELL
-		SHELL=$(command -v)
+		SHELL=$(command -v fish)
 		export SHELL
 		exec fish -l
 	fi
@@ -27,7 +27,7 @@ if [ "${MC_SID:-}" = "" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && command -v fish >
 		# workaround: run exec fish as prompt_command
 		__run_fish() {
 			export OLDSHELL=$SHELL
-			SHELL=$(command -v)
+			SHELL=$(command -v fish)
 			export SHELL
 			unset PROMPT_COMMAND
 			exec fish -l
@@ -37,7 +37,7 @@ if [ "${MC_SID:-}" = "" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && command -v fish >
 		return
 	else
 		export OLDSHELL=$SHELL
-		SHELL=$(command -v)
+		SHELL=$(command -v fish)
 		export SHELL
 		exec fish -l
 	fi
