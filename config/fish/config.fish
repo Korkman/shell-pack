@@ -146,14 +146,14 @@ function load_shell_pack -d "Load shell-pack"
 	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
 
 	# NOTE: as many distros come with pre-existing fish prompts, we override by *prepending*
-	if ! contains -- "$fish_function_path" "$__sp_config_fish_dir/functions"
+	if ! contains -- "$__sp_config_fish_dir/functions" $fish_function_path
 		set -g --prepend fish_function_path "$__sp_config_fish_dir/functions"
 	end
-	if ! contains -- "$fish_complete_path" "$__sp_config_fish_dir/completions"
+	if ! contains -- "$__sp_config_fish_dir/completions" $fish_complete_path
 		set -g --prepend fish_complete_path "$__sp_config_fish_dir/completions"
 	end
 	# unqoted path is converted to space separated list, compatible to contains
-	if ! contains -- $PATH "$__sp_dir/bin"
+	if ! contains -- "$__sp_dir/bin" $PATH
 		set -g --prepend PATH "$__sp_dir/bin"
 	end
 	# this is only available as of fish 3.2
