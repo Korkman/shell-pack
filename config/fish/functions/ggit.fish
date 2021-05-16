@@ -8,9 +8,9 @@ function ggit -d \
 		return
 	end
 	
-	set __ggit_cache_dir "$HOME/.cache/shell-pack/ggit"
+	set -l __ggit_cache_dir "$HOME/.cache/shell-pack/ggit"
 	mkdir -p "$__ggit_cache_dir"
-	set msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
+	set -l msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
 	
 	set -l skim_cmd (__skimcmd)
 	set -l skim_binds (printf %s \
@@ -29,6 +29,8 @@ function ggit -d \
 	"esc:cancel"
 	)
 	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-s:full-status f5:refresh esc:cancel"
+	set -l results
+	set -l filename
 
 	while true
 		set -l git_status (git status --porcelain)
@@ -113,7 +115,7 @@ end
 
 function __ggit_diff_preview -d "Show state of file and diff"
 	__ggit_set_filename "$argv[1]" || return
-	set msg_filename "$argv[2]"
+	set -l msg_filename "$argv[2]"
 	
 	# show commit message to this point
 	if [ -e "$msg_filename" ]
@@ -123,9 +125,9 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	end
 	
 	# grep two-symbol status
-	set gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
-	set index_status (echo "$gstatus" | string sub --start 1 --length 1)
-	set wtree_status (echo "$gstatus" | string sub --start 2 --length 1)
+	set -l gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
+	set -l index_status (echo "$gstatus" | string sub --start 1 --length 1)
+	set -l wtree_status (echo "$gstatus" | string sub --start 2 --length 1)
 	
 	# show a nice status
 	#echo "status: ["(set_color -b bryellow; set_color black)"$gstatus"(set_color normal)"]"
