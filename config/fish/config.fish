@@ -243,9 +243,6 @@ function load_shell_pack -d "Load shell-pack"
 		# ctrl-shift-* does not exist, using alt-shift-f instead
 		bind \eF 'quick_search'
 
-		# ctrl-j for juicessh FAILED: mc does not start subshell when ctrl-j is bound (why?!?)
-		#bind \cj 'quick_search --dotfiles'
-
 		# alt-up, ctrl-up, shift-up to cd ..
 		bind \e\[1\;3A "quick_dir_up"
 		bind \e\[1\;5A "quick_dir_up"
@@ -294,9 +291,8 @@ function load_shell_pack -d "Load shell-pack"
 		bind \eg "commandline --cursor 0; commandline --insert 'rrg '"
 
 		# reserved binds
-		# DO NOT BIND CTRL-J, breaks mc
-		# DO NOT BIND CTRL-H, breaks mc
-		bind \ej "echo -e '\n4 Reserved for jumping to bookmarks'; commandline -f repaint"
+		# DO NOT BIND CTRL-J, breaks mc, is newline escape seq (10th in alphabet = 0x10)
+		# DO NOT BIND CTRL-H, breaks mc, is backspace escape seq (8th in alphabet = 0x8)
 
 		# custom event: sp-submit-commandline
 		bind \r "emit sp-submit-commandline; commandline -f execute"
