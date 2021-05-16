@@ -9,8 +9,13 @@ function oldshell \
 		echo "Therefore, this function is useless to you."
 		return
 	end
-	set --local --export SHELL "$OLDSHELL"
-	# changing LC_NERDLEVEL without triggering event
-	# cut TMUX connection in case oldshell has support for importing tmux env
-	env LC_NERDLEVEL=0 TMUX= $OLDSHELL $argv
+	begin
+		# set SHELL for subshells
+		set -lx SHELL "$OLDSHELL"
+		# unexport TMUX connection in case oldshell has support for
+		# importing tmux env, which can cause loops
+		set -lu TMUX
+		# changing LC_NERDLEVEL without triggering event
+		env LC_NERDLEVEL=0 $OLDSHELL $argv
+	end
 end
