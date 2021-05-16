@@ -107,13 +107,16 @@ end
 
 function __ggit_set_filename -S -d "Set variable filename from git status argv[1]"
 	set filename (echo "$argv[1]" | __ggit_file_from_status)
+	# file deleted in working tree? OK to be missing!
+	if test (string sub --start 2 --length 1 -- "$argv[1]") = "D"; return; end
 	if test ! -e "$filename"
-		echo "reset: error processing files"
+		echo "error: file does not exist ($filename)"
 		return 1
 	end
 end
 
 function __ggit_diff_preview -d "Show state of file and diff"
+	set -l filename
 	__ggit_set_filename "$argv[1]" || return
 	set -l msg_filename "$argv[2]"
 	
@@ -123,7 +126,7 @@ function __ggit_diff_preview -d "Show state of file and diff"
 		cat "$msg_filename"
 		echo
 	end
-	
+		
 	# grep two-symbol status
 	set -l gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
 	set -l index_status (echo "$gstatus" | string sub --start 1 --length 1)
@@ -131,7 +134,7 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	
 	# show a nice status
 	#echo "status: ["(set_color -b bryellow; set_color black)"$gstatus"(set_color normal)"]"
-	echo "status: index="(echo $index_status|string escape)" tree="(echo $wtree_status|string escape)
+	echo "status: index="(echo $index_status|string escape)" tree="(echo $wtree_status|string escape)" ($filename)"
 	switch "$gstatus"
 		case "\?\?"
 			echo "untracked file"
@@ -156,8 +159,10 @@ function __ggit_diff_preview -d "Show state of file and diff"
 		ls -A -1 --color=always "$filename"
 		return
 	end
-	
-	git diff --color=always "$filename"
+	# file: does still exist?
+	if [ -e "$filename" ]
+		git diff --color=always "$filename"
+	end
 end
 
 function __ggit_diff_full
