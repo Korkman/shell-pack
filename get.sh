@@ -66,7 +66,7 @@ fi
 # Download shell-pack
 # ---------------------------------------------
 
-if [ -d "${SHELL_PACK_SRCDIR}/.git"]; then
+if [ -d "${SHELL_PACK_SRCDIR}/.git" ]; then
 	echo "Detected .git directory in ${SHELL_PACK_SRCDIR}!"
 	echo "Are you a developer? Trying not to ruin your day, aborting."
 	echo "Use 'git pull' ;-)"
@@ -101,7 +101,7 @@ tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -O > /dev/null
 echo "Extracting ${DOWNLOAD_FILENAME} ..."
 
 # purging previous install if present
-if [ -d "${SHELL_PACK_SRCDIR}"]; then
+if [ -d "${SHELL_PACK_SRCDIR}" ]; then
 	rm -rf "${SHELL_PACK_SRCDIR}"
 fi
 
