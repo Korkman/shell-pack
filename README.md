@@ -13,7 +13,7 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * improved `ctrl-r` history navigation and deletion
  * private mode alias `private`
  * recursive search for filenames with `alt-f`
- * tab title control with ```tag```, ```untag```
+ * tab / window title control with ```tag```, ```untag```, informative generated titles
  * tmux shortcuts, including exclusive session ```one``` for shared access
  * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
 
@@ -25,7 +25,7 @@ A fish shell environment with many quality of life improvements for sysadmins an
    * ```lsports```: list open ports in compact manner
    * ```lsnet```: list active network connections in compact manner
    * ```ddstat```: a dstat wrapper with "sticky" arguments (requires dstat)
-   * ```qmount```: mount a partition to /run/q/name (skip /dev/)
+   * ```qmount```: mount a partition to /run/q/name (blockdevice autocomplete)
    * ```ssmart```: shortcut to smartctl -x (skip /dev/)
    * ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
    * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
