@@ -39,20 +39,24 @@ Attach to or create a screen / tmux session SESSION.
 			function __mmux_tmux_update_shell_env --on-event fish_preexec
 				if set -q TMUX
 					# inside TMUX, grab environment update
-					for v in (tmux show-environment)
-						if [ (string sub --start 1 --length 1 -- $v) = "-" ]
-							set -l v (string sub --start 2 -- $v)
-							if contains -- $v $__mmux_imported_environment && set -q $v
-								#echo "tmux: unset $v"
-								set -e $v
-							end
-						else
-							set -l v (string split --max 1 "=" -- $v)
-							set -l vname "$v[1]"
-							set -l vval "$v[2]"
-							if contains -- $vname $__mmux_imported_environment && [ "$$vname" != "$vval" ]
-								#echo "tmux: set $vname=$vval"
-								set -g $vname $vval
+					set -l tmux_env (tmux show-environment 2> /dev/null)
+					if test $status -eq 0
+						# tmux commands fail when env variable is set but not writable (su)
+						for v in $tmux_env
+							if [ (string sub --start 1 --length 1 -- $v) = "-" ]
+								set -l v (string sub --start 2 -- $v)
+								if contains -- $v $__mmux_imported_environment && set -q $v
+									#echo "tmux: unset $v"
+									set -e $v
+								end
+							else
+								set -l v (string split --max 1 "=" -- $v)
+								set -l vname "$v[1]"
+								set -l vval "$v[2]"
+								if contains -- $vname $__mmux_imported_environment && [ "$$vname" != "$vval" ]
+									#echo "tmux: set $vname=$vval"
+									set -g $vname $vval
+								end
 							end
 						end
 					end
