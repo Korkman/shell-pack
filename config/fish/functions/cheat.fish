@@ -99,9 +99,12 @@ mount /dev/NAME /run/q/NAME        qmount NAME
   ex. NAME for LVM: vg/lv
 umount /run/q/NAME                 qumount NAME
 
-mount --rbind /dev, /proc, /sys    qchroot [ TARGET ]
+mount --rbind /dev, /proc, /sys    qchroot TARGET
   into TARGET, then chroot,
   then umount on exit
+
+SSH, but managed                   qssh [ ssh-params ]
+git add + commit with review       ggit
 
 	" | less
 end
