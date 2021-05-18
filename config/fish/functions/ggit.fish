@@ -17,12 +17,12 @@ function ggit -d \
 	"enter:execute(echo {q} >> '$msg_filename')+clear-query+refresh-preview,"\
 	"double-click:ignore,"\
 	"alt-s:preview(git -c color.ui=always status),"\
-	"alt-c:execute(echo commit)+accept,"\
-	"alt-p:execute(echo commit_and_push)+accept,"\
-	"alt-a:execute(echo add)+accept,"\
-	"alt-d:execute(echo diff)+accept,"\
-	"alt-x:execute(echo reset)+accept,"\
-	"f5:execute(echo refresh)+accept,"\
+	"alt-c:execute(echo commit; echo {q})+accept,"\
+	"alt-p:execute(echo commit_and_push; echo {q})+accept,"\
+	"alt-a:execute(echo add; echo {q})+accept,"\
+	"alt-d:execute(echo diff; echo {q})+accept,"\
+	"alt-x:execute(echo reset; echo {q})+accept,"\
+	"f5:execute(echo refresh; echo {q})+accept,"\
 	"alt-m:execute(echo message)+accept,"\
 	"f4:execute(echo message)+accept,"\
 	"f10:abort,"\
@@ -31,6 +31,7 @@ function ggit -d \
 	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-s:full-status f5:refresh esc:cancel"
 	set -l results
 	set -l filename
+	set -l msg_hold
 
 	while true
 		set -l git_status (git status --porcelain)
@@ -48,13 +49,16 @@ function ggit -d \
 			--disabled \
 			--prompt "Commit message (enter appends): " \
 			--preview "fishcall ggit diff_preview {} '$msg_filename'" \
+			--query "$msg_hold" \
 			--preview-window down \
 		| while read -l line; set -a results "$line"; end
 		
 		switch "$results[1]"
 			case "refresh"
+				__ggit_msg_hold
 				continue
 			case "commit" "commit_and_push"
+				__ggit_msg_append
 				if test ! -e "$msg_filename"
 					echo "No commit message yet!"
 					continue
@@ -78,17 +82,20 @@ function ggit -d \
 					echo "Aborted"
 				end
 			case "diff"
-				__ggit_set_filename "$results[2]" || return
+				__ggit_msg_hold
+				__ggit_set_filename "$results[3]" || return
 				git diff --color=always "$filename" | less -R
 				continue
 			case "add"
-				for line in $results[2..]
+				__ggit_msg_hold
+				for line in $results[3..]
 					__ggit_set_filename "$line" || return
 					git add "$filename" > /dev/null
 				end
 				continue
 			case "reset"
-				for line in $results[2..]
+				__ggit_msg_hold
+				for line in $results[3..]
 					__ggit_set_filename "$line" || return
 					git reset "$filename" > /dev/null
 				end
@@ -102,6 +109,17 @@ function ggit -d \
 		end
 		
 		break
+	end
+end
+
+function __ggit_msg_hold -S -d "Grab result[2] and hold in msg_hold"
+	if test "$results[2]" != ""
+		set msg_hold "$results[2]"
+	end
+end
+function __ggit_msg_append -S -d "Grab result[2] and append to msg_filename"
+	if test "$results[2]" != ""
+		echo "$results[2]" >> "$msg_filename"
 	end
 end
 
