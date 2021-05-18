@@ -8,6 +8,17 @@ function ggit -d \
 		return
 	end
 	
+	set -l init_pwd "$PWD"
+	set -l git_pwd (git rev-parse --show-cdup)
+	if test $status -ne 0
+		# no git repo
+		return 1
+	end
+	# cd (without history) to the git repo base
+	if test "$git_pwd" != ""
+		builtin cd "$git_pwd"
+	end
+
 	set -l __ggit_cache_dir "$HOME/.cache/shell-pack/ggit"
 	mkdir -p "$__ggit_cache_dir"
 	set -l msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
@@ -22,13 +33,14 @@ function ggit -d \
 	"alt-a:execute(echo add; echo {q})+accept,"\
 	"alt-d:execute(echo diff; echo {q})+accept,"\
 	"alt-x:execute(echo reset; echo {q})+accept,"\
+	"alt-i:execute(echo ignore; echo {q})+accept,"\
 	"f5:execute(echo refresh; echo {q})+accept,"\
 	"alt-m:execute(echo message)+accept,"\
 	"f4:execute(echo message)+accept,"\
 	"f10:abort,"\
 	"esc:cancel"
 	)
-	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-s:full-status f5:refresh esc:cancel"
+	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	set -l results
 	set -l filename
 	set -l msg_hold
@@ -63,11 +75,11 @@ function ggit -d \
 				if ! __ggit_is_anything_staged
 					# nothing is staged, assume commit on selected file(s) is intended
 					for line in $results[3..]
-						__ggit_set_filename "$line" || return
+						__ggit_set_filename "$line" || return 2
 						git add "$filename" > /dev/null
 					end
 				end
-				
+
 				if test ! -e "$msg_filename"
 					echo "No commit message yet!"
 					continue
@@ -92,20 +104,27 @@ function ggit -d \
 				end
 			case "diff"
 				__ggit_msg_hold
-				__ggit_set_filename "$results[3]" || return
+				__ggit_set_filename "$results[3]" || return 2 
 				git diff --color=always "$filename" | less -R
 				continue
 			case "add"
 				__ggit_msg_hold
 				for line in $results[3..]
-					__ggit_set_filename "$line" || return
+					__ggit_set_filename "$line" || return 2
 					git add "$filename" > /dev/null
+				end
+				continue
+			case "ignore"
+				__ggit_msg_hold
+				for line in $results[3..]
+					__ggit_set_filename "$line" || return 2
+					echo "$filename" >> ".gitignore"
 				end
 				continue
 			case "reset"
 				__ggit_msg_hold
 				for line in $results[3..]
-					__ggit_set_filename "$line" || return
+					__ggit_set_filename "$line" || return 2
 					git reset "$filename" > /dev/null
 				end
 				continue
@@ -114,11 +133,15 @@ function ggit -d \
 				continue
 			case "*"
 				#echo "Abort"
+				# i would love a break 2 here ...
+				builtin cd "$init_pwd"
 				return 0
 		end
 		
 		break
 	end
+
+	builtin cd "$init_pwd"
 end
 
 function __ggit_msg_hold -S -d "Grab result[2] and hold in msg_hold"
