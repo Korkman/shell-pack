@@ -9,7 +9,6 @@
 
 # be more strict about errors
 set -eu
-IFS=$'\n\t'
 AUTOSTART=${AUTOSTART:-yes}
 
 do_build=no
@@ -41,6 +40,8 @@ case "$BUILD_FROM" in
 		echo "Please provide distro name"
 		echo " - debian:buster"
 		echo " - ubuntu:xenial"
+		echo " - centos:8"
+		echo " - fedora:34"
 		exit 1
 		;;
 esac
@@ -62,8 +63,8 @@ then
 	#echo "${whereiam}"
 	#echo "${tagname}"
 	docker build \
-		--build-arg BUILD_FROM=$BUILD_FROM \
-		-t shell-pack:test-drive-${tagname} -f "${dockerfile}" .
+		--build-arg "BUILD_FROM=$BUILD_FROM" \
+		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
 fi
 
 # package src
@@ -94,22 +95,22 @@ fi
 docker run --rm \
 -e AUTOSTART="$AUTOSTART" \
 -e TERM="$TERM" \
---volume "$tmpdir":"/root/Downloads":rw \
+--volume "$tmpdir:/root/Downloads:rw" \
 --interactive \
---tty shell-pack:test-drive-${tagname}
+--tty "shell-pack:test-drive-${tagname}"
 
 # save downloaded rg, sk to cache
-if [ -e "$tmpdir/rg" -a ! -e "$cachedir/rg" ]
+if [ -e "$tmpdir/rg" ] && [ ! -e "$cachedir/rg" ]
 then
 	echo "Caching downloaded rg ..."
 	cp "$tmpdir/rg" "$cachedir/rg"
 fi
-if [ -e "$tmpdir/fzf" -a ! -e "$cachedir/fzf" ]
+if [ -e "$tmpdir/fzf" ] && [ ! -e "$cachedir/fzf" ]
 then
 	echo "Caching downloaded fzf ..."
 	cp "$tmpdir/fzf" "$cachedir/fzf"
 fi
-if [ -e "$tmpdir/sk" -a ! -e "$cachedir/sk" ]
+if [ -e "$tmpdir/sk" ] && [ ! -e "$cachedir/sk" ]
 then
 	echo "Caching downloaded sk ..."
 	cp "$tmpdir/sk" "$cachedir/sk"
