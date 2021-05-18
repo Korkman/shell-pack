@@ -59,6 +59,15 @@ function ggit -d \
 				continue
 			case "commit" "commit_and_push"
 				__ggit_msg_append
+
+				if ! __ggit_is_anything_staged
+					# nothing is staged, assume commit on selected file(s) is intended
+					for line in $results[3..]
+						__ggit_set_filename "$line" || return
+						git add "$filename" > /dev/null
+					end
+				end
+				
 				if test ! -e "$msg_filename"
 					echo "No commit message yet!"
 					continue
@@ -131,6 +140,22 @@ function __ggit_set_filename -S -d "Set variable filename from git status argv[1
 		echo "error: file does not exist ($filename)"
 		return 1
 	end
+end
+
+function __ggit_is_anything_staged -d "Return if anything was staged"
+	set -l git_status (git status --porcelain)
+	if test $status -ne 0
+		echo "git status failed"
+		return 4
+	end
+	for line in $git_status
+		set -l idx_status (echo "$line" | string sub --start 1 --length 1)
+		if ! contains "$idx_status" " " "?"
+			# status is not space or qmark
+			return 0
+		end
+	end
+	return 1
 end
 
 function __ggit_diff_preview -d "Show state of file and diff"
