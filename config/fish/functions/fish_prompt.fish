@@ -327,17 +327,6 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	set -g __saved_duration "$CMD_DURATION"
 	set -x __job_start_time (__sp_getnanoseconds)
 	set -g __saved_cmdline (echo "$argv[1]" | string replace "\n" " ")
-	if [ "$argv[1]" = " __shell_pack_clear_status_subroutine" ]
-		# move cursor one line up to overwrite __shell_pack_clear_status_subroutine
-		echo -en '\033[1A'
-		return
-	end
-	if [ "$argv[1]" = " " ]
-		# move cursor one line up to overwrite __shell_pack_clear_status_subroutine's solo space execution
-		echo -en '\033[1A'
-		return
-	end
-	
 	__update_glyphs
 	
 	# detect tracked, but lost jobs (e.g. by kill)
@@ -412,117 +401,120 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		end
 	end
 
-	# ignore empty lines and backgrounding tasks
-	if [ "$__saved_cmdline" != "" ]
-		if [ (string trim (string sub -s -1 -l 1 "$__saved_cmdline")) = "&" ]
-			# command ends in & means a task was backgrounded - assuming $status is misleading
-			echo
+	set -l do_show_exit_status "yes"
+	if set -q status_generation
+		# status_generation exists since fish 3.2, use it
+		if test "$status_generation" = "$__sp_last_status_generation"
+			set do_show_exit_status "no"
 		else
-			set -g __display_cmd_stats yes
+			set -g __sp_last_status_generation $status_generation
+		end
+	else if [ "$__saved_cmdline" = "" ] || [ (string trim (string sub -s -1 -l 1 "$__saved_cmdline")) = "&" ]
+		# empty line submitted or ends in "&"
+		set do_show_exit_status "no"
+	end
 
-			# output cmd
-			if [ $__saved_status -eq 0 ]
-				set thisbg "171"
-				set thisfg "fff"
+
+	# ignore empty lines and backgrounding tasks
+	if [ "$do_show_exit_status" = "yes" ]
+		set -g __display_cmd_stats yes
+
+		# output cmd
+		if [ $__saved_status -eq 0 ]
+			set thisbg "171"
+			set thisfg "fff"
+		else
+			set thisbg "711"
+			set thisfg "fff"
+		end
+		set_color -b $thisbg
+		set_color $thisfg
+		if [ "$__shellpack_current_cmd_confidential" = "yes" ]
+			if [ "$theme_nerd_fonts" = "yes" ]
+				echo -n ' '\ufaf8' '
 			else
+				echo -n ' ! '
+			end
+		else
+			if [ (string length "$__saved_cmdline") -gt 40 ]
+				echo -n ' '(string sub -l 19 "$__saved_cmdline")'…'(string sub -s -19 "$__saved_cmdline")' '
+			else
+				echo -n " "$__saved_cmdline" "
+			end
+		end
+		set_color -b normal
+		set_color $thisbg
+		echo -n "$right_black_arrow_glyph "
+
+		if [ $__saved_status -eq 0 ]
+			set_color "0b0"
+			echo -n "$happy_glyph "
+		else
+			set_color "c00"
+			# ring the bell
+			echo -n \a
+			echo -n "$unhappy_glyph ""$__saved_status "
+		end
+		set_color $fish_color_autosuggestion
+		__shellpack_cmd_duration
+		__shellpack_timestamp
+		set_color normal
+		
+		# hot new info: $pipestatus if any -ne 0
+		if [ (count $__saved_pipestatus) -gt 1 ]
+			set total_pipestatus 0
+			for substatus in $__saved_pipestatus
+				if [ $substatus -gt 0 ]
+					set total_pipestatus "$substatus"
+				end
+			end
+			if [ $total_pipestatus -gt 0 ]
 				set thisbg "711"
 				set thisfg "fff"
-			end
-			set_color -b $thisbg
-			set_color $thisfg
-			if [ "$__shellpack_current_cmd_confidential" = "yes" ]
-				if [ "$theme_nerd_fonts" = "yes" ]
-					echo -n ' '\ufaf8' '
-				else
-					echo -n ' ! '
-				end
-			else
-				if [ (string length "$__saved_cmdline") -gt 40 ]
-					echo -n ' '(string sub -l 19 "$__saved_cmdline")'…'(string sub -s -19 "$__saved_cmdline")' '
-				else
-					echo -n " "$__saved_cmdline" "
-				end
-			end
-			set_color -b normal
-			set_color $thisbg
-			echo -n "$right_black_arrow_glyph "
-
-			if [ $__saved_status -eq 0 ]
-				set_color "0b0"
-				echo -n "$happy_glyph "
-			else
-				set_color "c00"
-				# ring the bell
-				echo -n \a
-				echo -n "$unhappy_glyph ""$__saved_status "
-			end
-			set_color $fish_color_autosuggestion
-			__shellpack_cmd_duration
-			__shellpack_timestamp
-			set_color normal
-			
-			# hot new info: $pipestatus if any -ne 0
-			if [ (count $__saved_pipestatus) -gt 1 ]
-				set total_pipestatus 0
+				set_color -b $thisbg
+				set_color $thisfg
+				echo -n " Non-zero exit status in pipe "
+				set_color normal
+				set_color $thisbg
+				echo -n "$right_black_arrow_glyph "
+				set forcount 0
 				for substatus in $__saved_pipestatus
-					if [ $substatus -gt 0 ]
-						set total_pipestatus "$substatus"
-					end
-				end
-				if [ $total_pipestatus -gt 0 ]
-					set thisbg "711"
-					set thisfg "fff"
-					set_color -b $thisbg
-					set_color $thisfg
-					echo -n " Non-zero exit status in pipe "
-					set_color normal
-					set_color $thisbg
-					echo -n "$right_black_arrow_glyph "
-					set forcount 0
-					for substatus in $__saved_pipestatus
-						set forcount (math $forcount + 1)
+					set forcount (math $forcount + 1)
 
-						if [ $substatus -gt 0 ]
-							set_color "b00"
-						else
-							set_color "0b0"
-						end
-						echo -n "$substatus "
-						if [ $forcount -lt (count $__saved_pipestatus) ]
-							set_color $fish_color_autosuggestion
-							echo -ne "$right_arrow_glyph "
-						end
+					if [ $substatus -gt 0 ]
+						set_color "b00"
+					else
+						set_color "0b0"
 					end
-					set_color normal
-					echo
+					echo -n "$substatus "
+					if [ $forcount -lt (count $__saved_pipestatus) ]
+						set_color $fish_color_autosuggestion
+						echo -ne "$right_arrow_glyph "
+					end
 				end
+				set_color normal
+				echo
 			end
+		end
+		
+		if [ (string sub -s 1 -l 3 "$__saved_cmdline") = "   " ]
+			# feature: triple-space prefix to not save history without any comment
+			# (single 'up' history not cleared)
+		else if [ (string sub -s 1 -l 2 "$__saved_cmdline") = "  " ]
+			# feature: double-space prefix to prevent both in-memory and persistant history
+			# execute a single space to clear the history item
+			commandline --replace " "
+			commandline -f execute
 			
-			if [ (string sub -s 1 -l 1 "$__saved_cmdline") != " " -a $__saved_status -ne 0 ]
-				# feature: set $status to 0 for consistency (try 'set x 1')
-				# except for space-prefix, so one-line history still works
-				__shell_pack_clear_status
+			if [ "$theme_nerd_fonts" = "yes" ]
+				echo -n (set_color black; set_color -b ff0)' '\ufb8f' '(set_color ff0; set_color -b black;)\uE0B0(set_color normal)' '
+			else
+				echo -n (set_color black; set_color -b bryellow)'!'(set_color normal)
 			end
-			
-			if [ (string sub -s 1 -l 3 "$__saved_cmdline") = "   " ]
-				# feature: triple-space prefix to not save history without any comment
-				# (single 'up' history not cleared)
-			else if [ (string sub -s 1 -l 2 "$__saved_cmdline") = "  " ]
-				# feature: double-space prefix to prevent both in-memory and persistant history
-				# execute a single space to clear the history item
-				commandline --replace " "
-				commandline -f execute
-				
-				if [ "$theme_nerd_fonts" = "yes" ]
-					echo -n (set_color black; set_color -b ff0)' '\ufb8f' '(set_color ff0; set_color -b black;)\uE0B0(set_color normal)' '
-				else
-					echo -n (set_color black; set_color -b bryellow)'!'(set_color normal)
-				end
-				echo "Double-space prefix: Potentially harmful cmd flushed from history"
-			else if [ (string length "$__saved_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__saved_cmdline") = " " ]
-				# reminder to clear history
-				# moved to dedicated function __shellpack_confidential
-			end
+			echo "Double-space prefix: Potentially harmful cmd flushed from history"
+		else if [ (string length "$__saved_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__saved_cmdline") = " " ]
+			# reminder to clear history
+			# moved to dedicated function __shellpack_confidential
 		end
 	else
 		# empty line submitted, want a spacer
@@ -549,23 +541,6 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			set -g __reload_pending yes
 		end
 	end
-end
-
-function __shell_pack_clear_status -d "reset the exit status to zero"
-	set -g __skip_prompt 1
-	set -g __skip_right_prompt 1
-	# execute __shell_pack_clear_status_subroutine outside history
-	commandline --replace " __shell_pack_clear_status_subroutine"
-	commandline -f execute
-end
-
-function __shell_pack_clear_status_subroutine
-	set -g __skip_prompt 1
-	set -g __skip_right_prompt 1
-	# execute __shell_pack_clear_status_subroutine outside history
-	commandline --replace " "
-	commandline -f execute
-	return 0
 end
 
 function __shellpack_cmd_duration -S -d 'Show command duration'
