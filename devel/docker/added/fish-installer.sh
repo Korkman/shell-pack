@@ -63,17 +63,13 @@ case "$distro-$version" in
 	;;
 	'CentOS-8')
 		installer_case='CentOS-8'
-		# paste here
-		cd /etc/yum.repos.d/
-		wget https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_8/shells:fish:release:3.repo
-		yum install fish
+		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_8/shells:fish:release:3.repo > /etc/yum.repos.d/shells:fish:release:3.repo
+		yum install -y fish
 	;;
 	'CentOS-7')
 		installer_case='CentOS-7'
-		# paste here
-		cd /etc/yum.repos.d/
-		wget https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_7/shells:fish:release:3.repo
-		yum install fish
+		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_7/shells:fish:release:3.repo > /etc/yum.repos.d/shells:fish:release:3.repo
+		yum install -y fish
 	;;
 	'CentOS'*)
 		installer_case='CentOS-any'
