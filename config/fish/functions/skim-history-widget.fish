@@ -23,14 +23,11 @@ function skim-history-widget -d "Show command history"
 				# Triple-space prefix to prevent any special handling and also to not
 				# submit combined content to history
 				commandline --replace (echo -e "   \n")
-				for result in $results[-1..1]
+				for result in $results
 					if test (string length -- $result) -gt 1 -a (string sub --start -2 --length 2 -- $result) = '\n'
 						# trailing newline detected, has to be removed here
-						#echo 1
-						#sleep 1
 						set result (string sub --end -2 -- $result)
 					end
-					#echo "$result"
 					
 					eval "commandline --append -- $result\\;\\n"
 				end
