@@ -20,7 +20,7 @@ A fish shell environment with many quality of life improvements for sysadmins an
 ## Tools
  * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`), an easy to use ripgrep file content search with preview
- * `ggit`, quicky review changes, add files to the commit
+ * `ggit`, quickly review changes, add files to the commit
  * Linux only
    * ```lsports```: list open ports in compact manner
    * ```lsnet```: list active network connections in compact manner
