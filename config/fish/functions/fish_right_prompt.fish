@@ -119,7 +119,7 @@ end
 
 function __clear_skip_right_prompt_until_reset --on-event fish_preexec -d \
 	'Re-enable right prompt at preexec event'
-	set -e __skip_right_prompt_until_reset
+	set -eg __skip_right_prompt_until_reset
 end
 
 function __clear_skip_right_prompt_until_reset_on_cancel --on-event fish_cancel -d \

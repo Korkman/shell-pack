@@ -75,14 +75,14 @@ function fish_prompt -d "powerline-go like prompt"
 	__update_glyphs
 	
 	fish_prompt_reset_segments
-	set pwd_budget 40
+	set -l pwd_budget 40
 	if ! functions -q fish_right_prompt
 		# left-hand versions of right prompt segments
 		
 		# backgrounded jobs
 		if jobs -q
-			set ijobs (jobs -g)
-			set njobs (count $ijobs)
+			set -l ijobs (jobs -g)
+			set -l njobs (count $ijobs)
 			if [ $njobs -lt 4 ]
 				fish_prompt_segment "bryellow" "black" "$running_glyph "(string join ' ' $ijobs)
 			else
@@ -105,7 +105,7 @@ function fish_prompt -d "powerline-go like prompt"
 	end
 
 	if [ "$__session_tag" != "" ]
-		set visual_session_tag "$__session_tag"
+		set -l visual_session_tag "$__session_tag"
 		fish_prompt_shorten_string visual_session_tag 20
 		# subtract taken space from pwd budget
 		__fish_prompt_reduce_pwd_budget visual_session_tag
