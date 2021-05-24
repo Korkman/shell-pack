@@ -93,6 +93,7 @@ function load_shell_pack -d "Load shell-pack"
 			set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
 			# create a function using eval to execute the pre-escaped string as-is
 			eval function the_end \n exec env --ignore-environment $initial_env fish -l \n end
+			emit "fish_exit"
 			# run the function
 			the_end
 			#exec env fish -l # NOTE: this locks up midnight commander!
@@ -107,6 +108,7 @@ function load_shell_pack -d "Load shell-pack"
 				echo "Cannot reload within midnight commander"
 				return 1
 			end
+			emit "fish_exit"
 			exec env fish -l
 		end
 	end
@@ -117,7 +119,8 @@ function load_shell_pack -d "Load shell-pack"
 			tail -r -- $argv
 		end
 	end
-
+	
+	# these functions are possibly called many times a second, so they are not put in dedicated function files
 	function __sp_getmtime -a file -d \
 		'Get modification time of a file'
 		if $__cap_stat_has_printf
@@ -137,6 +140,11 @@ function load_shell_pack -d "Load shell-pack"
 			# TODO: check if this is bugged because time does not incorporate leap seconds while datetime does?
 			python -c 'import datetime; import time; print(str(int(time.time())) + datetime.datetime.now().strftime("%f") + "000")'
 		end
+	end
+	
+	function __sp_sigusr1 -s SIGUSR1
+		# only a placeholder to guarantee the signal is handled,
+		# not killing us when no handler is present (reload & timer pulse race precaution)
 	end
 
 	set -g __sp_config_fish_file (status --current-filename)
@@ -310,7 +318,7 @@ function load_shell_pack -d "Load shell-pack"
 		# DO NOT BIND CTRL-J, breaks mc, is newline escape seq (10th in alphabet = 0x10)
 		# DO NOT BIND CTRL-H, breaks mc, is backspace escape seq (8th in alphabet = 0x8)
 
-		# custom event: sp-submit-commandline
+		# custom event: pressing enter emits sp-submit-commandline
 		bind \r "emit sp-submit-commandline; commandline -f execute"
 
 		# did something stupid? arrow-up to the command, hit f8 to delete
@@ -337,7 +345,8 @@ function load_shell_pack -d "Load shell-pack"
 
 	set -g fish_color_command '00ff87'
 	set -g fish_color_autosuggestion '9e9e9e'
-
+	
+	# this will be unset on pre-exec
 	set -g __right_prompt_pid_once ""
 
 	# SCREEN / TMUX HANDLING
