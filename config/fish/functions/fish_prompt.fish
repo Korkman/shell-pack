@@ -332,7 +332,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	# detect tracked, but lost jobs (e.g. by kill)
 	if [ "$__watched_job_pids" != "" ]
 		for job_pid in $__watched_job_pids
-			if ! [ -e /proc/$job_pid ]
+			if ! ps -p $job_pid &> /dev/null
 				job_watcher$job_pid "KILLED?" 0 -2
 			end
 		end
