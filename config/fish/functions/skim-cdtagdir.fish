@@ -3,6 +3,7 @@ function skim-cdtagdir -d \
 	set -l skim_cmd (__skimcmd)
 	
 	begin
+		lsdirtags | sort
 		set -l mentioned "$PWD" # dedup list
 		for i in $dirnext
 			if contains -- "$i" $mentioned; continue; end
@@ -14,7 +15,6 @@ function skim-cdtagdir -d \
 			set -a mentioned "$i"
 			echo "<:$i"
 		end
-		lsdirtags | sort
 	end \
 	| $skim_cmd --ansi --no-multi --reverse --height 40% --bind 'esc:cancel' --header 'enter:cd  esc:abort' --prompt "cd tagged / history: " \
 	| read -l result
