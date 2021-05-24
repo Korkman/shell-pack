@@ -19,7 +19,7 @@ function __sp_set_timer -a timer_name timer_seconds
 	
 	if ! set -q __sp_timer_pulse_pid && ! set -q __sp_timer_pulse_disable_kill
 		# start the pulse, sending a SIGUSR1 to this PID every $tick_interval in background
-		sh -c "while true; do sleep $tick_interval; kill -s USR1 $fish_pid || exit 0 > /dev/null 2>&1; done; exit 0" > /dev/null 2>&1 < /dev/null &
+		sh -c "trap 'noop=1' INT; while true; do sleep $tick_interval; kill -s USR1 $fish_pid || exit 0 > /dev/null 2>&1; done; exit 0" > /dev/null 2>&1 < /dev/null &
 		# store and disown the pid
 		set -g __sp_timer_pulse_pid (jobs --last --pid)
 		disown $__sp_timer_pulse_pid
