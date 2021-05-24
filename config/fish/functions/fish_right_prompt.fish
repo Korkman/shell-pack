@@ -125,7 +125,8 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 			# move cursor to pos1
 			echo -en '\r'
 			# clear line
-			echo -en (string repeat -n $COLUMNS ' ')
+			#echo -en (string repeat -n $COLUMNS ' ')
+			echo -en '\033[K'
 			# move cursor to pos1
 			echo -en '\r'
 		else
@@ -140,7 +141,8 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 			# move cursor to pos1
 			echo -en '\r'
 			# clear line
-			echo -en (string repeat -n $COLUMNS ' ')
+			#echo -en (string repeat -n $COLUMNS ' ')
+			echo -en '\033[K'
 			# move cursor up
 			#echo -en '\033[1A'
 		end
