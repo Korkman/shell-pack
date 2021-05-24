@@ -27,8 +27,28 @@ function __sp_set_timer -a timer_name timer_seconds
 		function __sp_timer_kill_pulse --on-event fish_exit
 			if ! set -q __sp_timer_pulse_pid; return; end
 			#echo "Killing timer pulse PID $__sp_timer_pulse_pid"
-			kill $__sp_timer_pulse_pid
+			
+			# find matching pid in ppid group, otherwise abort kill
+			if ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
+				kill $__sp_timer_pulse_pid
+			else
+				echo "Warning: Timer pulse bg process lost!"
+			end
 			set -ge __sp_timer_pulse_pid
+		end
+	end
+end
+
+function __sp_timer_check_pulse --on-event fish_postexec -d \
+	'Check pulse: is the background timer running correctly?'
+	if set -q __sp_timer_pulse_pid
+		# find matching pid in ppid group, otherwise cancel pending timers && remove pid information
+		if ! ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
+			echo "Warning: Timer pulse bg process lost!"
+			echo "Pending timers cancelled: $__sp_timer_names"
+			set -ge __sp_timer_names
+			set -ge __sp_timer_pulse_pid
+			functions -e __sp_timer_kill_pulse
 		end
 	end
 end
