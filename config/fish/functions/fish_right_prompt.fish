@@ -59,8 +59,7 @@ function fish_right_prompt
 	else
 		
 		# user segment
-		# TODO: improve root user test
-		if contains -- "$USER" root toor Administrator
+		if fish_is_root_user
 			set colorbg "711"
 			set colorfg "fff"
 		else
@@ -77,7 +76,6 @@ function fish_right_prompt
 		
 		# pid segment (only once)
 		if set -q __right_prompt_pid_once
-			set -e __right_prompt_pid_once
 			set colorbg "070"
 			set colorfg "fff"
 			set_color $colorbg
@@ -108,29 +106,104 @@ function fish_right_prompt
 	set_color normal
 end
 
-function __unpaint_right_prompt --on-signal winch --on-event "sp-submit-commandline" -d \
-	'Remove the right prompt as soon as enter is pressed or the terminal is resized to keep a 
+function __unpaint_right_prompt --on-event sp_submit_commandline -d \
+	'Remove the right prompt as soon as enter is pressed to keep a 
 	clean and resizable scrollback buffer'
+	
+	if set -q __right_prompt_pid_once
+		# this is the only exception to keep it: for the stuff only displayed once
+		set -eg __right_prompt_pid_once
+		return
+	end
+	
+	if ! set -q __skip_right_prompt_until_reset
+		# right prompt is not hidden yet
+		set -g __skip_right_prompt_until_reset yes
+		if test (commandline) = ""
+			# on empty commandline, paint blank line
+			
+			# move cursor to pos1
+			echo -en '\r'
+			# clear line
+			echo -en (string repeat -n $COLUMNS ' ')
+			# move cursor to pos1
+			echo -en '\r'
+		else
+			# on filled commandline, paint prompt without right prompt
+			commandline -f repaint
+		end
+	else
+		# right prompt is already hidden
+		if test (commandline) = ""
+			# on empty commandline, paint blank line
+			
+			# move cursor to pos1
+			echo -en '\r'
+			# clear line
+			echo -en (string repeat -n $COLUMNS ' ')
+			# move cursor up
+			#echo -en '\033[1A'
+		end
+		
+	end
+	
+	# set (and reset) a timer to repaint the right prompt when resizing is complete
+	__sp_set_timer "right_prompt_repaint" 1.5
+end
+
+function __unpaint_right_prompt_cancel --on-event sp_cancel_commandline -d \
+	'Remove the right when ctrl-c is pressed to keep a 
+	clean and resizable scrollback buffer'
+	
+	if set -q __right_prompt_pid_once
+		# this is the only exception to keep it: for the stuff only displayed once
+		set -eg __right_prompt_pid_once
+		return
+	end
+	
 	if ! set -q __skip_right_prompt_until_reset
 		set -g __skip_right_prompt_until_reset yes
 		commandline -f repaint
 	end
+	
+	# set (and reset) a timer to repaint the right prompt when resizing is complete
+	__sp_set_timer "right_prompt_repaint" 1.5
+end
+
+function __unpaint_right_prompt_winch --on-signal winch -d \
+	'Remove the right prompt when the terminal is resized to keep a 
+	clean and resizable scrollback buffer'
+	
+	if ! set -q __skip_right_prompt_until_reset
+		set -g __skip_right_prompt_until_reset yes
+		commandline -f repaint
+	end
+	
+	# set (and reset) a timer to repaint the right prompt when resizing is complete
+	__sp_set_timer "right_prompt_repaint" 1.5
+end
+
+function __sp_right_prompt_repaint --on-event "sp_timer_right_prompt_repaint"
+	set -eg __skip_right_prompt_until_reset
+	commandline -f repaint
 end
 
 function __clear_skip_right_prompt_until_reset --on-event fish_preexec -d \
 	'Re-enable right prompt at preexec event'
 	set -eg __skip_right_prompt_until_reset
+	set -eg __right_prompt_pid_once
 end
 
-function __clear_skip_right_prompt_until_reset_on_cancel --on-event fish_cancel -d \
-	'Re-enable right prompt at cancel event'
-	__clear_skip_right_prompt_until_reset
-end
-
-function disable-right-prompt
+function disable-right-prompt -d \
+	'Disable right prompt, for use in subshell'
 	functions -e fish_right_prompt
+	functions -e __unpaint_right_prompt
+	functions -e __unpaint_right_prompt_cancel
+	functions -e __unpaint_right_prompt_winch
+	functions -e __clear_skip_right_prompt_until_reset
 end
 
-function enable-right-prompt
+function enable-right-prompt -d \
+	'Enable right prompt after disabled with -disable-right-prompt'
 	source (status --current-filename)
 end

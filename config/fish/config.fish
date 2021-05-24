@@ -318,8 +318,10 @@ function load_shell_pack -d "Load shell-pack"
 		# DO NOT BIND CTRL-J, breaks mc, is newline escape seq (10th in alphabet = 0x10)
 		# DO NOT BIND CTRL-H, breaks mc, is backspace escape seq (8th in alphabet = 0x8)
 
-		# custom event: pressing enter emits sp-submit-commandline
-		bind \r "emit sp-submit-commandline; commandline -f execute"
+		# custom event: pressing enter emits custom event before fish_preexec
+		bind \r "emit sp_submit_commandline; commandline -f execute"
+		# fill commandline with space so ctrl-c does something, also emit custom event before fish_cancel
+		bind \cC "if test (commandline) = ''; commandline ' '; end; emit sp_cancel_commandline; commandline -f cancel-commandline"
 
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind -k f8 "__history_delete_commandline"
