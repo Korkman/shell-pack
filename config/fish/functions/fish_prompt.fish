@@ -326,7 +326,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	set -g __saved_status $__saved_pipestatus[(count $__saved_pipestatus)]
 	set -g __saved_duration "$CMD_DURATION"
 	set -x __job_start_time (__sp_getnanoseconds)
-	set -g __saved_cmdline (echo "$argv[1]" | string replace "\n" " ")
+	set -g __saved_cmdline (echo "$argv[1]" | while read line; echo -n "$line; "; end)
 	__update_glyphs
 	
 	# detect tracked, but lost jobs (e.g. by kill)
