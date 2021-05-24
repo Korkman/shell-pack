@@ -124,6 +124,18 @@ function load_shell_pack -d "Load shell-pack"
 		end
 	end
 	
+	# test if the command 'kill' is available. if not, improvise!
+	# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
+	# since kill is not a builtin (yet), we depend on it here to be a command
+	# this can happen in docker images or similar minimalistic containers.
+	# mc will hang whatever we do, so this polyfill will kill using the hopefully
+	# built-in of another installed shell ...
+	if ! command -q kill and ! builtin -q kill
+		function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
+			/usr/bin/env sh -c "kill $argv"
+		end
+	end
+
 	# these functions are possibly called many times a second, so they are not put in dedicated function files
 	function __sp_getmtime -a file -d \
 		'Get modification time of a file'

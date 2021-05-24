@@ -13,18 +13,6 @@ function fish_prompt -d "powerline-go like prompt"
 		if ! set -q mc_prompt_fixed
 			set -g mc_prompt_fixed yes
 
-			# test if the command 'kill' is available. if not, improvise!
-			# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
-			# since kill is not a builtin (yet), we depend on it here to be a command
-			# this can happen in docker images or similar minimalistic containers.
-			# mc will hang whatever we do, so this polyfill will kill using the hopefully
-			# built-in of another installed shell ...
-			if ! command -q kill and ! builtin -q kill
-				function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
-					/usr/bin/env sh -c "kill $argv"
-				end
-			end
-
 			# terrible bug in Debian Stretch: an additional prompt line!
 			# lets remove it
 			set -l mc_prompt (functions fish_prompt)
