@@ -119,7 +119,7 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 	if ! set -q __skip_right_prompt_until_reset
 		# right prompt is not hidden yet
 		set -g __skip_right_prompt_until_reset yes
-		if test (commandline) = ""
+		if test (commandline | string collect) = ""
 			# on empty commandline, paint blank line
 			
 			# move cursor to pos1
@@ -134,7 +134,7 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 		end
 	else
 		# right prompt is already hidden
-		if test (commandline) = ""
+		if test (commandline | string collect) = ""
 			# on empty commandline, paint blank line
 			
 			# move cursor to pos1

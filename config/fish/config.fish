@@ -321,7 +321,7 @@ function load_shell_pack -d "Load shell-pack"
 		# custom event: pressing enter emits custom event before fish_preexec
 		bind \r "emit sp_submit_commandline; commandline -f execute"
 		# fill commandline with space so ctrl-c does something, also emit custom event before fish_cancel
-		bind \cC "if test (commandline) = ''; commandline ' '; end; emit sp_cancel_commandline; commandline -f cancel-commandline"
+		bind \cC "if test (commandline | string collect) = ''; commandline ' '; end; emit sp_cancel_commandline; commandline -f cancel-commandline"
 
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind -k f8 "__history_delete_commandline"
