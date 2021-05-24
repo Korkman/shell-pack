@@ -93,7 +93,9 @@ function load_shell_pack -d "Load shell-pack"
 			set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
 			# create a function using eval to execute the pre-escaped string as-is
 			eval function the_end \n exec env --ignore-environment $initial_env fish -l \n end
+			# emit fish_exit event and give time to reap exit status of children to prevent zombies
 			emit "fish_exit"
+			sleep 1
 			# run the function
 			the_end
 			#exec env fish -l # NOTE: this locks up midnight commander!
@@ -108,7 +110,9 @@ function load_shell_pack -d "Load shell-pack"
 				echo "Cannot reload within midnight commander"
 				return 1
 			end
+			# emit fish_exit event and give time to reap exit status of children to prevent zombies
 			emit "fish_exit"
+			sleep 1
 			exec env fish -l
 		end
 	end
