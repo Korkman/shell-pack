@@ -37,7 +37,7 @@ Store = ctrl-c; alt-w
 Paste = ctrl-v
 Cut = ctrl-x
 Undo = ctrl-z; ctrl-u
-Redo = ctrl-y; alt-r
+Redo = ctrl-y; ctrl-shift-z; alt-r
 # removed ctrl-y here
 DeleteLine =
 # TODO: make ctrl-backspace work
