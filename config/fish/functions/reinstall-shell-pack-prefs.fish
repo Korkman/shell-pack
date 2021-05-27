@@ -1,3 +1,5 @@
+__polyfill_cmp
+
 function reinstall-shell-pack-prefs \
 -d "Reinstalls mc, htop, tmux, screen preferences"
 	

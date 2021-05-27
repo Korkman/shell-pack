@@ -36,12 +36,16 @@ case "$BUILD_FROM" in
 	centos:*)
 		dockerfile="Dockerfile-Redhat"
 		;;
+	archlinux:*)
+		dockerfile="Dockerfile-Archlinux"
+		;;
 	*)
 		echo "Please provide distro name"
 		echo " - debian:buster"
 		echo " - ubuntu:xenial"
 		echo " - centos:8"
 		echo " - fedora:34"
+		echo " - archlinux:latest"
 		exit 1
 		;;
 esac
