@@ -3,6 +3,8 @@
 
 set -eu
 
+installer_log="$HOME/fish_installer_case.log"
+
 if command -v lsb_release > /dev/null
 then
 	# get data from release files
@@ -21,6 +23,10 @@ elif [ -e /etc/fedora_release ]
 then
 	distro=fedora
 	version=$(cat /etc/fedora_release | sed 's/\..*//')
+elif [ -e "/etc/arch-release" ]
+then
+	distro=Arch
+	version=$(cat "/etc/arch-release" | sed 's/Arch Linux //')
 fi
 
 export DEBIAN_FRONTEND=noninteractive
@@ -75,14 +81,20 @@ case "$distro-$version" in
 		installer_case='CentOS-any'
 		dnf install -y fish
 	;;
+	'Arch'*)
+		installer_case='Arch-any'
+		pacman -S --noconfirm fish
+	;;
 	*)
 		installer_case='none'
 		echo "Cannot install fish :-("
 	;;
 esac
 
-echo "$0" > "/root/fish_installer_case.log"
-echo "$installer_case" >> "/root/fish_installer_case.log"
+touch "$installer_log"
+echo "args: $0" >> "$installer_log"
+echo "detected os: $distro-$version" >> "$installer_log"
+echo "used method: $installer_case" >> "$installer_log"
 
 exit
 }

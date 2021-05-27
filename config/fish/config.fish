@@ -183,8 +183,8 @@ function load_shell_pack -d "Load shell-pack"
 	# this is only available as of fish 3.2
 	#fish_add_path --path --global --prepend -- "$__sp_dir/bin"
 
-	# reduce hostname calls
-	set -g short_hostname (hostname -s)
+	# provide $short_hostname globally
+	set -g short_hostname (echo "$hostname" | string replace --regex '\..*' '')
 
 	# normalize starting fish -l without nerdlevel.sh
 	# all subshells should be fish from here
