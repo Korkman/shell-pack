@@ -1,8 +1,10 @@
 # NOTE: main is renamed to filemanager in later mc versions (4.8.26 and up)
 [main]
 HotList = alt-d; ctrl-\\
+ScreenList = alt-q; alt-prime
 [filemanager]
 HotList = alt-d; ctrl-\\
+ScreenList = alt-q; alt-prime
 
 
 # NOTE: main:xmap is renamed to filemanager:xmap in later mc versions (4.8.26 and up)
@@ -14,6 +16,7 @@ HotList = alt-d; ctrl-\\
 [dialog]
 # NOTE: removing ctrl-g here will not work (as of debian buster)
 #Cancel = f10; esc; ctrl-g
+ScreenList = alt-q; alt-prime
 
 [input]
 
