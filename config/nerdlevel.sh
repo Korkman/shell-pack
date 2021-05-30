@@ -30,10 +30,11 @@ if [ "${MC_SID:-}" = "" ] && [ "${LC_NERDLEVEL:-0}" -gt 0 ] && command -v fish >
 			SHELL=$(command -v fish)
 			export SHELL
 			unset PROMPT_COMMAND
+			unset PROMPT
 			exec fish -l
 		}
-		export PROMPT_COMMAND=__run_fish
-		export PROMPT=__run_fish
+		PROMPT_COMMAND=__run_fish
+		PROMPT=__run_fish
 		return
 	else
 		export OLDSHELL=$SHELL
