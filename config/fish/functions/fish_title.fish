@@ -5,6 +5,12 @@ function __update_tab_title -v tabtitle
 end
 
 function fish_title
+	
+	# blacklist of terminals NOT supporting window titles
+	if string match -q --regex "(fbterm)" "$TERM"
+		return
+	end
+	
 	if set -q __saved_status && [ "$__saved_status" != "" ] && [ $__saved_status -ne 0 ]
 		set statusprefix "!"
 	end
