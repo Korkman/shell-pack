@@ -158,13 +158,19 @@ function load_shell_pack -d "Load shell-pack"
 		end
 	end
 	
+	function __sp_getmd5 -a file -d \
+		'Get md5 sum of a file (normalized)'
+		$__name_md5sum < "$file" | string replace --regex -- ' .*' ''
+	end
+
 	function __sp_sigusr1 -s SIGUSR1
 		# only a placeholder to guarantee the signal is handled,
 		# not killing us when no handler is present (reload & timer pulse race precaution)
 	end
-
+ 
 	set -g __sp_config_fish_file (status --current-filename)
 	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
+	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
 	set -g __sp_config_fish_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_file)
 	set -g __sp_config_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_dir)
 	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
@@ -349,25 +355,14 @@ function load_shell_pack -d "Load shell-pack"
 	# actual preferences
 
 	set -g fish_prompt_pwd_dir_length 0
-	set -g theme_project_dir_length 0
-	set -g theme_display_user yes
-	set -g theme_display_hostname no
 	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
 	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
-	set -g theme_display_jobs_verbose yes          # displays the number of currently running background jobs next to the percent sign
-	set -g theme_show_exit_status yes              # show the last exit code if it was non_zero instead of just the exclamation mark.
-
-	set -g theme_title_display_process yes
-	set -g theme_title_display_path no
-	set -g theme_title_display_user no
 
 	set -g fish_color_command '00ff87'
 	set -g fish_color_autosuggestion '9e9e9e'
 	
 	# this will be unset on pre-exec
 	set -g __right_prompt_pid_once ""
-
-	# SCREEN / TMUX HANDLING
 
 	# screen / tmux shortcuts
 	alias one "mmux one --exclusive \$argv"

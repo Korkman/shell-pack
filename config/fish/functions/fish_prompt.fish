@@ -516,19 +516,39 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	#	nerdlevel 0
 	#end
 	
-	# when no jobs are running, consider autoupdate
-	if [ "$__sp_config_fish_file" = "" ] || [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
-		if [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
-			# auto-update
-			echo "Your most recent cmd:"
-			echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
-			policeline "new fish config loaded - env reset"
-			reload
-		else
-			# hint update
-			set -g __reload_pending yes
+	# if not already pending, detect if config.fish has to be reloaded
+	if [ "$__reload_pending" != "yes" ]
+		if [ "$__sp_config_fish_file" = "" ] \
+			|| [ "$__sp_config_fish_md5" = "" ] \
+			|| [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
+
+			set -l new_md5 "invalid"
+			if functions -q __sp_getmd5
+				set new_md5 (__sp_getmd5 $__sp_config_fish_file)
+			end
+
+			if [ "$new_md5" = "$__sp_config_fish_md5" ]
+				# unchanged md5 - update timestamp, no reload necessary
+				#echo "config.fish changed mtime, but md5 is equal, no action required"
+				set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
+			else
+				# hint update
+				set -g __reload_pending yes
+			end
 		end
 	end
+
+	# when no jobs are running, consider autoupdate
+	if [ "$__reload_pending" = "yes" ] \
+		&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
+		
+		# auto-update
+		echo "Autoupdate triggered! Remember your most recent cmd:"
+		echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
+		policeline "new fish config loaded - env reset"
+		reload
+	end
+
 end
 
 function __shellpack_cmd_duration -S -d 'Show command duration'
