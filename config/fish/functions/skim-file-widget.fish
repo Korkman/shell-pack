@@ -13,11 +13,11 @@ function skim-file-widget -d "List files and folders"
 
 	set -l skim_binds (printf %s \
 	"ctrl-p:toggle-preview,"\
-	"f4:execute-silent(echo //mcedit)+accept,"\
-	"f3:execute-silent(echo //mcview)+accept,"\
-	"ctrl-l:execute-silent(echo //less)+accept,"\
+	"f4:execute(echo //mcedit)+accept,"\
+	"f3:execute(echo //mcview)+accept,"\
+	"ctrl-l:execute(echo //less)+accept,"\
 	"ctrl-v:accept,"\
-	"alt-v:execute-silent(echo //vi)+accept,"\
+	"alt-v:execute(echo //vi)+accept,"\
 	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
 	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
 	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
