@@ -55,7 +55,7 @@ function __sp_timer_start_pulse -d \
 		
 		# find matching pid in ppid group, otherwise abort kill
 		if ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
-			kill $__sp_timer_pulse_pid
+			kill $__sp_timer_pulse_pid || echo "It seems a race occured stopping the timer pulse subprocess with kill"
 		else
 			# this is a normal thing now
 			#echo "Warning: Timer pulse bg process lost!"
@@ -99,11 +99,13 @@ end
 
 function __sp_timer_refresh_pulse -d \
 	'Send a SIGUSR1 to the pulse subprocess to refresh its self-termination countdown'
+	if ! set -q __sp_timer_pulse_pid; return; end
+	
 	set -g __sp_ticks_since_pulse_refresh 0
 
 	#echo "debug: refreshing pulse"
 	if ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
 		#echo "debug: refreshing pulse!"
-		kill -s USR1 $__sp_timer_pulse_pid
+		kill -s USR1 $__sp_timer_pulse_pid || echo "It seems a race occured when sending USR1 to the timer pulse subprocess"
 	end
 end
