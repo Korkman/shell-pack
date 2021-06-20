@@ -62,12 +62,13 @@ function __sp_timer_start_pulse -d \
 			kill -s STOP $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race A1 (OK)"
 			if __sp_timer_verify_pulse_pid
 				kill $__sp_timer_pulse_pid || echo "debug: race A2 (NOT OK)"
-			else
 				kill -s CONT $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race A3 (OK)"
+			else
+				kill -s CONT $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race A4 (OK)"
 			end
 		else
 			# this is a normal thing now, the process might exit before we can think about killing it
-			#echo "debug: race A4 (OK)"
+			#echo "debug: race A5 (OK)"
 		end
 		set -ge __sp_timer_pulse_pid
 	end
