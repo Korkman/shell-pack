@@ -1,5 +1,6 @@
 function __sp_set_timer -a timer_name timer_seconds
 	# dynamic variable name to store ticks to pass until timer fires
+	block
 	set -l tick_var "__sp_timer_ticks_$timer_name"
 	set -l tick_interval "0.5"
 	# calculate ticks to pass based on tick interval
@@ -26,6 +27,7 @@ end
 
 function __sp_timer_check_pulse --on-event fish_postexec -d \
 	'Check pulse: is the background timer running correctly?'
+	block
 	if set -q __sp_timer_pulse_pid
 		# find matching pid in ppid group, otherwise cancel pending timers && remove pid information
 		if ! ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
@@ -38,6 +40,7 @@ end
 
 function __sp_timer_start_pulse -d \
 	'Start pulse subprocess'
+	block
 	set -l tick_interval '0.5'
 	# start the pulse, sending a SIGUSR1 to this PID every $tick_interval in background
 	# cd / so the subprocess won't block mounts
@@ -50,21 +53,28 @@ function __sp_timer_start_pulse -d \
 
 	# ready function to kill the PID on exit
 	function __sp_timer_kill_pulse --on-event fish_exit
+		block
 		if ! set -q __sp_timer_pulse_pid; return; end
 		#echo "Killing timer pulse PID $__sp_timer_pulse_pid"
 		
 		# find matching pid in ppid group, otherwise abort kill
-		if ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
-			kill $__sp_timer_pulse_pid || echo "It seems a race occured stopping the timer pulse subprocess with kill"
+		if __sp_timer_verify_pulse_pid
+			kill -s STOP $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race A1 (OK)"
+			if __sp_timer_verify_pulse_pid
+				kill $__sp_timer_pulse_pid || echo "debug: race A2 (NOT OK)"
+			else
+				kill -s CONT $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race A3 (OK)"
+			end
 		else
-			# this is a normal thing now
-			#echo "Warning: Timer pulse bg process lost!"
+			# this is a normal thing now, the process might exit before we can think about killing it
+			#echo "debug: race A4 (OK)"
 		end
 		set -ge __sp_timer_pulse_pid
 	end
 end
 
 function __sp_timer_pulse -s SIGUSR1
+	block
 	for timer_name in $__sp_timer_names
 		set -l tick_var "__sp_timer_ticks_$timer_name"
 		set -g $tick_var (math "$$tick_var - 1")
@@ -99,13 +109,30 @@ end
 
 function __sp_timer_refresh_pulse -d \
 	'Send a SIGUSR1 to the pulse subprocess to refresh its self-termination countdown'
+	block
 	if ! set -q __sp_timer_pulse_pid; return; end
 	
 	set -g __sp_ticks_since_pulse_refresh 0
 
-	#echo "debug: refreshing pulse"
-	if ps o pid,ppid | string match -q --regex "[^0-9]*""$__sp_timer_pulse_pid""[^0-9]+""$fish_pid"
-		#echo "debug: refreshing pulse!"
-		kill -s USR1 $__sp_timer_pulse_pid || echo "It seems a race occured when sending USR1 to the timer pulse subprocess"
+	# find matching pid in ppid group, otherwise abort kill
+	if __sp_timer_verify_pulse_pid
+		kill -s STOP $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race B1 (OK)"
+		if __sp_timer_verify_pulse_pid
+			kill -s USR1 $__sp_timer_pulse_pid || echo "debug: race B2 (NOT OK)"
+			kill -s CONT $__sp_timer_pulse_pid || echo "debug: race B3 (NOT OK)"
+		else
+			kill -s CONT $__sp_timer_pulse_pid &> /dev/null #|| echo "debug: race B4 (OK)"
+		end
+	else
+		echo "debug: the pulse pid was not found in our process group"
+	end
+end
+
+function __sp_timer_verify_pulse_pid -d \
+	'Verify the pulse subprocess pid is still active and in our process group'
+	if ps -o ppid= -p "$__sp_timer_pulse_pid" | string trim | string match -q "$fish_pid"
+		return 0
+	else
+		return 1
 	end
 end
