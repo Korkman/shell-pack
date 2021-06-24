@@ -28,12 +28,11 @@ function load_shell_pack -d "Load shell-pack"
 		set -g disable_autoupdate yes
 	end
 
-	# detect OS capabilities
+	# detect OS capabilities (very rough)
 	if [ (uname) = "Linux" ]
 		set -g __cap_env_has_null true
 		set -g __cap_stat_has_printf true
 		set -g __cap_getent true
-		set -g __cap_date_nanoseconds true
 
 		set -g __cap_dscacheutil false
 		set -g __cap_finger false
@@ -47,7 +46,6 @@ function load_shell_pack -d "Load shell-pack"
 		set -g __cap_dscacheutil true
 		set -g __cap_finger true
 		set -g __name_md5sum "md5"
-		set -g __cap_date_nanoseconds false
 		set -g __cap_ss false
 	end
 
@@ -146,18 +144,6 @@ function load_shell_pack -d "Load shell-pack"
 		end
 	end
 
-	function __sp_getnanoseconds -d \
-		'Get current nanoseconds since epoch'
-		if $__cap_date_nanoseconds
-			date +%s%N
-		else if command -sq gdate
-			gdate +%s%N
-		else
-			# TODO: check if this is bugged because time does not incorporate leap seconds while datetime does?
-			python -c 'import datetime; import time; print(str(int(time.time())) + datetime.datetime.now().strftime("%f") + "000")'
-		end
-	end
-	
 	function __sp_getmd5 -a file -d \
 		'Get md5 sum of a file (normalized)'
 		$__name_md5sum < "$file" | string replace --regex -- ' .*' ''
