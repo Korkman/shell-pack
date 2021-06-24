@@ -36,7 +36,6 @@ function load_shell_pack -d "Load shell-pack"
 
 		set -g __cap_dscacheutil false
 		set -g __cap_finger false
-		set -g __name_md5sum "md5sum"
 		set -g __cap_ss true
 	else
 		set -g __cap_env_has_null false
@@ -45,7 +44,6 @@ function load_shell_pack -d "Load shell-pack"
 
 		set -g __cap_dscacheutil true
 		set -g __cap_finger true
-		set -g __name_md5sum "md5"
 		set -g __cap_ss false
 	end
 
@@ -144,19 +142,12 @@ function load_shell_pack -d "Load shell-pack"
 		end
 	end
 
-	function __sp_getmd5 -a file -d \
-		'Get md5 sum of a file (normalized)'
-		$__name_md5sum < "$file" | string replace --regex -- ' .*' ''
-	end
-
 	function __sp_sigusr1 -s SIGUSR1
 		# only a placeholder to guarantee the signal is handled,
 		# not killing us when no handler is present (reload & timer pulse race precaution)
 	end
  
 	set -g __sp_config_fish_file (status --current-filename)
-	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
-	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
 	set -g __sp_config_fish_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_file)
 	set -g __sp_config_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_dir)
 	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
@@ -174,6 +165,9 @@ function load_shell_pack -d "Load shell-pack"
 	end
 	# this is only available as of fish 3.2
 	#fish_add_path --path --global --prepend -- "$__sp_dir/bin"
+
+	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
+	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
 
 	# provide $short_hostname globally
 	set -g short_hostname (echo "$hostname" | string replace --regex '\..*' '')

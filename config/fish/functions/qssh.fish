@@ -655,7 +655,7 @@ function __qssh_parse_connect_args --no-scope-shadowing
 	set -a cp_hostdef $hostdef_user
 	set -a cp_hostdef $hostdef_port
 	# NOTE: length of unix domain socket limited! | string sub -l 8
-	set controlPathSuffix (echo $cp_hostdef | $__name_md5sum | string replace --regex -- ' .*' '')
+	set controlPathSuffix (echo $cp_hostdef | __sp_getmd5 | string replace --regex -- ' .*' '')
 	if set -q hostdef_jumphost
 		# Jumphost does not support controlPath, as it seems
 		set controlPath none
