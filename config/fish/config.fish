@@ -237,8 +237,8 @@ function load_shell_pack -d "Load shell-pack"
 
 	mmux --grab-hooks
 
-	# detect and coordinate iTerm2 integration loading
-	if [ "$LC_TERMINAL" = "iTerm2" ]
+	# detect and coordinate iTerm2 integration loading (if not in mc subshell)
+	if [ "$MC_SID" = "" -a "$LC_TERMINAL" = "iTerm2" ]
 		# load fish_prompt
 		fish_prompt > /dev/null
 		# load iterm2 integration
