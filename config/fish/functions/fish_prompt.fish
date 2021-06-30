@@ -1,4 +1,5 @@
-function fish_prompt -d "powerline-go like prompt"
+function fish_prompt -d \
+	"shell-pack prompt"
 	if [ (status function) = "fish_prompt_mc" ]
 		# this function was copied and renamed by mc to fish_prompt_mc
 		
@@ -8,32 +9,54 @@ function fish_prompt -d "powerline-go like prompt"
 			set -g __mc_history_cleared yes
 			echo "all" | history delete --prefix "if not functions -q fish_prompt_mc;" &> /dev/null
 		end
-
+		
 		# some hotfixing for the mc prompt
 		if ! set -q mc_prompt_fixed
 			set -g mc_prompt_fixed yes
-
-			# terrible bug in Debian Stretch: an additional prompt line!
-			# lets remove it
+			set -g mc_true_term "$TERM"
+			
 			set -l mc_prompt (functions fish_prompt)
+			# # Defined interactively
+			# function fish_prompt
+			# echo "$PWD">&7; fish_prompt_mc; kill -STOP %self;
+			# end
+			
+			# ^ this is how we expect fish_prompt to look like when overwritten by mc
+			# note that >&7 is a variable pipe number
+
 			set -l filtered_mc_prompt
-			set -l found_bugged no
 			for mc_line in $mc_prompt
 				if string trim -- "$mc_line" | string match -q "#*"
 					# comment lines must be filtered or eval will not work!
 					continue
 				end
-				if string match --quiet "*echo (whoami)*" -- "$mc_line"
-					# fix the bad line
-					set mc_line (string replace --regex 'echo \(whoami\)[^;]+;' '' -- "$mc_line")
-					set found_bugged yes
-				end
+				
+				# terrible bug in Debian Stretch: an additional prompt line!
+				# let's remove it
+				set mc_line (string replace --regex 'echo \(whoami\)[^;]+;' '' -- "$mc_line")
+				
+				# fish 3.3.0 started sending \r in capable terminals, which mc does not expect.
+				# setting TERM to "dumb" and reverting at tactical places
+				
+				# append 'set -g TERM dumb' after 'kill .*;'
+				set mc_line (string replace --regex 'kill .*;' '$0 set -g TERM dumb' -- "$mc_line")
+				
+				# prepend 'set -g TERM $mc_true_term' before 'echo $PWD'
+				set mc_line (string replace --regex 'echo "\$PWD' 'set -g TERM "$$mc_true_term"; $0' -- "$mc_line")
+				
+				# save to list of lines
 				set -a filtered_mc_prompt "$mc_line;"
 			end
-			# redefine fish_prompt when fix necessary
-			if test "$found_bugged" = "yes"
-				eval "$filtered_mc_prompt"
+			
+			# redefine fish_prompt
+			eval "$filtered_mc_prompt"
+			
+			# also hook preexec to swap TERM for saved value
+			function term_not_dumb_on_exec --on-event fish_preexec -d \
+				"Revert to saved TERM value pre-exec"
+				set -g TERM "$mc_true_term"
 			end
+			
 		end
 	end
 	
