@@ -56,7 +56,9 @@ function fish_prompt -d \
 				"Revert to saved TERM value pre-exec"
 				set -g TERM "$mc_true_term"
 			end
-			
+
+			# set TERM dumb NOW to have first prompt working on iTerm2
+			set -g TERM dumb
 		end
 	end
 	
