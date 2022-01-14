@@ -6,7 +6,10 @@ function fish_greeting -d "shell-pack says hello"
 	if [ "$theme_nerd_fonts" = "yes" ]
 		set theme_greeting_add $theme_greeting_add " + nerdfont "(set_color 070)" "(set_color normal)""
 	end
-	echo -nes "Welcome to FISH $FISH_VERSION + shell-pack "(shell-pack-version) $theme_greeting_add "\n"
+	# NOTE: the following is split to workaround a bug in Windows Terminal
+	# causing the powerline arrow to show no background color for the space.
+	echo -n "Welcome to FISH $FISH_VERSION"
+	echo -ne " + shell-pack "(shell-pack-version) $theme_greeting_add "\n"
 	
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
 		# check dependencies once a day
