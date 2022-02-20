@@ -1,0 +1,32 @@
+#! /bin/bash
+
+set -eu
+
+if [ -v "1" ]
+then
+	hostToScan=${1%:*}
+	portToScan=${1#*:}
+	[ "$hostToScan" = "$portToScan" ] && portToScan="22"
+	echo "Connecting to '$hostToScan' on port '$portToScan' ..."
+else
+	hostToScan="localhost"
+	portToScan="22"
+fi
+
+
+# scan host for hostkeys, output in typical encodings to verify
+echo "$( \
+	( \
+		ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null \
+		| ssh-keygen -E md5 -lf -; \
+		ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null \
+		| ssh-keygen -E sha256 -lf - \
+	) \
+	| sort | sed 's/^/    /' \
+)"
+
+# output globally routed IPs and ethernet mac addresses
+if command -v ip &> /dev/null
+then
+	ip address | grep -E "(global|ether)" | sort
+fi
