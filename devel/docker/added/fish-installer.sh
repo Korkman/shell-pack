@@ -31,6 +31,14 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 case "$distro-$version" in
+	'Debian-11'|'Kali-'*)
+		installer_case='Debian-11'
+		# paste here
+		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_11/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
+		curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_11/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+		sudo apt update
+		sudo apt -y install fish
+	;;
 	'Debian-10')
 		installer_case='Debian-10'
 		# paste here
@@ -55,11 +63,11 @@ case "$distro-$version" in
 		sudo apt update
 		sudo apt -y install fish
 	;;
-	'Ubuntu'*)
+	'Ubuntu'*|'Pop'*)
 		installer_case='Ubuntu-any'
 		sudo apt-get -y install software-properties-common
 		# paste here
-		sudo apt-add-repository ppa:fish-shell/release-3
+		sudo apt-add-repository -y --no-update ppa:fish-shell/release-3
 		sudo apt-get update
 		sudo apt-get -y install fish
 	;;
@@ -81,9 +89,9 @@ case "$distro-$version" in
 		installer_case='CentOS-any'
 		dnf install -y fish
 	;;
-	'Arch'*)
+	'Arch'*|'EndeavourOS'*|'Garuda'*)
 		installer_case='Arch-any'
-		pacman -S --noconfirm fish
+		pacman -Sy --noconfirm fish
 	;;
 	*)
 		installer_case='none'
