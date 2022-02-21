@@ -9,16 +9,44 @@
 
 # be more strict about errors
 set -eu
+# initialize defaults
 AUTOSTART=${AUTOSTART:-yes}
-
-do_build=no
+do_build="no"
+build_uncached="no"
+if [ -z "${XDG_RUNTIME_DIR+x}" ]
+then
+	XDG_RUNTIME_DIR="/run/user/$(id -u)"
+	[ ! -e "$XDG_RUNTIME_DIR" ] && XDG_RUNTIME_DIR="/tmp/user-$USER"
+fi
+echo "Using $XDG_RUNTIME_DIR for temporary files"
 
 if [ "${2:-}" = "build" ]
 then
-	do_build=yes
+	do_build="yes"
+fi
+if [ "${2:-}" = "build-uncached" ]
+then
+	do_build="yes"
+	build_uncached="yes"
 fi
 
-BUILD_FROM="${1:-debian:buster}"
+export DOCKER_BUILDKIT=1
+if command -v "podman" > /dev/null
+then
+	echo "Using podman to run test-drive"
+	docker="podman"
+else
+	if [ "$(whoami)" = "root" ]
+	then
+		echo "Using docker to run test-drive (I am root)"
+		docker="docker"
+	else
+		echo "Using docker to run test-drive (via sudo)"
+		docker="sudo docker"
+	fi
+fi
+
+BUILD_FROM="${1:-debian:bullseye}"
 tagname=$(echo "$BUILD_FROM" | sed 's/:/-/')
 case "$BUILD_FROM" in
 	'debian:jessie')
@@ -57,17 +85,25 @@ whereiam="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 srcdir="$( cd "${whereiam}/../.." >/dev/null 2>&1 && pwd )"
 
 # the temporary directory which will be shared as a docker volume
-tmpdir="/tmp/docker-shell-pack-test-drive-$tagname"
+tmpdir="$XDG_RUNTIME_DIR/shell-pack-test-drive-$tagname"
 mkdir -p "$tmpdir"
 download_file="korkman-shell-pack-latest.tar.gz"
+
+# test if image is present, otherwise force build
+if [ "$($docker images --quiet "shell-pack:test-drive-${tagname}")" = "" ]
+then
+	do_build="yes"
+fi
 
 # build
 if [ "$do_build" = "yes" ]
 then
 	#echo "${whereiam}"
 	#echo "${tagname}"
-	docker build \
-		--build-arg "BUILD_FROM=$BUILD_FROM" \
+	cache_arg=""
+	[ "$build_uncached" = "yes" ] && cache_arg="--no-cache "
+	$docker build \
+		$cache_arg --build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
 		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
 fi
 
@@ -96,9 +132,10 @@ then
 fi
 
 # run
-docker run --rm \
+$docker run --rm \
 -e AUTOSTART="$AUTOSTART" \
 -e TERM="$TERM" \
+--hostname "test-${tagname}" \
 --volume "$tmpdir:/root/Downloads:rw" \
 --interactive \
 --tty "shell-pack:test-drive-${tagname}"
