@@ -89,6 +89,7 @@ Toggle full private mode      private
 
 ========== for admins ==========
 
+List ssh fingerprints              ffingerprints
 List open network ports            lsports
 List established connections       lsnet
 dstat with saved preset            ddstat [ ... ]

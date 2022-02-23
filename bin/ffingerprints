@@ -1,8 +1,12 @@
 #! /bin/sh
 
+# show localhost SSH fingerprints and IPs
+# to secure and simplify connecting from another host
+
+{
 set -eu
 
-if [ ! -z "${1+x}" ]
+if [ -n "${1+x}" ]
 then
 	hostToScan=${1%:*}
 	portToScan=${1#*:}
@@ -15,18 +19,48 @@ fi
 
 
 # scan host for hostkeys, output in typical encodings to verify
-echo "$( \
-	( \
-		ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null \
-		| ssh-keygen -E md5 -lf -; \
-		ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null \
-		| ssh-keygen -E sha256 -lf - \
-	) \
-	| sort | sed 's/^/    /' \
-)"
-
-# output globally routed IPs and ethernet mac addresses
-if command -v ip &> /dev/null
+set +e
+scanResult="$(ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null)"
+exitStatus=$?
+set -e
+if [ $exitStatus -gt 0 ]
 then
-	ip address | grep -E "(global|ether)" | sort
+	echo "ssh-keyscan failed (is $hostToScan:$portToScan reachable?)"
+	exit $exitStatus
 fi
+
+sha256Hashes=$(echo "$scanResult" | ssh-keygen -E sha256 -lf -)
+md5Hashes=$(echo "$scanResult" | ssh-keygen -E md5 -lf -)
+allHashes=$(echo "$sha256Hashes"; echo "$md5Hashes")
+
+if command -v column > /dev/null
+then
+	# nice formatting
+	filter() {
+		column -t
+	}
+else
+	# rough formatting
+	filter() {
+		sed "s/^256 /256  /;s/^512 /512  /"
+	}
+fi
+
+echo "$allHashes" | filter
+
+if [ "$hostToScan" = "localhost" ]
+then
+	# output globally routed IPs and ethernet mac addresses
+	if command -v ip > /dev/null
+	then
+		# linux
+		ip address | grep -E "(global|ether)" | sort
+	elif command -v ifconfig > /dev/null
+	then
+		# macos (/ unix?)
+		ifconfig -u | grep -E "(inet|ether)" | grep -vE "(inet6 ::1|inet6 fe80::|inet 127\.)" | sort | uniq
+	fi
+fi
+
+exit
+}
