@@ -146,7 +146,7 @@ function fish_prompt -d \
 			set tagged_dir_path "$__tagged_dirs_path_list[$tagged_dir]"
 			set tagged_dir_name "$__tagged_dirs_name_list[$tagged_dir]"
 			set len_tagged_dir_path (string length "$tagged_dir_path")
-			if [ $len_tagged_dir_path -gt $matched_len_tagged_dir_path -a (string sub --start 1 --length $len_tagged_dir_path "$PWD") = "$tagged_dir_path" ]
+			if [ $len_tagged_dir_path -gt $matched_len_tagged_dir_path -a (string sub --start 1 --length (math $len_tagged_dir_path + 1) "$PWD/") = "$tagged_dir_path/" ]
 				set matched_len_tagged_dir_path $len_tagged_dir_path
 				set matched_tagged_dir_path "$tagged_dir_path"
 				set -g matched_tagged_dir_name "$tagged_dir_name"
