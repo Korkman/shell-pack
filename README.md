@@ -1,6 +1,8 @@
 # shell-pack
 A fish shell environment with many quality of life improvements for sysadmins and devops.
 
+![nerdlevel 3](docs/images/nerdlevel-3.png)
+
 ## Features
  * vibrant colors, nice icons
  * execution time, exit status and pipe status visibility
