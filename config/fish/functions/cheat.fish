@@ -3,6 +3,20 @@ function cheat
 		__cheat_glyphs
 		return
 	end
+
+	if command -v cheat > /dev/null && [ "$argv[1]" != "--shell-pack" ]
+		command cheat $argv
+		if [ "$argv[1]" = "" ]
+			echo
+			echo "  To view the native shell-pack cheatsheet:"
+			echo "    cheat --shell-pack"
+			echo "    (shell-pack detected 'cheat' is installed)"
+		end
+		return
+	end
+	
+	
+
 	echo "
 Fish & shell-pack "(shell-pack-version)" cheatsheet
 
