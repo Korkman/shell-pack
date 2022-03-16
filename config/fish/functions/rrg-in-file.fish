@@ -1,6 +1,8 @@
 function rrg-in-file -d "rrg in file and focus on matching lines."
 	argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' -- $argv
 	and not set -q _flag_help
+	and set -q _flag_file
+	and test "$argv" != ""
 	or begin
 		echo "\
 Usage: rrg-in-file -f FILE [ --line N ] [ --truncate ] QUERY
@@ -8,7 +10,7 @@ Usage: rrg-in-file -f FILE [ --line N ] [ --truncate ] QUERY
 Search for a regex in FILE with same parser as rrg. Show matching
 lines with context.
 
-   -f/--file          File to parse.
+   -f/--file FILE     File to parse. Use - for stdin.
    -l/--line          Jump to line N in file. Interactive with less.
    -t/--truncate      Truncate file before matching. Roughly limits
                       matches to one. Non-interactive.

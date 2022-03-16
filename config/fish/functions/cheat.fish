@@ -70,7 +70,7 @@ Untag current directory       untagdir
 List tagged directories       lsdirtags
 
 Search files by content       rrg REGEX
-Search in file by content     rrg-in-file FILE REGEX
+Search in file by content     rrg-in-file -f FILE REGEX
 
 (Re)open tmux / screen
   for user X                  $__multiplexer_names
@@ -78,10 +78,6 @@ Search in file by content     rrg-in-file FILE REGEX
   steal session 'one'         forceone
   share session 'one'         shareone
   custom session              mmux SESSION [ ... see usage ]
-
-Execute cmd in private,
-... but allow edit            SPACE cmd
-... and don't allow edit      SPACE SPACE cmd
 
 Toggle full private mode      private
 - no history read / written
