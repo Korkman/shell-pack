@@ -1,6 +1,8 @@
 # shell-pack
 A fish shell environment with many quality of life improvements for sysadmins and devops.
 
+![nerdlevel 3](docs/images/nerdlevel-3.png)
+
 ## Features
  * vibrant colors, nice icons
  * execution time, exit status and pipe status visibility
@@ -15,7 +17,6 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * recursive search for filenames with `alt-f`
  * tab / window title control with ```tag```, ```untag```, informative generated titles
  * tmux shortcuts, including exclusive session ```one``` for shared access
- * double-space prefix to execute a command completely off-the-record (opposed to single space prefix, which can be recalled)
 
 ## Tools
  * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
