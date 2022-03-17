@@ -78,6 +78,9 @@ function fish_prompt -d \
 		end
 	end
 	
+	# bind f10 to exit
+	bind -k f10 "exit"
+
 	# end silent updates
 	
 	if set -q __skip_prompt
