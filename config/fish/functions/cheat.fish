@@ -4,6 +4,16 @@ function cheat
 		return
 	end
 
+	if [ "$argv[1]" = "--mc" ]
+		__cheat_mc
+		return
+	end
+
+	if [ "$argv[1]" = "--tmux" ]
+		__cheat_tmux
+		return
+	end
+
 	if command -v cheat > /dev/null && [ "$argv[1]" != "--shell-pack" ]
 		command cheat $argv
 		if [ "$argv[1]" = "" ]
@@ -64,6 +74,8 @@ What is word at cursor        Alt-W
 
 Show this cheatsheet          cheat
 Show glyphs cheatsheet        cheat --glyphs
+Show mc cheatsheet            cheat --mc
+Show tmux cheatsheet          cheat --tmux
 
 Launch POSIX-compliant shell  oldshell
 
@@ -117,7 +129,7 @@ mount --rbind /dev, /proc, /sys    qchroot TARGET
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit
 
-	" | less
+	" | less -P "cheat --shell-pack | less - q to quit, h for help"
 end
 
 function __cheat_glyphs
@@ -216,4 +228,77 @@ And these fine colors should be distinguishable:
 	end
 	set_color normal
 	echo
+end
+
+function __cheat_mc
+	echo "
+midnight commander
+(as configured by shell-pack)
+
+global keys:
+
+Alt-Q, Alt-Shift-Q, Alt-Shift-W:
+  mc has multiple windows. when internal editors are opened, use these to switch
+  between them and the file manager.
+
+mcedit (partially also mcview):
+
+Ctrl-C, Ctrl-V, Ctrl-X:
+  these are bound now in mcedit and work as you'd expect for copy, paste and cut
+Ctrl-Z, Ctrl-Y, Ctrl-Shift-Z:
+  these, too, are bound now in mcedit and undo / redo respectively
+Ctrl-S: in addition to F2, saves in mcedit
+Ctrl-F: in addition to F7, search in mcedit
+Alt-N: in addition to Shift-F7, continue search
+Ctrl-L, Alt-L: goto line in mcedit
+Ctrl-Left, Ctrl-Right: move cursor by words
+Ctrl-W: closes the editor
+Tab, Esc & Tab: indent, unindent selection
+Shift-Arrows: Select text
+
+file manager:
+  Alt-Enter: inserts selected filename into subshell
+  Alt-S: prefix search in file listing, syntax highlighting in mcedit
+  Alt-D: show bookmarks list (including shell-pack tagged dirs)
+" | less -P "cheat --mc | less - q to quit, h for help"
+end
+
+function __cheat_tmux
+	echo "
+tmux
+(as configured by shell-pack)
+
+keys:
+
+ctrl-a: is synonym for ctrl-b, because it is more accessible (and tradition)
+ctrl-a, then
+r: reload config
+|: split window into left and right
+-: split window into top and bottom
+   alias: shift-s
+c: create new window
+esc: enter copy mode to scroll up to 10000 lines back
+     alias: pgup
+v: paste
+arrow-left, arrow-right: move window left / right on task bar, renumber
+shift-b: enter broadcast mode, sending keystrokes to all panes
+bspace, space: jump to previous, next window
+ctrl-a: jump to most recent window
+shift-Q: break out a pane into a dedicated window
+         alias: !
+k: kill pane (if confirmed)
+tab: jump to next pane
+shift-k: kill all windows and exit (if confirmed)
+         alias: \
+shift-n: show window number and name
+shift-a: rename window
+
+notes:
+
+* mouse works, can scroll in history when in copy mode and resize panes
+* window numbering starts at 1, ends on 0 to be more natural on keyboard
+* environment variables are being taken care of, most notably enabling 
+  ssh agent forwarding
+* a new window will inherit the working directory of the current window
+" | less -P "cheat --tmux | less - q to quit, h for help"
 end
