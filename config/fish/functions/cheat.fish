@@ -45,6 +45,7 @@ Search args history           Alt-.
 Change directory
 ----------------
 cd ..                         Shift-Up
+cd ~ | cd /                   Alt-Home
 Change directory              Shift-Down        Alt-X
 ... excluding dotfiles        Alt-Shift-Down    Alt-Shift-X
 ... recursive                 Alt-C
@@ -68,6 +69,7 @@ Append '&| less'              Alt-P
 Prepend 'sudo'                Alt-S
 Manpage for current cmd       Alt-H             F1
 What is word at cursor        Alt-W
+Clear line, exit shell        F10
 
 
 ========= Quick commands =========

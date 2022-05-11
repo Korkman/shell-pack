@@ -79,7 +79,8 @@ function fish_prompt -d \
 	end
 	
 	# bind f10 to exit
-	bind -k f10 "exit"
+	bind -k f10 "if test (commandline | string collect) = ''; exit; else; commandline ''; end;"
+	bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
 
 	# end silent updates
 	
