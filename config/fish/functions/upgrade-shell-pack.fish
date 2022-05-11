@@ -1,8 +1,9 @@
 function upgrade-shell-pack -d \
 	"Download & install latest shell-pack"
 	
-	set tag 'latest'
-	if set -q $argv[1]
+	if [ "$argv[1]" = "" ]
+		set tag 'latest'
+	else
 		set tag $argv[1]
 	end
 	
