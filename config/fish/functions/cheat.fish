@@ -35,7 +35,8 @@ Fish & shell-pack "(shell-pack-version)" cheatsheet
 Command History
 ---------------
 Prefix search in history      Up
-Delete current history item   F8
+Delete selected history item  F8
+Delete & edit last command    F4
 Accept autosuggestion         End               Right
 ... partially                 Ctrl-Right
 Fuzzy search in history       Ctrl-R

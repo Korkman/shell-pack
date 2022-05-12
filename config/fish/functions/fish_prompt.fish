@@ -62,28 +62,6 @@ function fish_prompt -d \
 		end
 	end
 	
-	# begin silent updates (avoid reload)
-	# from time to time, upgraded shells can be live patched here until a config.fish
-	# upgrade becomes necessary, at which point stuff gets copied over
-	
-	# improvise OLDSHELL if not set - 2021 (*guess*)
-	# NOTE: this is already handled in a better way in config.fish!
-	if ! set -q OLDSHELL
-		# TODO: if getent is available, ask system for default shell, use if not fish?
-		if set -g OLDSHELL (which bash)
-		else if set -g OLDSHELL (which zsh)
-		else
-			# last resort, sh
-			set -g OLDSHELL (which sh)
-		end
-	end
-	
-	# bind f10 to exit
-	bind -k f10 "if test (commandline | string collect) = ''; exit; else; commandline ''; end;"
-	bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
-
-	# end silent updates
-	
 	if set -q __skip_prompt
 		set -e __skip_prompt
 		return
@@ -644,3 +622,30 @@ function __shellpack_timestamp -S -d 'Show the current timestamp'
 	date $theme_time_format
 end
 
+
+# begin silent updates (avoid reload)
+
+# from time to time, upgraded shells can be live patched here until a config.fish
+# upgrade becomes necessary, at which point stuff gets copied over
+
+# improvise OLDSHELL if not set - 2021 (*guess*)
+# NOTE: this is already handled in a better way in config.fish!
+if ! set -q OLDSHELL
+	# TODO: if getent is available, ask system for default shell, use if not fish?
+	if set -g OLDSHELL (which bash)
+	else if set -g OLDSHELL (which zsh)
+	else
+		# last resort, sh
+		set -g OLDSHELL (which sh)
+	end
+end
+
+# bind f10 to exit
+bind -k f10 "if test (commandline | string collect) = ''; exit; else; commandline ''; end;"
+# bind Alt-Home to cd ~ | cd /
+bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
+# bind f4 to history edit
+bind -k f4 '__sp_history_delete_and_edit_prev'
+bind \e4 '__sp_history_delete_and_edit_prev'
+
+# end silent updates
