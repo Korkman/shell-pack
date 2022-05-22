@@ -16,6 +16,7 @@
 ```
 /usr/bin/env LC_NERDLEVEL=3 fish -l
 ```
+  * Also set it to always keep the working directory so the file browser context menu item "Open in terminal" works as expected
   * Optionally make it default (click on triangle)
 
 ### Fix the font in dconf
