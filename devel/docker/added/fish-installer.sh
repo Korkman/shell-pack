@@ -77,25 +77,25 @@ case "$distro-$version" in
 	;;
 	'Fedora'*)
 		installer_case='Fedora-any'
-		dnf install -y fish
+		sudo dnf install -y fish
 	;;
 	'CentOS-8')
 		installer_case='CentOS-8'
-		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_8/shells:fish:release:3.repo > /etc/yum.repos.d/shells:fish:release:3.repo
-		yum install -y fish
+		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_8/shells:fish:release:3.repo > sudo tee /etc/yum.repos.d/shells:fish:release:3.repo > /dev/null
+		sudo yum install -y fish
 	;;
 	'CentOS-7')
 		installer_case='CentOS-7'
-		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_7/shells:fish:release:3.repo > /etc/yum.repos.d/shells:fish:release:3.repo
-		yum install -y fish
+		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_7/shells:fish:release:3.repo > sudo tee /etc/yum.repos.d/shells:fish:release:3.repo > /dev/null
+		sudo yum install -y fish
 	;;
 	'CentOS'*)
 		installer_case='CentOS-any'
-		dnf install -y fish
+		sudo dnf install -y fish
 	;;
 	'Arch'*|'EndeavourOS'*|'Garuda'*)
 		installer_case='Arch-any'
-		pacman -Sy --noconfirm fish
+		sudo pacman -Sy --noconfirm fish
 	;;
 	*)
 		installer_case='none'
