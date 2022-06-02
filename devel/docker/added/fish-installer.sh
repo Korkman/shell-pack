@@ -21,11 +21,11 @@ then
 	version=$(cat /etc/ubuntu_release | sed 's/\..*//')
 elif [ -e /etc/fedora_release ]
 then
-	distro=fedora
+	distro=Fedora
 	version=$(cat /etc/fedora_release | sed 's/\..*//')
 elif [ -e /etc/fedora-release ]
 then
-	distro=fedora
+	distro=Fedora
 	version=$(cat /etc/fedora-release | sed 's/\..*//')
 elif [ -e "/etc/arch-release" ]
 then
