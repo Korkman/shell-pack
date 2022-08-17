@@ -64,12 +64,12 @@ function skim-cd-widget-one -d "Change directory without changing command"
 					commandline --insert (string escape -- "$result")
 				end
 				#commandline --cursor 9999
-				cd "$original_dir"
+				cd -- "$original_dir"
 				break
 			else if string match -q --regex '^//final:' -- "$result"
 				set result (string replace --regex '^//final:' '' -- "$result")
 				if [ "$result" != '.' ]
-					cd "$result"
+					cd -- "$result"
 					# move cursor up
 					#echo -en '\033[1A'
 					break
@@ -95,7 +95,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 				set cd_success 0
 				continue
 			else
-				cd "$result"
+				cd -- "$result"
 				set cd_success $status
 				set paste_absolute_path 'yes'
 			end
@@ -110,7 +110,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 			end
 			
 		else
-			cd "$original_dir"
+			cd -- "$original_dir"
 			# move cursor up
 			#echo -en '\033[1A'
 			break

@@ -24,7 +24,7 @@ function skim-cdtagdir -d \
 		#if string match --quiet --regex '^>' -- "$result" && set idx (contains --index $dest $dirnext[-1..1])
 		#	nextd $idx
 		#else
-		cd "$dest"
+		cd -- "$dest"
 		#end
 	end
 	commandline -f repaint

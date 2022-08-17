@@ -49,7 +49,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				# navigate one down
 				set result (string replace --regex '^//down:' '' -- "$result")
 				if [ -n "$result" ]
-					cd "$result"
+					cd -- "$result"
 				end
 			else if string match -q --regex '^//paste:' -- "$result"
 				# paste result
@@ -58,7 +58,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 					set result (realpath "$result")
 				end
 				commandline --insert (string escape -- "$result")
-				cd "$original_dir"
+				cd -- "$original_dir"
 				break
 			else if string match -q --regex '^//list:' -- "$result"
 				# list result
@@ -67,7 +67,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				continue
 			else
 				# cd to result
-				cd "$result"
+				cd -- "$result"
 				break
 			end
 			

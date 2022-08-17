@@ -14,7 +14,7 @@ function tagdir -d "tag cwd to shorten name"
 			set -lx fish_prompt_pwd_dir_length 1
 			set tagged_name (prompt_pwd)
 			# prophylactic: if fish ever comes up with color codes in prompt_pwd, strip them here
-			set tagged_name (string replace -ra '\e\[[^m]*m' '' "$tagged_name" | string replace -ra '[^[:print:]]' '')
+			set tagged_name (string replace -ra -- '\e\[[^m]*m' '' "$tagged_name" | string replace -ra '[^[:print:]]' '')
 			# colons are not allowed, strip them as well
 			set tagged_name (string replace --all -- ':' '-' "$tagged_name")
 		end
@@ -37,7 +37,7 @@ function tagdir -d "tag cwd to shorten name"
 		return 2
 	end
 	
-	if string match --quiet --regex '.*:.*' "$tagged_name"
+	if string match --quiet --regex -- '.*:.*' "$tagged_name"
 		echo "Colons not allowed in tag names"
 		return 3
 	end

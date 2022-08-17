@@ -5,7 +5,7 @@ function untagdir -d "untag cwd to shorten name: [ NAME | PATH ]"
 		set search "$PWD"
 	end
 	for tagged_dir in $__tagged_dirs
-		if [ "$__tagged_dirs_name_list[$tagged_dir]" = "$search" -o "$__tagged_dirs_path_list[$tagged_dir]" = "$search" ]
+		if [ "$__tagged_dirs_name_list[$tagged_dir]" = "$search" ] || [ "$__tagged_dirs_path_list[$tagged_dir]" = "$search" ]
 			set --universal -e __tagged_dirs
 			set --universal -e __tagged_dirs_name_list[$tagged_dir]
 			set --universal -e __tagged_dirs_path_list[$tagged_dir]

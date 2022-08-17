@@ -10,7 +10,7 @@ function private -d "Toggle private mode"
 		end
 		set -l msg "$symbol Entering private mode. No history will be written to disk!"
 		echo -n "$msg"
-		set -l right_budget (math $COLUMNS - (string length "$msg") - 1)
+		set -l right_budget (math $COLUMNS - (string length -- "$msg") - 1)
 		echo -n (string repeat -n $right_budget " ")
 		set_color normal
 		echo

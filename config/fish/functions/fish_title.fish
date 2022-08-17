@@ -7,7 +7,7 @@ end
 function fish_title
 	
 	# blacklist of terminals NOT supporting window titles
-	if string match -q --regex "(fbterm)" "$TERM"
+	if string match -q --regex "(fbterm)" -- "$TERM"
 		return
 	end
 	

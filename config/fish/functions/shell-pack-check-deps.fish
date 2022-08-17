@@ -44,7 +44,7 @@ function shell-pack-check-deps -d \
 			set version_in_there "0.0.0"
 		end
 		
-		if set version_found (string match --regex '([0-9]+(\.[0-9]+){1,3})' "$version_in_there")
+		if set version_found (string match --regex -- '([0-9]+(\.[0-9]+){1,3})' "$version_in_there")
 			set version_found "$version_found[1]"
 			set dec_version_found (printf "%d" (get_hex_from_version "$version_found"))
 		else
@@ -62,7 +62,7 @@ function shell-pack-check-deps -d \
 	end
 	
 	function get_hex_from_version
-		set verparts (string split . $argv[1])
+		set verparts (string split -- . $argv[1])
 		while test (count $verparts) -lt 4
 			set verparts $verparts 0
 		end

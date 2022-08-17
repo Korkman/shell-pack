@@ -189,12 +189,12 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	# show commit message to this point
 	if [ -e "$msg_filename" ]
 		echo "staged commit message:"
-		cat "$msg_filename"
+		cat -- "$msg_filename"
 		echo
 	end
 		
 	# grep two-symbol status
-	set -l gstatus (git status --porcelain "$filename" | head -n1 | string replace --regex "^(.?.?).*" "\$1")
+	set -l gstatus (git status --porcelain -- "$filename" | head -n1 | string replace --regex -- "^(.?.?).*" "\$1")
 	set -l index_status (echo "$gstatus" | string sub --start 1 --length 1)
 	set -l wtree_status (echo "$gstatus" | string sub --start 2 --length 1)
 	
@@ -222,18 +222,18 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	# directory: list content instead of diff
 	if [ -d "$filename" ]
 		echo "directory $filename"
-		ls -A -1 --color=always "$filename"
+		ls -A -1 --color=always -- "$filename"
 		return
 	end
 	# file: does still exist?
 	if [ -e "$filename" ]
-		git diff --color=always "$filename"
+		git diff --color=always -- "$filename"
 	end
 end
 
 function __ggit_diff_full
 	__ggit_set_filename "$argv[1]" || return
-	git diff --color=always "$filename" | less
+	git diff --color=always -- "$filename" | less
 end
 
 function __ggit_file_from_status -d "Strip git status from beginning of line"

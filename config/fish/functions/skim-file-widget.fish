@@ -92,9 +92,9 @@ function skim-file-widget -d "List files and folders"
 	
 	for i in $result
 		if [ "$paste_absolute_path" = "yes" ]
-			commandline -it -- (string escape (realpath "$i"))
+			commandline -it -- (string escape -- (realpath "$i"))
 		else
-			commandline -it -- (string escape $i)
+			commandline -it -- (string escape -- $i)
 		end
 		commandline -it -- ' '
 	end

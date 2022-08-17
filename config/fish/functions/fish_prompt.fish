@@ -127,22 +127,22 @@ function fish_prompt -d \
 		for tagged_dir in $__tagged_dirs
 			set tagged_dir_path "$__tagged_dirs_path_list[$tagged_dir]"
 			set tagged_dir_name "$__tagged_dirs_name_list[$tagged_dir]"
-			set len_tagged_dir_path (string length "$tagged_dir_path")
-			if [ $len_tagged_dir_path -gt $matched_len_tagged_dir_path -a (string sub --start 1 --length (math $len_tagged_dir_path + 1) "$PWD/") = "$tagged_dir_path/" ]
+			set len_tagged_dir_path (string length -- "$tagged_dir_path")
+			if [ $len_tagged_dir_path -gt $matched_len_tagged_dir_path -a (string sub --start 1 --length (math $len_tagged_dir_path + 1) -- "$PWD/") = "$tagged_dir_path/" ]
 				set matched_len_tagged_dir_path $len_tagged_dir_path
 				set matched_tagged_dir_path "$tagged_dir_path"
 				set -g matched_tagged_dir_name "$tagged_dir_name"
 			end
 		end
 		
-		set len_home (string length "$HOME")
+		set len_home (string length -- "$HOME")
 		if [ "$matched_tagged_dir_path" != "" ]
-			set visual_pwd (string sub --start (math $matched_len_tagged_dir_path + 1) "$PWD")
+			set visual_pwd (string sub --start (math $matched_len_tagged_dir_path + 1) -- "$PWD")
 			fish_prompt_segment "0087af" "fff" "$bookmark_glyph""$matched_tagged_dir_name"
-		else if [ $len_home -gt 0 -a (string sub --start 1 --length $len_home "$PWD") = "$HOME" ]
+		else if [ $len_home -gt 0 -a (string sub --start 1 --length $len_home -- "$PWD") = "$HOME" ]
 			# home indicator
 			# prefix replace ~
-			set visual_pwd (string sub --start (math $len_home + 1) "$PWD")
+			set visual_pwd (string sub --start (math $len_home + 1) -- "$PWD")
 			fish_prompt_segment "0087af" "fff" "$home_glyph"
 		else
 			set visual_pwd "$PWD"
@@ -155,8 +155,8 @@ function fish_prompt -d \
 				fish_prompt_segment "3a3a3a" "fff" "$visual_pwd"
 			else
 				# split into segments
-				set visual_pwd (string trim --left --chars '/' "$visual_pwd")
-				set path_segments (string split '/' $visual_pwd)
+				set visual_pwd (string trim --left --chars '/' -- "$visual_pwd")
+				set path_segments (string split '/' -- $visual_pwd)
 				set cnt_path_segments (count $path_segments)
 				set idx_path_segments 0
 				for path_segment in $path_segments
@@ -202,7 +202,7 @@ function fish_prompt_shorten_path --no-scope-shadowing -d "Shorten path to perce
 end
 
 function __fish_prompt_reduce_pwd_budget --no-scope-shadowing -d "Reduce the percentual pwd_budget by an absolute string length"
-	set pwd_budget (math $pwd_budget - (math 100 / $COLUMNS x (string length "$$argv[1]")))
+	set pwd_budget (math $pwd_budget - (math 100 / $COLUMNS x (string length -- "$$argv[1]")))
 end
 
 function fish_prompt_reset_segments --no-scope-shadowing -d "Reset segments to null"
@@ -271,7 +271,7 @@ function __shellpack_get_string_term_lines -d "Return count of terminal lines a 
 	
 	# walk all actual lines in input
 	while read -l line
-		set -l this_line_length (string length "$line")
+		set -l this_line_length (string length -- "$line")
 		set linesburned (math "$linesburned + ceil(($this_line_length + $promptlength - 1) / $COLUMNS)")
 	end
 	
@@ -296,7 +296,7 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 	end
 	
 	set -l __new_cmdline (echo "$argv[1]")
-	if [ (string length "$__new_cmdline") -gt 1 -a (string sub -s 1 -l 1 "$__new_cmdline") = " " -a (string sub -s 1 -l 2 "$__new_cmdline") != "  " ]
+	if [ (string length -- "$__new_cmdline") -gt 1 ] && string match -- " " (string sub -s 1 -l 1 -- "$__new_cmdline") ]
 		echo "$argv[1]" | __shellpack_erase_command_lines
 		# reminder to clear history
 		__update_glyphs
@@ -316,7 +316,7 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 end
 
 function enhanced_prompt -e fish_postexec -d "Foreground and background job execution tracking and status code clearance"
-	set -g __saved_pipestatus (string split ' ' "$pipestatus")
+	set -g __saved_pipestatus (string split ' ' -- "$pipestatus")
 	# NOTE: $status is gone at this point
 	set -g __saved_status $__saved_pipestatus[(count $__saved_pipestatus)]
 	set -g __saved_duration "$CMD_DURATION"
@@ -352,8 +352,8 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 					echo
 					set_color -b bryellow
 					set_color black
-					if [ (string length "$__saved_cmdline") -gt 20 ]
-						echo -n ' '(string sub -l 9 "$__saved_cmdline")'…'(string sub -s -9 "$__saved_cmdline")' '
+					if [ (string length -- "$__saved_cmdline") -gt 20 ]
+						echo -n ' '(string sub -l 9 -- "$__saved_cmdline")'…'(string sub -s -9 -- "$__saved_cmdline")' '
 					else
 						echo -n " "$__saved_cmdline" "
 					end
@@ -404,7 +404,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		else
 			set -g __sp_last_status_generation $status_generation
 		end
-	else if [ "$__saved_cmdline" = "" ] || [ (string trim (string sub -s -1 -l 1 "$__saved_cmdline")) = "&" ]
+	else if [ "$__saved_cmdline" = "" ] || [ (string trim -- (string sub -s -1 -l 1 -- "$__saved_cmdline")) = "&" ]
 		# empty line submitted or ends in "&"
 		set do_show_exit_status "no"
 	end
@@ -431,8 +431,8 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				echo -n ' ! '
 			end
 		else
-			if [ (string length "$__saved_cmdline") -gt 40 ]
-				echo -n ' '(string sub -l 19 "$__saved_cmdline")'…'(string sub -s -19 "$__saved_cmdline")' '
+			if [ (string length -- "$__saved_cmdline") -gt 40 ]
+				echo -n ' '(string sub -l 19 -- "$__saved_cmdline")'…'(string sub -s -19 -- "$__saved_cmdline")' '
 			else
 				echo -n " "$__saved_cmdline" "
 			end

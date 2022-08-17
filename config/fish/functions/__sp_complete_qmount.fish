@@ -1,40 +1,16 @@
 function __sp_complete_qmount -d \
 	"Autocomplete for qmount, listing all currently unmounted blockdevices"
 	
-	# NOTE: jq would be a better option here, but I don't feel like introducing this dependency now
+	# NOTE: --json is nice, but unreliably parsed until jq is included in deps
 
 	set -l lsblk_out
 
-	# while debian jessie is still around, use the --pairs edition
-	# detect --json edition
 
-	if lsblk --help | grep -q "\--json"
-		set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --json) || return 1
+	# using lsblk --json and parsing it with regex
+	set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
 
-		# sanity checks for --json
-		if test "$lsblk_out[1]" != "{"; return 2; end
-		if test "$lsblk_out[2]" != '   "blockdevices": ['; return 3; end
-
-		# WARNING: regular expression not for the faint hearted
-
-		function __sp_complete_qmount_lineparser -S
-			string match --regex -q '^      \{'\
-'"name": ?"(?<name>.*)"'\
-', "size": ?"(?<size>.*)"'\
-', "type": ?"(?<type>.*)"'\
-', "mountpoint": ?("(?<mountpoint>.*)"|null)'\
-', "label": ?("(?<label>.*)"|null)'\
-', "partlabel": ?("(?<partlabel>.*)"|null)'\
-', "fstype": ?("(?<fstype>.*)"|null)'\
-'\}?,?' -- "$line"
-		end
-
-	else
-		# using lsblk --json and parsing it with regex
-		set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
-
-		function __sp_complete_qmount_lineparser -S
-			string match --regex -q '^'\
+	function __sp_complete_qmount_lineparser -S
+		string match --regex -q '^'\
 'NAME="(?<name>.*)"'\
 ' SIZE="(?<size>.*)"'\
 ' TYPE="(?<type>.*)"'\
@@ -43,8 +19,6 @@ function __sp_complete_qmount -d \
 ' PARTLABEL="(?<partlabel>.*)"'\
 ' FSTYPE="(?<fstype>.*)"'\
 '' -- "$line"
-		end
-
 	end
 
 	
@@ -75,7 +49,7 @@ function __sp_complete_qmount -d \
 			
 			set identifiers "$identifiers""$size"
 			
-			set identifiers (string trim $identifiers)
+			set identifiers (string trim -- $identifiers)
 			if test "$mountpoint" = ""
 				# only suggest unmounted options
 				echo "$name"\t"$identifiers"
