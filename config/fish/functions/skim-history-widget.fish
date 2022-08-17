@@ -11,10 +11,10 @@ function skim-history-widget -d "Show command history"
 		| while read -zl result; set -a results (string escape -- $result); end
 		
 		# magic prefix: an empty line (should be impossible in history), followed by delete
-		if test "$results[1]" = "''" -a "$results[2]" = "delete"
+		if test "$results[1]" = "''" && test "$results[2]" = "delete"
 			for result in $results[3..]
 				#echo "$result"
-				eval "history delete --exact --case-sensitive $result"
+				eval "history delete --exact --case-sensitive -- $result"
 			end
 			history save
 			echo (set_color red)"$deleted_glyph"(set_color normal)" Deleted "(math (count $results) - 2)" history item(s)"
@@ -24,7 +24,7 @@ function skim-history-widget -d "Show command history"
 				# submit combined content to history
 				commandline --replace (echo -e "   \n")
 				for result in $results
-					if test (string length -- $result) -gt 1 -a (string sub --start -2 --length 2 -- $result) = '\n'
+					if test (string length -- $result) -gt 1 && test (string sub --start -2 --length 2 -- $result) = '\n'
 						# trailing newline detected, has to be removed here
 						set result (string sub --end -2 -- $result)
 					end
