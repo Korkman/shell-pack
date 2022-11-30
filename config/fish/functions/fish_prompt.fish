@@ -622,6 +622,16 @@ function __shellpack_timestamp -S -d 'Show the current timestamp'
 	date $theme_time_format
 end
 
+function __sp_reset_exit_status -e fish_preexec -d \
+	"Reset exit status variables"
+	set -e -g __saved_pipestatus
+	set -e -g __saved_status
+end
+
+function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
+	"Reset exit status variables on enter"
+	__sp_reset_exit_status
+end
 
 # begin silent updates (avoid reload)
 
