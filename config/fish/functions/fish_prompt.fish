@@ -658,4 +658,14 @@ bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandli
 bind -k f4 '__sp_history_delete_and_edit_prev'
 bind \e4 '__sp_history_delete_and_edit_prev'
 
+# bright yellow background in less highlights (improving manpage readability)
+if ! set -x -q LESS_TERMCAP_so
+	set -x -g LESS_TERMCAP_so (set_color -b "ff0" && set_color "black")
+	#set -x -g LESS_TERMCAP_so (echo -e "\e[48;5;226m\e[38;5;0m")
+end
+if ! set -x -q LESS_TERMCAP_se
+	set -x -g LESS_TERMCAP_se (set_color normal)
+	#set -x -g LESS_TERMCAP_se (echo -e "\e[0m")
+end
+
 # end silent updates
