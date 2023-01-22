@@ -22,6 +22,7 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`), an easy to use ripgrep file content search with preview
  * `ggit`, quickly review changes, add files to the commit
+ * `venv`, activate / deactivate Python virtual env corresponding to current directory
  * Linux only
    * ```lsports```: list open ports in compact manner
    * ```lsnet```: list active network connections in compact manner
