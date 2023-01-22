@@ -99,6 +99,25 @@ function fish_prompt -d \
 		fish_prompt_segment "000" "fff" "$chroot_tag"
 	end
 
+	# python virtual_env support
+	if set -q VIRTUAL_ENV
+		# shorten VIRTUAL_ENV once
+		# strip hidden directory name (typically .venv) at end of path
+		# basename of remaining path = tag name
+		if ! set -q _SP_VENV_TAG
+			set -gx _SP_VENV_TAG (basename (string replace --regex -- "/\.[^/]+\$" "" "$VIRTUAL_ENV"))
+		end
+		fish_prompt_shorten_string _SP_VENV_TAG 20
+		set -l venv_prefix "venv:"
+		__fish_prompt_reduce_pwd_budget _SP_VENV_TAG
+		__fish_prompt_reduce_pwd_budget venv_prefix
+		fish_prompt_segment "3a3a3a" "ff0" "$venv_prefix""$_SP_VENV_TAG"
+	else
+		if set -q _SP_VENV_TAG
+			set -g -e _SP_VENV_TAG
+		end
+	end
+	
 	if [ "$__session_tag" != "" ]
 		set -l visual_session_tag "$__session_tag"
 		fish_prompt_shorten_string visual_session_tag 20
@@ -138,7 +157,11 @@ function fish_prompt -d \
 		set len_home (string length -- "$HOME")
 		if [ "$matched_tagged_dir_path" != "" ]
 			set visual_pwd (string sub --start (math $matched_len_tagged_dir_path + 1) -- "$PWD")
-			fish_prompt_segment "0087af" "fff" "$bookmark_glyph""$matched_tagged_dir_name"
+			if [ "$_SP_VENV_TAG" = "$matched_tagged_dir_name" ]
+				# shortcut: if virtual environment matches directory tag, skip the directory tag
+			else
+				fish_prompt_segment "0087af" "fff" "$bookmark_glyph""$matched_tagged_dir_name"
+			end
 		else if [ $len_home -gt 0 -a (string sub --start 1 --length $len_home -- "$PWD") = "$HOME" ]
 			# home indicator
 			# prefix replace ~
@@ -220,7 +243,7 @@ function fish_prompt_segment --no-scope-shadowing -d "Add a segment to be printe
 	set __fish_prompt_segments_bgcolor_list $__fish_prompt_segments_bgcolor_list $argv[1]
 	set __fish_prompt_segments_fgcolor_list $__fish_prompt_segments_fgcolor_list $argv[2]
 	set __fish_prompt_segments_content_list $__fish_prompt_segments_content_list $argv[3]
-	set --local dim_fgcolor "$fgcolor"
+	set --local dim_fgcolor "$argv[2]"
 	if [ "$argv[4]" != "" ]
 		set dim_fgcolor "$argv[4]"
 	end
@@ -650,8 +673,8 @@ if ! set -q OLDSHELL
 	end
 end
 
-# bind f10 to exit
-bind -k f10 "if test (commandline | string collect) = ''; exit; else; commandline ''; end;"
+# bind f10 to empty commandline, deactivate virtual env or exit - in this order of precedence
+bind -k f10 "if ! test (commandline | string collect) = ''; commandline ''; else if set -q VIRTUAL_ENV; commandline 'venv'; commandline --function execute; else; exit; end;"
 # bind Alt-Home to cd ~ | cd /
 bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
 # bind f4 to history edit
@@ -666,6 +689,11 @@ end
 if ! set -x -q LESS_TERMCAP_se
 	set -x -g LESS_TERMCAP_se (set_color normal)
 	#set -x -g LESS_TERMCAP_se (echo -e "\e[0m")
+end
+
+# prompt already sports VIRTUAL_ENV support, disable activate.fish version
+if ! set -q VIRTUAL_ENV_DISABLE_PROMPT
+	set -g VIRTUAL_ENV_DISABLE_PROMPT yes
 end
 
 # end silent updates
