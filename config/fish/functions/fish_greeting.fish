@@ -1,4 +1,11 @@
 function fish_greeting -d "shell-pack says hello"
+	# infinite loop protection: a 'read' issued within fish_greeting triggers fish_greeting in 3.6.0
+	# see https://github.com/fish-shell/fish-shell/issues/9564
+	if set -q __sp_greeting_infinite_loop
+		return
+	end
+	set -x __sp_greeting_infinite_loop "yes"
+	
 	set theme_greeting_add ""
 	if [ "$theme_powerline_fonts" = "yes" ]
 		set theme_greeting_add $theme_greeting_add " + "(set_color -b 070; set_color fff)" powerline "(set_color normal; set_color 070)""(set_color normal)
@@ -20,4 +27,6 @@ function fish_greeting -d "shell-pack says hello"
 			set --universal __sp_last_date_check_deps "$thisdate"
 		end
 	end
+	
+	set -e __sp_greeting_infinite_loop "yes"
 end
