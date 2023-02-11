@@ -2,7 +2,10 @@
 Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
- * [fish shell](https://fishshell.com/) version 3.1 or higher (currently no auto-installer included)
+ * [fish shell](https://fishshell.com/) version 3.1 or higher. Automated installer for several distros, YMMV:
+    ```bash
+    curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/main/devel/docker/added/fish-installer.sh | sh
+    ```
 
 These optional dependencies are highly recommended
  * **do not** set fish as your default shell - a POSIX compliant shell is recommended (bash, zsh, …)
@@ -108,14 +111,14 @@ export TAG="v2.6"; curl -sL "https://raw.githubusercontent.com/Korkman/shell-pac
 
 ### Installing shell-pack manually
  * Download [latest tar.gz](https://github.com/Korkman/shell-pack/archive/refs/tags/latest.tar.gz)
- * Extract to $HOME/.local/share/shell-pack/src
- * Verify README.md ended up in the correct place: $HOME/.local/share/shell-pack/src/README.md
- * Follow the steps in $HOME/.local/share/shell-pack/src/get.sh
+ * Extract to `$HOME/.local/share/shell-pack/src`
+ * Verify README.md ended up in the correct place: `$HOME/.local/share/shell-pack/src/README.md`
+ * Follow the steps in `$HOME/.local/share/shell-pack/src/get.sh`
 
 ### Installing for development
 
 Install as usual. Clone git repo into a dedicated directory. Symlink the following locations to destinations in your development directory:
- * ~/.local/share/shell-pack/bin
- * ~/.local/share/shell-pack/config
+ * `~/.local/share/shell-pack/bin`
+ * `~/.local/share/shell-pack/config`
 
 This will have your changes take immediate effect on the local installation and you will be able to create commits. Be aware that upgrade-shell-pack will overwrite your git directory - it should not be run on developer installations. Also, do not accidentially add the binaries rg, fzf or sk to the repo.
