@@ -19,12 +19,13 @@ function fish_greeting -d "shell-pack says hello"
 	echo -ne " + shell-pack "(shell-pack-version) $theme_greeting_add "\n"
 	
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
-		# check dependencies once a day
+		# check once a day for new version and dependendies
 		set -l thisdate (date +%Y%m%d)
-		if test "$__sp_last_date_check_deps" != "$thisdate"
+		if test "$__sp_last_date_check_deps" != "$thisdate""."(shell-pack-version)
 			shell-pack-check-upgrade
 			shell-pack-check-deps
-			set --universal __sp_last_date_check_deps "$thisdate"
+			# save version in trigger variable so if version is upgraded, dependencies are checked again
+			set --universal __sp_last_date_check_deps "$thisdate""."(shell-pack-version)
 		end
 	end
 	
