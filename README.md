@@ -3,6 +3,8 @@ A fish shell environment with many quality of life improvements for sysadmins an
 
 ![nerdlevel 3](docs/images/nerdlevel-3.png)
 
+tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installation.md).
+
 ## Features
  * vibrant colors, nice icons
  * execution time, exit status and pipe status visibility
@@ -18,7 +20,7 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * tab / window title control with ```tag```, ```untag```, informative generated titles
  * tmux shortcuts, including exclusive session ```one``` for shared access
 
-## Tools
+## Custom tools
  * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`), an easy to use ripgrep file content search with preview
  * `ggit`, quickly review changes, add files to the commit
@@ -26,10 +28,16 @@ A fish shell environment with many quality of life improvements for sysadmins an
  * Linux only
    * ```lsports```: list open ports in compact manner
    * ```lsnet```: list active network connections in compact manner
-   * ```ddstat```: a dstat wrapper with "sticky" arguments (requires dstat)
+   * ```ddool```: a dool wrapper with "sticky" arguments
    * ```qmount```: mount a partition to /run/q/name (blockdevice autocomplete)
    * ```ssmart```: shortcut to smartctl -x (skip /dev/)
    * ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
    * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
 
-Hyped? See [the docs](docs/index.md) on [how to install shell-pack](docs/installation.md).
+## Bundled tools
+On first startup, these tools will be downloaded and installed into a dedicated directory if not readily available
+on the system. Each tool will be presented and permission
+for download will be asked for:
+*  rg (ripgrep)
+*  fzf (fuzzy finder)
+*  dool (dstat replacement)

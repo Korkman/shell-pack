@@ -117,7 +117,8 @@ Toggle full private mode      private
 List ssh fingerprints              ffingerprints
 List open network ports            lsports
 List established connections       lsnet
-dstat with saved preset            ddstat [ ... ]
+dool with saved preset             ddool
+  (formerly: dstat, ddstat)
 SMART readout from /dev/NAME       ssmart NAME
 
 mount /dev/NAME /run/q/NAME        qmount NAME
