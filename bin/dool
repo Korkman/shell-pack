@@ -1,0 +1,40 @@
+#! /usr/bin/env fish
+
+# dool requires plugins in either global locations or a subdirectory "plugins"
+# adjacent to its binary. we aim for the latter, but don't want bin/plugins,
+# so we created bin/dool.d/plugins, which places bin/dool.d/dool outside of PATH.
+# since we don't want to inflate PATH anymore, and a symlink doesn't work,
+# we install this script as bin/dool to proxy around.
+
+# loading shell-pack as a library
+# this does not load keybinds for non-interactive cases
+load_shell_pack
+
+if [ -x "$__sp_dir/bin/dool.d/dool" ]
+	exec "$__sp_dir/bin/dool.d/dool" $argv
+else
+	# to find a globally installed binary, walk $PATH and skip those which point to ourselves
+	set found ""
+	for search in $PATH
+		if [ -x "$search/dool" ] && [ "$search/dool" != (status filename) ]
+			set found "$search/dool"
+			break
+		end
+	end
+	if [ "$found" = "" ]
+		# fallback to dstat if available (and again, not this script)
+		for search in $PATH
+			if [ -x "$search/dstat" ] && [ "$search/dstat" != (status filename) ]
+				set found "$search/dstat"
+				break
+			end
+		end
+	end
+	
+	if [ "$found" = "" ]
+		echo "No dool (or dstat) executable found in PATH or \"$__sp_dir/bin/dool.d\""
+		exit 1
+	else
+		exec "$found" $argv
+	end
+end

@@ -9,6 +9,8 @@ function shell-pack-deps -d \
 			shell-pack-deps-install-fzf $argv[3]
 		else if test "$argv[2]" = "ripgrep"
 			shell-pack-deps-install-ripgrep $argv[3]
+		else if test "$argv[2]" = "dool"
+			shell-pack-deps-install-dool $argv[3]
 		else
 			echo "Invalid argument"
 			return 2
@@ -211,6 +213,57 @@ function shell-pack-deps-install-ripgrep
 	cd "$initial_dir"
 	rm -f "$dldir/ripgrep.tar.gz" || return 8
 	rm -rf "$dldir/ripgrep-""$pversion""-"* || return 9
+	
+	echo "Complete"
+end
+
+function shell-pack-deps-install-dool
+	echo "Project website: https://github.com/scottchiefbaker/dool"
+	set pversion "$argv[1]"
+	if test "$pversion" = ""
+		set pversion "1.1.0"
+	end
+	set url "https://github.com/scottchiefbaker/dool/archive/refs/tags/vVERSION.tar.gz"
+	
+	set initial_dir "$PWD"
+	
+	read -P "OK to download and execute release file? (Y/n)" answer
+	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
+		return 1
+	end
+	
+	set dldir ~/.cache/shell-pack-downloads
+	mkdir -p "$dldir" || return 2
+	cd "$dldir" || return 2
+	set url (string replace --all 'VERSION' "$pversion" -- "$url")
+	
+	rm -f dool.tar.gz
+	
+	echo "Downloading $url ..."
+	curl --silent --location "$url" > dool.tar.gz || return 3
+	
+	tar -xzf dool.tar.gz || return 4
+	
+	echo "Installing to ""$__sp_dir""/bin/dool ..."
+	cd "dool-""$pversion" || return 5
+	rm -rf "$__sp_dir/bin/dool.d"
+	mkdir -p "$__sp_dir/bin/dool.d"
+	cp "dool" "$__sp_dir/bin/dool.d/dool" || return 51
+	cp -a "plugins" "$__sp_dir/bin/dool.d/plugins" || return 52
+	
+	set new_pversion (dool --version) || return 6
+	
+	echo "Installed version: $new_version"
+	
+	if ! string match "*$pversion*" -- "$new_pversion"
+		echo "Unexpected result, please investigate"
+		return 7
+	end
+	
+	echo "Cleaning up ..."
+	cd "$initial_dir"
+	rm -f "$dldir/dool.tar.gz" || return 8
+	rm -rf "$dldir/dool-""$pversion" || return 9
 	
 	echo "Complete"
 end

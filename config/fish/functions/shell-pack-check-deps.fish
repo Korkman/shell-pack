@@ -18,6 +18,11 @@ function shell-pack-check-deps -d \
 		else
 			shell-pack-deps install ripgrep
 		end
+		if command -q dool
+			echo "Dool pre-installed, skipping ..."
+		else
+			shell-pack-deps install dool
+		end
 		#if command -q sk
 		#	echo "Skim pre-installed, skipping ..."
 		#else
@@ -73,6 +78,7 @@ function shell-pack-check-deps -d \
 	test_version_min "fzf"     "0.27.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
 	test_version_min "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
 	#test_version_min "skim"    "0.9.4"  "sk --version"       "Run: shell-pack-deps install skim \$minver"
+	test_version_min "dool"    "1.1.0"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	
 	functions -e test_version_min
 	functions -e get_hex_from_version
