@@ -10,13 +10,17 @@
 # this does not load keybinds for non-interactive cases
 load_shell_pack
 
+set realfilename (realpath (status filename))
+
 if [ -x "$__sp_dir/bin/dool.d/dool" ]
+	#echo "exec local dool"
 	exec "$__sp_dir/bin/dool.d/dool" $argv
 else
 	# to find a globally installed binary, walk $PATH and skip those which point to ourselves
 	set found ""
 	for search in $PATH
-		if [ -x "$search/dool" ] && [ "$search/dool" != (status filename) ]
+		if [ -x "$search/dool" ] && [ (realpath "$search/dool") != "$realfilename" ]
+			#echo "found global dool in $search/dool"
 			set found "$search/dool"
 			break
 		end
@@ -24,7 +28,8 @@ else
 	if [ "$found" = "" ]
 		# fallback to dstat if available (and again, not this script)
 		for search in $PATH
-			if [ -x "$search/dstat" ] && [ "$search/dstat" != (status filename) ]
+			if [ -x "$search/dstat" ] && [ (realpath "$search/dstat") != "$realfilename" ]
+				#echo "found global dstat in $search/dstat"
 				set found "$search/dstat"
 				break
 			end
@@ -35,6 +40,7 @@ else
 		echo "No dool (or dstat) executable found in PATH or \"$__sp_dir/bin/dool.d\""
 		exit 1
 	else
+		#echo "exec $found"
 		exec "$found" $argv
 	end
 end
