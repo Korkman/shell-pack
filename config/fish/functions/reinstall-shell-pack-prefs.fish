@@ -22,7 +22,7 @@ function reinstall-shell-pack-prefs \
 		set answer y
 		set -ge FORCE_INSTALL_SP_PREFS
 	else
-		read -n1 -P '? (Y/n) ' answer
+		read -n1 -P '? (Y/n) ' answer || set answer n
 	end
 	if [ "$answer" != "" ] && [ "$answer" != "y" ] && [ "$answer" != 'Y' ]
 		echo "Skipping preferences."

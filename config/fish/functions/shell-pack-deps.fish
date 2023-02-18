@@ -49,7 +49,7 @@ function shell-pack-deps-install-fzf
 		return 1
 	end
 	
-	read -P "OK to download and execute release file? (Y/n)" answer
+	read -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -113,7 +113,7 @@ function shell-pack-deps-install-skim
 		return 1
 	end
 	
-	read -P "OK to download and execute release file? (Y/n)" answer
+	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -178,7 +178,7 @@ function shell-pack-deps-install-ripgrep
 		return 1
 	end
 	
-	read -P "OK to download and execute release file? (Y/n)" answer
+	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -227,7 +227,7 @@ function shell-pack-deps-install-dool
 	
 	set initial_dir "$PWD"
 	
-	read -P "OK to download and execute release file? (Y/n)" answer
+	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -251,7 +251,8 @@ function shell-pack-deps-install-dool
 	cp "dool" "$__sp_dir/bin/dool.d/dool" || return 51
 	cp -a "plugins" "$__sp_dir/bin/dool.d/plugins" || return 52
 	
-	set new_pversion (dool --version) || return 6
+	# NOTE: --groups-only not available in fish 3.3.1, which is the most up-to-date available in rockylinux 9.1
+	set new_pversion (dool --version | string match --regex 'Dool ([0-9]\.[0-9]\.[0-9])') | tail -n1 || return 6
 	
 	echo "Installed version: $new_version"
 	
