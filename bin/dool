@@ -13,6 +13,13 @@ load_shell_pack
 set realfilename (realpath (status filename))
 set scriptname (status basename)
 
+# despite all caution, infinite loops can still happen for weird setups (like my dev station)
+if set -q __shp_dool_infinite_loop_breaker
+	echo "Breaking infinite loop (sorry, please check your dool installation, see also 'command -a dool') ..."
+	exit 20
+end
+set -x __shp_dool_infinite_loop_breaker 1
+
 # if dstat is available, run it - it might be a different tool (the Red Hat desaster)
 if [ "$scriptname" = "dstat" ]
 	for search in (command -a dstat)
