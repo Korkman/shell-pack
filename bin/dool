@@ -36,7 +36,13 @@ else
 			exit 10 # this should never execute
 		end
 	end
-	
+	# if not available, fall back to any installed dstat
+	for search in (command -a dstat)
+		if [ (realpath "$search") != "$realfilename" ]
+			exec "$search" $argv
+			exit 10 # this should never execute
+		end
+	end
 	echo "No dool (or dstat) executable found in PATH or \"$__sp_dir/bin/dool.d\""
 	exit 1
 end
