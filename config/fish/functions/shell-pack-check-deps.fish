@@ -18,7 +18,9 @@ function shell-pack-check-deps -d \
 		else
 			shell-pack-deps install ripgrep
 		end
-		if command -q dool
+		if command -a dool | string match -v --regex "^"(string escape --style regex -- $__sp_dir)"/bin/dool" &> /dev/null
+		   or [ -e "$__sp_dir/bin/dool.d/dool" ]
+		   	# a dool which is not shell-pack's wrapper exists or the dool.d directory already exists
 			echo "Dool pre-installed, skipping ..."
 		else
 			shell-pack-deps install dool
