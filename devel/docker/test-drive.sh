@@ -3,14 +3,16 @@
 
 # this script
 # - packages the source dir as a tar.gz
-# - builds a docker container
-# - runs docker, with tar.gz and get.sh inside
+# - builds a docker / podman container
+# - runs docker / podman, with tar.gz and get.sh inside
 # - runs get.sh, unless started with env AUTOSTART=no
 
 # be more strict about errors
 set -eu
 # initialize defaults
-AUTOSTART=${AUTOSTART:-yes}
+AUTOSTART=${AUTOSTART:-yes} # run installer in guest-startup.sh
+FORCE_DOCKER=${FORCE_DOCKER:-no} # force use of docker although podman is available
+USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
 do_build="no"
 build_uncached="no"
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
@@ -31,9 +33,9 @@ then
 fi
 
 export DOCKER_BUILDKIT=1
-if command -v "podman" > /dev/null
+if command -v "podman" > /dev/null && [ "$FORCE_DOCKER" != "yes" ]
 then
-	echo "Using podman to run test-drive"
+	echo "Using podman to run test-drive (if you prefer docker, run with env FORCE_DOCKER=yes)"
 	docker="podman"
 else
 	if [ "$(whoami)" = "root" ]
@@ -47,21 +49,15 @@ else
 fi
 
 BUILD_FROM="${1:-debian:bullseye}"
-tagname=$(echo "$BUILD_FROM" | sed 's/:/-/')
+tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
 case "$BUILD_FROM" in
-	'debian:jessie')
-		dockerfile="Dockerfile-Debian"
-		;;
 	'debian:'*)
 		dockerfile="Dockerfile-Debian"
 		;;
 	ubuntu:*)
 		dockerfile="Dockerfile-Debian"
 		;;
-	fedora:*)
-		dockerfile="Dockerfile-Redhat"
-		;;
-	centos:*)
+	fedora:* | centos:* | redhat/*:* | rockylinux:* )
 		dockerfile="Dockerfile-Redhat"
 		;;
 	archlinux:*)
@@ -69,7 +65,9 @@ case "$BUILD_FROM" in
 		;;
 	*)
 		echo "Please provide distro name"
+		echo " - debian:bookworm"
 		echo " - debian:buster"
+		echo " - debian:stretch"
 		echo " - ubuntu:xenial"
 		echo " - centos:8"
 		echo " - fedora:34"
@@ -108,8 +106,17 @@ then
 fi
 
 # package src
+# exclude unnecessary .git and binaries potentially unsuitable for platform
+# also exclude dool.d to simulate first use experience (clear download cache for this)
 echo "Packaging ${srcdir}"
-(cd "${srcdir}" && tar '--exclude=.git' '--exclude=rg' '--exclude=fzf' '--exclude=sk' -czf "${tmpdir}/${download_file}" ".")
+(cd "${srcdir}" && tar \
+	'--exclude=.git' \
+	'--exclude=rg' \
+	'--exclude=fzf' \
+	'--exclude=sk' \
+	'--exclude=dool.d' \
+	-czf "${tmpdir}/${download_file}" \
+".")
 
 cp -f "$srcdir/get.sh" "$tmpdir/get.sh"
 
@@ -118,17 +125,24 @@ cachedir="$HOME/.cache/shell-pack-devel/docker/$tagname"
 mkdir -p "$cachedir"
 
 # copy over cached rg, sk, if present
-if [ -e "$cachedir/rg" ]
+if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
 then
-	cp "$cachedir/rg" "$tmpdir/rg"
-fi
-if [ -e "$cachedir/fzf" ]
-then
-	cp "$cachedir/fzf" "$tmpdir/fzf"
-fi
-if [ -e "$cachedir/sk" ]
-then
-	cp "$cachedir/sk" "$tmpdir/sk"
+	if [ -e "$cachedir/rg" ]
+	then
+		cp "$cachedir/rg" "$tmpdir/rg"
+	fi
+	if [ -e "$cachedir/fzf" ]
+	then
+		cp "$cachedir/fzf" "$tmpdir/fzf"
+	fi
+	if [ -e "$cachedir/sk" ]
+	then
+		cp "$cachedir/sk" "$tmpdir/sk"
+	fi
+	if [ -e "$cachedir/dool.d" ]
+	then
+		cp -a "$cachedir/dool.d" "$tmpdir/"
+	fi
 fi
 
 # run
@@ -155,6 +169,11 @@ if [ -e "$tmpdir/sk" ] && [ ! -e "$cachedir/sk" ]
 then
 	echo "Caching downloaded sk ..."
 	cp "$tmpdir/sk" "$cachedir/sk"
+fi
+if [ -e "$tmpdir/dool.d" ] && [ ! -e "$cachedir/dool.d" ]
+then
+	echo "Caching downloaded dool.d ..."
+	cp -a "$tmpdir/dool.d" "$cachedir/"
 fi
 
 # clean-up

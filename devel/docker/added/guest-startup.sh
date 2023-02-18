@@ -16,22 +16,22 @@ then
 fi
 
 onexit_copy_downloads() {
-	#echo "Checking if rg, sk were installed ..."
 	# copy back downloaded files for later use
 	if [ -e ~/.local/share/shell-pack/bin/rg ]
 	then
-		#echo "Caching rg ..."
 		cp ~/.local/share/shell-pack/bin/rg ~/Downloads/rg
 	fi
 	if [ -e ~/.local/share/shell-pack/bin/fzf ]
 	then
-		#echo "Caching fzf .."
 		cp ~/.local/share/shell-pack/bin/fzf ~/Downloads/fzf
 	fi
 	if [ -e ~/.local/share/shell-pack/bin/sk ]
 	then
-		#echo "Caching sk .."
 		cp ~/.local/share/shell-pack/bin/sk ~/Downloads/sk
+	fi
+	if [ -e ~/.local/share/shell-pack/bin/dool.d ] && [ ! -e ~/Downloads/dool.d ]
+	then
+		cp -a ~/.local/share/shell-pack/bin/dool.d ~/Downloads/
 	fi
 }
 
@@ -47,17 +47,37 @@ cp -aT /etc/skel /home/shpuser
 cp -a /root/Downloads /home/shpuser/
 chown -R shpuser:shpuser /home/shpuser
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
-chsh shpuser -s $(command -v fish)
+chsh shpuser -s $(command -v fish) &> /dev/null || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
 # autorun installer on first startup
 if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
+	echo "-------------------------------------------------"
+	echo "         Installer 'get.sh'             "
+	echo "-------------------------------------------------"
 	FORCE_PRE_DOWNLOADED=y ~/Downloads/get.sh
 	cd ~shpuser/Downloads
 	FORCE_PRE_DOWNLOADED=y su shpuser -c "./get.sh" > /dev/null
 	cd ~
-	FORCE_INSTALL_SP_PREFS=y bash -l
+	if [ -e ~/Downloads/dool.d ]
+	then
+		cp -a ~/Downloads/dool.d ~/.local/share/shell-pack/bin/
+		cp -a ~/Downloads/dool.d ~shpuser/.local/share/shell-pack/bin/
+	fi
+	
+	echo "-------------------------------------------------"
+	echo " Startup experience:                             "
+	echo " - unprivileged user 'shpuser' created           "
+	echo " - executing bash for 'root' with LC_NERDLEVEL=3 "
+	echo "-------------------------------------------------"
+	bash -l
 else
 	cd ~
+	echo "-------------------------------------------------"
+	echo " Autostart skipped:                     "
+	echo " - unprivileged user 'shpuser' created  "
+	echo " - get.sh is available in ~/Downloads   "
+	echo " - executing bash with LC_NERDLEVEL=3   "
+	echo "-------------------------------------------------"
 	bash -l
 fi
 

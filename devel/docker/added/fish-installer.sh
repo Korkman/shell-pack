@@ -4,15 +4,16 @@
 set -eu
 
 installer_log="$HOME/fish_installer_case.log"
+touch "$installer_log"
+echo "args: $0" >> "$installer_log"
 
+# get data from release files
 if command -v lsb_release > /dev/null
 then
-	# get data from release files
 	distro=$(lsb_release -si)
 	version=$(lsb_release -sr | sed 's/\..*//')
 elif [ -e /etc/debian_version ]
 then
-	# get data from release files
 	distro=Debian
 	version=$(cat /etc/debian_version | sed 's/\..*//')
 elif [ -e /etc/ubuntu_release ]
@@ -23,15 +24,33 @@ elif [ -e /etc/fedora_release ]
 then
 	distro=Fedora
 	version=$(cat /etc/fedora_release | sed 's/\..*//')
-elif [ -e /etc/fedora-release ]
+elif [ -e /etc/rocky-release ]
 then
-	distro=Fedora
-	version=$(cat /etc/fedora-release | sed 's/\..*//')
+	distro=CentOS
+	version=$(cat /etc/rocky-release | sed 's/\..*//')
 elif [ -e "/etc/arch-release" ]
 then
 	distro=Arch
 	version=$(cat "/etc/arch-release" | sed 's/Arch Linux //')
+else
+	echo "Distro unsuported by fish-installer.sh - check list for release file" >> "$installer_log"
+	ls "/etc" >> "$installer_log"
+	exit
 fi
+
+if command -v sudo &> /dev/null
+then
+	sudo() {
+		command sudo $@
+	}
+else
+	echo "No sudo available - attempting to run package manager without"
+	echo "(this usually works if you are root or have similar superpowers)"
+	sudo() {
+		eval $@
+	}
+fi
+
 
 export DEBIAN_FRONTEND=noninteractive
 case "$distro-$version" in
@@ -89,7 +108,7 @@ case "$distro-$version" in
 		curl https://download.opensuse.org/repositories/shells:fish:release:3/CentOS_7/shells:fish:release:3.repo > sudo tee /etc/yum.repos.d/shells:fish:release:3.repo > /dev/null
 		sudo yum install -y fish
 	;;
-	'CentOS'*)
+	'CentOS'* | 'Rocky Linux'* )
 		installer_case='CentOS-any'
 		sudo dnf install -y fish
 	;;
@@ -103,8 +122,6 @@ case "$distro-$version" in
 	;;
 esac
 
-touch "$installer_log"
-echo "args: $0" >> "$installer_log"
 echo "detected os: $distro-$version" >> "$installer_log"
 echo "used method: $installer_case" >> "$installer_log"
 

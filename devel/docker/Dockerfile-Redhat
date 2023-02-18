@@ -13,10 +13,11 @@ RUN yum -y install epel-release || echo
 
 RUN yum install -y \
 	man-db \
-	htop tmux procps mc screen curl \
+	htop tmux procps mc screen \
 	less sudo
-RUN yum install -y \
-	redhat-lsb-core xz gettext
+RUN yum install -y xz gettext
+RUN yum install -y curl-minimal || yum install -y curl
+RUN yum install -y redhat-lsb-core --skip-broken
 
 # NOTE: use cache to run more apt-get lines during development, then
 #       move them to the combined line above.
