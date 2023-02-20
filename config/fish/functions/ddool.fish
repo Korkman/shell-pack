@@ -11,5 +11,5 @@ function ddool -w dool
 	if test "$ddstat_addon_params" != ""
 		echo "Starting ddool $ddstat_addon_params"
 	end
-	eval "dool -cdrn --tcp --time $ddstat_addon_params"
+	eval "dool -cdrn --tcp --time --bytes $ddstat_addon_params"
 end
