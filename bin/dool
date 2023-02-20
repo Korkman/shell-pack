@@ -20,33 +20,37 @@ if set -q __sp_dool_infinite_loop_breaker
 end
 set -x __sp_dool_infinite_loop_breaker 1
 
+set forced_bytes_arg ""
 # if dstat is available, run it - it might be a different tool (the Red Hat desaster)
 if [ "$scriptname" = "dstat" ]
 	for search in (command -a dstat)
 		if [ (realpath "$search") != "$realfilename" ]
-			exec "$search" $argv
+			eval exec "$search" $argv
 			exit 10 # this should never execute
 		end
 	end
+	# will be executing dool in place of dstat, bits/s is a new default, so we're reverting that to --bytes
+	# (makes much more sense for HDDs)
+	set forced_bytes_arg "--bytes"
 end
 
 # if downloaded dool is available, run it
 if [ -x "$__sp_dir/bin/dool.d/dool" ]
 	#echo "exec local dool"
-	exec "$__sp_dir/bin/dool.d/dool" $argv
+	eval exec "$__sp_dir/bin/dool.d/dool" $forced_bytes_arg $argv
 	exit 10 # this should never execute
 else
 	# try find globally installed dool, run that
 	for search in (command -a dool)
 		if [ (realpath "$search") != "$realfilename" ]
-			exec "$search" $argv
+			eval exec "$search" $forced_bytes_arg $argv
 			exit 10 # this should never execute
 		end
 	end
 	# if not available, fall back to any installed dstat
 	for search in (command -a dstat)
 		if [ (realpath "$search") != "$realfilename" ]
-			exec "$search" $argv
+			eval exec "$search" $argv
 			exit 10 # this should never execute
 		end
 	end
