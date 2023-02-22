@@ -25,6 +25,7 @@ if test "$new_ver" != "$cur_ver"
 	and mv "$tmp_path" "$func_path"
 	and git add "$func_path"
 	and git commit -m "version bump"
+	and git push
 	or exit 1
 end
 
