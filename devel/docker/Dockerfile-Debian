@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y \
 	lsb-release gettext-base man-db xz-utils \
 	htop tmux procps mc screen curl \
-	less sudo
+	less sudo vim
 
 RUN apt-get install -y gpg || echo
 RUN apt-get install -y libncurses6 || echo

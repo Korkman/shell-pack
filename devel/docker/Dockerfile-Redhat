@@ -14,7 +14,7 @@ RUN yum -y install epel-release || echo
 RUN yum install -y \
 	man-db \
 	htop tmux procps mc screen \
-	less sudo
+	less sudo vim
 RUN yum install -y xz gettext
 RUN yum install -y curl-minimal || yum install -y curl
 RUN yum install -y redhat-lsb-core --skip-broken
