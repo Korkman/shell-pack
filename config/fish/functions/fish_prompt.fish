@@ -12,6 +12,16 @@ function fish_prompt -d \
 		
 		# some hotfixing for the mc prompt
 		if ! set -q mc_prompt_fixed
+			# fish 3.3.0 started sending \r in capable terminals, which mc does not expect.
+			# setting TERM to "dumb" and reverting at tactical places is a wonky workaround I can apply here.
+			# fish 3.6.1 added a better workaround on their own, because mc devs haven't incorporated the bugfix yet
+			set -l play_dumb
+			if test (__sp_vercmp "$FISH_VERSION" '3.3.0') -ge 0 -a (__sp_vercmp "$FISH_VERSION" '3.6.1') -lt 0
+				set play_dumb yes
+			else
+				set play_dumb no
+			end
+			
 			set -g mc_prompt_fixed yes
 			set -g mc_true_term "$TERM"
 			
@@ -35,14 +45,13 @@ function fish_prompt -d \
 				# let's remove it
 				set mc_line (string replace --regex 'echo \(whoami\)[^;]+;' '' -- "$mc_line")
 				
-				# fish 3.3.0 started sending \r in capable terminals, which mc does not expect.
-				# setting TERM to "dumb" and reverting at tactical places
-				
-				# append 'set -g TERM dumb' after 'kill .*;'
-				set mc_line (string replace --regex 'kill .*;' '$0 set -g TERM dumb' -- "$mc_line")
-				
-				# prepend 'set -g TERM $mc_true_term' before 'echo $PWD'
-				set mc_line (string replace --regex 'echo "\$PWD' 'set -g TERM "$$mc_true_term"; $0' -- "$mc_line")
+				if [ "$play_dumb" = "yes" ]
+					# append 'set -g TERM dumb' after 'kill .*;'
+					set mc_line (string replace --regex 'kill .*;' '$0 set -g TERM dumb' -- "$mc_line")
+					
+					# prepend 'set -g TERM $mc_true_term' before 'echo $PWD'
+					set mc_line (string replace --regex 'echo "\$PWD' 'set -g TERM "$$mc_true_term"; $0' -- "$mc_line")
+				end
 				
 				# save to list of lines
 				set -a filtered_mc_prompt "$mc_line;"
@@ -51,14 +60,16 @@ function fish_prompt -d \
 			# redefine fish_prompt
 			eval "$filtered_mc_prompt"
 			
-			# also hook preexec to swap TERM for saved value
-			function term_not_dumb_on_exec --on-event fish_preexec -d \
-				"Revert to saved TERM value pre-exec"
-				set -g TERM "$mc_true_term"
-			end
+			if [ "$play_dumb" = "yes" ]
+				# also hook preexec to swap TERM for saved value
+				function term_not_dumb_on_exec --on-event fish_preexec -d \
+					"Revert to saved TERM value pre-exec"
+					set -g TERM "$mc_true_term"
+				end
 
-			# set TERM dumb NOW to have first prompt working on iTerm2
-			set -g TERM dumb
+				# set TERM dumb NOW to have first prompt working on iTerm2
+				set -g TERM dumb
+			end
 		end
 	end
 	
