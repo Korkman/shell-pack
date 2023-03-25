@@ -53,27 +53,16 @@ function shell-pack-check-deps -d \
 		
 		if set version_found (string match --regex -- '([0-9]+(\.[0-9]+){1,3})' "$version_in_there")
 			set version_found "$version_found[1]"
-			set dec_version_found (printf "%d" (get_hex_from_version "$version_found"))
 		else
-			set version_found "n/a"
-			set dec_version_found 0
+			set version_found "0.0.2"
 		end
-		set dec_version_required (printf "%d" (get_hex_from_version "$minver"))
 		
-		if test "$dec_version_found" -lt "$dec_version_required"
+		if test (__sp_vercmp "$version_found" "$minver") -lt 0
 			set __shp_outdated_deps "$__shp_outdated_deps $product"
 			set -l product_url (string replace '$minver' "$minver" -- "$product_url")
 			echo "NOTE: $product is outdated - $version_found < $minver"
 			echo "$product_url"
 		end
-	end
-	
-	function get_hex_from_version
-		set verparts (string split -- . $argv[1])
-		while test (count $verparts) -lt 4
-			set verparts $verparts 0
-		end
-		echo "0x"(printf "%02x" $verparts[1])(printf "%02x" $verparts[2])(printf "%02x" $verparts[3])(printf "%02x" $verparts[4])
 	end
 	
 	test_version_min "ripgrep" "12.1.1" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
@@ -83,7 +72,6 @@ function shell-pack-check-deps -d \
 	test_version_min "dool"    "1.1.0"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	
 	functions -e test_version_min
-	functions -e get_hex_from_version
 	
 	if test "$__shp_outdated_deps" != ""
 		echo "outdated: $__shp_outdated_deps"
