@@ -76,33 +76,43 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 				--one-file-system \
 				--line-buffered \
 				--color=always \
-				--max-columns 160 \
+				--max-columns 500 \
 				--with-filename \
 				--ignore-case \
 				--hidden \
 				--line-number \
+				# things get ugly. only NUL and / are disallowed in linux filenames.
+				# fzf cannot split fields on NUL. the only option left is to use two slashes
+				# because a single slash can occur in paths.
+				--field-match-separator '//' \
 				$extra_opts \
 				-e "$query" \
 				2>| begin
 					# format inline errors using awk, output line-buffered with rg (should prevent mixed lines)
-					awk '{print "\033[0;31m!\033[0m:ERROR: \033[0;31m" $0 "\033[0m"}' \
+					awk '{print "\033[0;31m!\033[0m//ERROR// \033[0;31m" $0 "\033[0m"}' \
 					| rg --no-config --line-buffered --text "" 2> /dev/null
 				end
 				# read spawns fish processes, consumes PIDs = fork bomb detection kills fish
 				#while read -l line
 				#	# inline error reporting, compatible with rrg-in-file preview
-				#	echo (set_color red)"!"(set_color normal)":ERROR: "(set_color red)"$line"(set_color normal)
+				#	echo (set_color red)"!"(set_color normal)"//ERROR// "(set_color red)"$line"(set_color normal)
 				#end
 				set main_rg_status $pipestatus[1]
 			#set main_rg_status $status
 		end \
 		| head -n 100000 2> /dev/null \
+		# remove all low unprintable ASCII characters from match field (they cannot occur in UTF8, too)
+		# with the notable exception of ESC so control sequences (colors!) survive.
+		# currently, the one bad character really is the NUL byte which if passed through,
+		# sabotages the ability to pass the line from fzf as argument to other tools down the line.
+		# fzf sanitizes control sequences, so we (thankfully) don't have to deal with them here.
+		| sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
 		| $skim_cmd \
 			--no-multi \
 			--bind "$skim_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:wrap:right:80%:~1' \
-			--delimiter ':' \
+			--delimiter '//' \
 			--header 'ctrl-h:help enter:results-in-file c-p:pane c-l:less c-v:vim f3:mcview f4:mcedit c-i:line c-o:content' \
 			--ansi \
 			--prompt "Fuzzy search in list: " \

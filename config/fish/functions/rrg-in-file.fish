@@ -51,7 +51,7 @@ lines with context.
 				echo -- "(press ctrl-p to toggle pane)"
 				echo -- "Error message:"
 				echo
-				echo -- (string replace --regex '^!:ERROR: ' '' -- "$_flag_rrg_preview")
+				echo -- (string replace --regex '^!//ERROR// ' '' -- "$_flag_rrg_preview")
 			else
 				echo "(line argument is 'ERROR', no preview)"
 			end
