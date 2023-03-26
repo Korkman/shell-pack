@@ -33,7 +33,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		echo
 		echo 'Short term history works. Try arrow keys.'
 		echo 
-		read -p 'set_color green; echo -n "Search for (ctrl-c to abort): "; set_color normal' query || exit 1
+		read -p 'set_color green; echo -n "Search for (ctrl-c to abort): "; set_color normal' query || return 1
 	end
 	if test "$extra_opts" != ""
 		# pass extra_opts down to rrg-in-file
