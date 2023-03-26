@@ -1,8 +1,10 @@
 function rrg-in-file -d "rrg in file and focus on matching lines."
-	argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' 'p/rrg-preview=' -- $argv
+	#echo (string join '|' -- $argv)
+	
+	test "$argv" != ""
+	and argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' 'p/rrg-preview=' -- $argv
 	and not set -q _flag_help
 	and set -q _flag_file
-	and test "$argv" != ""
 	or begin
 		echo "\
 Usage: rrg-in-file -f FILE [ --line N ] [ --truncate ] QUERY
