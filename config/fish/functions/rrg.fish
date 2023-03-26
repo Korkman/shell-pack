@@ -106,7 +106,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		# currently, the one bad character really is the NUL byte which if passed through,
 		# sabotages the ability to pass the line from fzf as argument to other tools down the line.
 		# fzf sanitizes control sequences, so we (thankfully) don't have to deal with them here.
-		| sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
+		| LC_ALL=C sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
 		| $skim_cmd \
 			--no-multi \
 			--bind "$skim_binds" \
