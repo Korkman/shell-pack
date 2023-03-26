@@ -25,7 +25,7 @@ function shell-pack-deps-install-fzf
 	echo "Project website: https://github.com/junegunn/fzf"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "0.27.0"
+		set pversion "0.38.0"
 	end
 	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv6.tar.gz"
 	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv7.tar.gz"
@@ -155,7 +155,7 @@ function shell-pack-deps-install-ripgrep
 	echo "Project website: https://github.com/BurntSushi/ripgrep"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "12.1.1"
+		set pversion "13.0.0"
 	end
 	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-arm-unknown-linux-gnueabihf.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-apple-darwin.tar.gz"
