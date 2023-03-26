@@ -1,5 +1,5 @@
 function rrg-in-file -d "rrg in file and focus on matching lines."
-	argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' -- $argv
+	argparse -n rrg-in-file 't/truncate' 'f/file=' 'l/line=' 'h/help' 'p/rrg-preview=' -- $argv
 	and not set -q _flag_help
 	and set -q _flag_file
 	and test "$argv" != ""
@@ -14,6 +14,8 @@ lines with context.
    -l/--line          Jump to line N in file. Interactive with less.
    -t/--truncate      Truncate file before matching. Roughly limits
                       matches to one. Non-interactive.
+   -p/--rrg-preview   Preview pane mode, pass result line for error
+                      message display. Used by rrg.
    --help             Show this help
 "
 		if set -q _flag_help
@@ -23,7 +25,11 @@ lines with context.
 		end
 	end
 	
-	set query $argv
+	set query "$argv"
+	set -l extra_opts
+	if set -q RG_EXTRA
+		set extra_opts (string split ' ' -- $RG_EXTRA)
+	end
 	
 	set startpoint 1
 	set opt_linenumber "--line-number"
@@ -38,8 +44,19 @@ lines with context.
 			echo "Error: --truncate requires --line"
 			return 3
 		end
-		set startpoint (math $_flag_line - 3 )
-		if [ $startpoint -lt 1 ]
+		if [ "$_flag_line" = "ERROR" ]
+			if set -q _flag_rrg_preview
+				echo -- "(press ctrl-p to toggle pane)"
+				echo -- "Error message:"
+				echo
+				echo -- (string replace --regex '^!:ERROR: ' '' -- "$_flag_rrg_preview")
+			else
+				echo "(line argument is 'ERROR', no preview)"
+			end
+			return 0
+		end
+		set startpoint (math "$_flag_line" - 3 )
+		if [ "$startpoint" -lt 1 ]
 			set startpoint 1
 		end
 		set opt_linenumber "--no-line-number"
@@ -49,11 +66,13 @@ lines with context.
 	end
 	
 	function start-with-cat --no-scope-shadowing
-		cat $_flag_file
+		# NOTE: using rg as a "clever cat" here so opening zipped results from rrg works
+		rg --text --follow --search-zip --color=never -- "" "$_flag_file"
 	end
 	
 	function start-with-tail --no-scope-shadowing
-		tail -n +$startpoint $_flag_file \
+		# NOTE: using rg as a "clever cat" here so opening zipped results from rrg works
+		rg --text --follow --search-zip --color=never -- "" "$_flag_file" | tail -n "+$startpoint" \
 		# cut off file:
 		| head -n 20
 	end
@@ -79,8 +98,8 @@ lines with context.
 	function end-with-tail --no-scope-shadowing
 		# re-add line numbers, emulating ripgrep + less style:
 		awk \
-		-v i=$startpoint \
-		-v l=$_flag_line \
+		-v "i=$startpoint" \
+		-v "l=$_flag_line" \
 		# linenumber highlighted
 		-v lh=(set_color -b ffff00; set_color black) \
 		# linenumber normal
@@ -92,9 +111,12 @@ lines with context.
 	
 	# header
 	if set -q _flag_line && set -q _flag_truncate
-		echo "|  Results for '$query'"
-		echo "|  $_flag_file:$_flag_line"
-		echo -- -----------
+		if set -q _flag_rrg_preview
+			echo -- "(press ctrl-p to toggle pane)"
+		end
+		echo -- "Results for '$query' $extra_opts"
+		echo -- "at $_flag_file:$_flag_line"
+		echo
 	end
 
 	# start outputting file at position $startpoint:
@@ -106,12 +128,14 @@ lines with context.
 	--no-heading \
 	--auto-hybrid-regex \
 	--ignore-case \
+	--text \
 	-C5 \
 	$opt_passthru \
 	$opt_linenumber \
 	--context-separator "\n(…)\n" \
 	--color always \
-	-e $query \
+	$extra_opts \
+	-e "$query" \
 	# pipe to end function:
 	| $ending
 end

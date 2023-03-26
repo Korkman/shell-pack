@@ -98,8 +98,10 @@ Untag current directory       untagdir
 ... specified directory       untagdir [ NAME | PATH ]
 List tagged directories       lsdirtags
 
-Search files by content       rrg REGEX
-Search in file by content     rrg-in-file -f FILE REGEX
+Search files for content       rrg REGEX
+... pass rg options            rrg --option ... -- REGEX
+... see also                   rrg-help
+Search in file for content     rrg-in-file -f FILE REGEX
 
 (Re)open tmux / screen
   for user X                  $__multiplexer_names
