@@ -17,8 +17,15 @@ do_build="no"
 build_uncached="no"
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
 then
+	# XDG_RUNTIME_DIR missing, try fixing
 	XDG_RUNTIME_DIR="/run/user/$(id -u)"
-	[ ! -e "$XDG_RUNTIME_DIR" ] && XDG_RUNTIME_DIR="/tmp/user-$USER"
+	# if it doesn't exist where we expect it, this might be macos or other unix
+	# since podman on macos doesn't have access to /tmp (and it is arguably a bad idea to change that)
+	# use a directory in $HOME instead
+	if [ ! -e "$XDG_RUNTIME_DIR" ]
+	then
+		 XDG_RUNTIME_DIR="$HOME/.cache/shell-pack-devel/test-drive-runtime-dir"
+	fi
 fi
 echo "Using $XDG_RUNTIME_DIR for temporary files"
 
@@ -37,6 +44,15 @@ if command -v "podman" > /dev/null && [ "$FORCE_DOCKER" != "yes" ]
 then
 	echo "Using podman to run test-drive (if you prefer docker, run with env FORCE_DOCKER=yes)"
 	docker="podman"
+	# check if podman help mentions "machine", and if so, ensure it is running
+	if podman help | grep -q -E '\s+machine\s+'
+	then
+		if ! podman machine info | grep -q -E '\s*MachineState:\s+Running'
+		then
+			echo "podman machine start"
+			podman machine start
+		fi
+	fi
 else
 	if [ "$(whoami)" = "root" ]
 	then
