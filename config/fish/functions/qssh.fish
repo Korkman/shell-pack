@@ -1146,7 +1146,8 @@ function __qssh_mru_pick -d \
 			'ctrl-c:execute(echo ""; echo --quit)+abort,'\
 			'ctrl-d:execute(echo ""; echo --quit)+abort,'\
 			'esc:cancel,'\
-			'f10:execute(echo ""; echo --quit)+abort'\
+			'f10:execute(echo ""; echo --quit)+abort,'\
+			'home:pos(0),end:pos(-1)'\
 		)
 		# not fzf compatible:
 		#	'enter:if-non-matched(execute:echo {q}; echo --instant-new+abort)+execute(echo {q}; echo {1})+abort,'\
@@ -1455,7 +1456,8 @@ function __qssh_multipick -d \
 				'f10:execute(echo ""; echo --quit)+abort,'\
 				'alt-m:execute(echo --mirror-keyboard)+accept,'\
 				'alt-o:execute(echo --one-window)+accept,'\
-				'alt-s:execute(echo --sort)+accept'\
+				'alt-s:execute(echo --sort)+accept,'\
+				'home:pos(0),end:pos(-1)'\
 			)
 			# not fzf compatible
 			#	'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\

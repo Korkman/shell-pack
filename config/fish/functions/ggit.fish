@@ -37,7 +37,8 @@ function ggit -d \
 	"alt-m:execute(echo message)+accept,"\
 	"f4:execute(echo message)+accept,"\
 	"f10:abort,"\
-	"esc:cancel"
+	"esc:cancel,"\
+	'home:pos(-1),end:pos(0)'
 	)
 	set -l fzf_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	set -l results

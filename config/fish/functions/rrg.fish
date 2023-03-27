@@ -56,7 +56,8 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'alt-i:change-preview(printf "Full line #{n}:\n\n%s" {} | less -R)+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
 		'alt-o:change-preview(clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
 		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
-		'right-click:toggle-preview'
+		'right-click:toggle-preview,'\
+		'home:pos(0),end:pos(-1)'\
 	)
 	
 	# this causes display error in microsoft terminal
