@@ -49,7 +49,6 @@ lines with context.
 		end
 		if [ "$_flag_line" = "ERROR" ]
 			if set -q _flag_rrg_preview
-				echo -- "(press ctrl-p to toggle pane)"
 				echo -- "Error message:"
 				echo
 				echo -- (string replace --regex '^!//ERROR// ' '' -- "$_flag_rrg_preview")
@@ -68,36 +67,43 @@ lines with context.
 		set opt_passthru "--passthru"
 	end
 	
-	function start-with-cat --no-scope-shadowing
+	function start-with-cat --no-scope-shadowing -d \
+		'Pipe entire input file to rg'
 		# NOTE: using rg as a "clever cat" here so opening zipped results from rrg works
 		rg --text --follow --search-zip --color=never -- "" "$_flag_file"
 	end
 	
-	function start-with-tail --no-scope-shadowing
+	function start-with-tail --no-scope-shadowing -d \
+		'Pipe only an excerpt from the input file'
 		# NOTE: using rg as a "clever cat" here so opening zipped results from rrg works
 		rg --text --follow --search-zip --color=never -- "" "$_flag_file" | tail -n "+$startpoint" \
 		# cut off file:
 		| head -n 20
 	end
 
-	function end-with-less-single --no-scope-shadowing
-		# show file with current line highlighted
+	function end-with-less-single --no-scope-shadowing -d \
+		'Present with less, highlighting a specific line'
+		
+		set -lx LESSHISTFILE '-'
 		less \
 		--clear-screen \
-		"+/^$_flag_line:" \
+		'+/^'"$_flag_line"':' \
+		"+/^[0-9]+:" \
 		-j 3 \
 		-R \
-		-P "Matched context in $file_basename | less - q to quit, h for help"
+		'-Ps '(rrg-in-file-desc)' | less - q to quit, h for help $'
 	end
 
-	function end-with-less-multi --no-scope-shadowing
-		# show file with current line highlighted
+	function end-with-less-multi --no-scope-shadowing -d \
+		'Present with less, highlighting all line numbers followed by ":"'
+		
+		set -lx LESSHISTFILE '-'
 		less \
 		--clear-screen \
 		"+/^[0-9]+:" \
 		-j 3 \
 		-R \
-		-P "All matches with context in $file_basename | less - q to quit, h for help"
+		'-Ps '(rrg-in-file-desc)' | less - q to quit, h for help $'
 	end
 
 	function end-with-tail --no-scope-shadowing
@@ -112,15 +118,37 @@ lines with context.
 		# color reset
 		-v cr=(set_color normal) \
 		'BEGIN { OFS="" } { print (i == l ? lh : ln), i, (i == l ? ":" : "-"), cr, "", $0; i++ }'
+		if set -q _flag_rrg_preview
+			echo (set_color -b ff00ff; set_color black)' End of match preview with context | ctrl-p to hide pane '(set_color normal)
+		end
 	end
 	
+	function rrg-in-file-desc --no-scope-shadowing
+		switch "$starting"
+			case 'start-with-cat'
+				echo -n "n = next, N = prev match - all matches shown"
+			case 'start-with-tail'
+				echo -n "showing only one match"
+			case '*'
+				echo -n "Unknown input"
+		end
+
+		#switch "$ending"
+		#	case 'end-with-tail'
+		#		echo -n "non-interactive"
+		#	case 'end-with-less-single'
+		#	case 'end-with-less-multi'
+		#		echo -n "n = next, N = prev match"
+		#	case '*'
+		#		echo -n "unknown output"
+		#end
+	end
+
 	# header
 	if set -q _flag_line && set -q _flag_truncate
-		if set -q _flag_rrg_preview
-			echo -- "(press ctrl-p to toggle pane)"
-		end
-		echo -- "Results for '$query' $extra_opts"
-		echo -- "at $_flag_file:$_flag_line"
+		echo -- "Single result with context for '$query' $extra_opts"
+		echo -- "in $_flag_file"
+		echo -- "line $_flag_line"
 		echo
 	end
 

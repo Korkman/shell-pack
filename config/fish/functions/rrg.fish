@@ -53,8 +53,8 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'ctrl-q:abort,'\
 		'f10:abort,'\
 		'esc:cancel,'\
-		'ctrl-i:change-preview(printf "(press ctrl-p to toggle pane)\nFull line #{n}:\n\n%s" {} | less -R)+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
-		'ctrl-o:change-preview(clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
+		'alt-i:change-preview(printf "Full line #{n}:\n\n%s" {} | less -R)+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
+		'alt-o:change-preview(clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
 		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
 		'right-click:toggle-preview'
 	)
@@ -72,7 +72,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 				--auto-hybrid-regex \
 				--one-file-system \
 				--line-buffered \
-				--color=always \
+				--color always \
 				--max-columns 500 \
 				--with-filename \
 				--ignore-case \
@@ -114,8 +114,13 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:wrap:right:80%:~1' \
+			--preview-label 'Preview pane - toggle with ctrl-p' \
+			--border top \
+			--border-label 'Rapid Ripgrep' \
+			--border-label-pos 3 \
+			--height (math $LINES-1) \
 			--delimiter '//' \
-			--header 'ctrl-h:help enter:results-in-file c-p:pane c-l:less c-v:vim f3:mcview f4:mcedit c-i:line c-o:content' \
+			--header 'ctrl-h:help enter:results-in-file c-p:pane c-l:less c-v:vim f3:mcview f4:mcedit a-i:line a-o:content' \
 			--ansi \
 			--prompt "Fuzzy search in list: " \
 			--layout reverse
