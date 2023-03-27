@@ -23,8 +23,7 @@ function ggit -d \
 	mkdir -p "$__ggit_cache_dir"
 	set -l msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
 	
-	set -l skim_cmd (__skimcmd)
-	set -l skim_binds (printf %s \
+	set -l fzf_binds (printf %s \
 	"enter:execute(echo {q} >> '$msg_filename')+clear-query+refresh-preview,"\
 	"double-click:ignore,"\
 	"alt-s:preview(git -c color.ui=always status),"\
@@ -40,7 +39,7 @@ function ggit -d \
 	"f10:abort,"\
 	"esc:cancel"
 	)
-	set -l skim_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
+	set -l fzf_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	set -l results
 	set -l filename
 	set -l msg_hold
@@ -53,9 +52,9 @@ function ggit -d \
 		end
 		set -e results
 		for line in $git_status; echo "$line"; end \
-		| $skim_cmd \
-			--bind "$skim_binds" \
-			--header "$skim_help" \
+		| safe-fzf \
+			--bind "$fzf_binds" \
+			--header "$fzf_help" \
 			--multi \
 			--height 90% \
 			--disabled \

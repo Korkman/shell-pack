@@ -222,10 +222,10 @@ function qssh -d \
 			return 0
 		else if contains -- --qssh-preview $argv
 			set_color white
-			# preview pane for skim
+			# preview pane for fzf
 			set -e argv[(contains --index -- --qssh-preview $argv)]
 			# NOTE: qssh-preview should be called with the hostdef as a single arg
-			# as done by skim!
+			# as done by fzf!
 			if [ (count $argv) -eq 0 ]
 				echo "Error: hostdef required" 1>&2
 				return 1
@@ -1124,8 +1124,7 @@ function __qssh_mru_pick -d \
 			set opt_sort cat
 		end
 		
-		set -l skim_cmd (__skimcmd)
-		set -l skim_binds (printf %s \
+		set -l fzf_binds (printf %s \
 			'enter:execute(echo {q}; echo {1})+abort,'\
 			'alt-n:execute(echo {q}; echo --new)+abort,'\
 			'f1:execute(echo {q}; echo --help)+abort,'\
@@ -1157,10 +1156,10 @@ function __qssh_mru_pick -d \
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
-			$skim_cmd \
+			safe-fzf \
 				$opt_query \
 				--no-multi \
-				--bind "$skim_binds" \
+				--bind "$fzf_binds" \
 				--delimiter '\t' \
 				--header \
 					'F1:Help Alt-N:New F10:Quit' \
@@ -1450,8 +1449,7 @@ function __qssh_multipick -d \
 			else
 				set opt_sort cat
 			end
-			set -l skim_cmd (__skimcmd)
-			set -l skim_binds (printf %s \
+			set -l fzf_binds (printf %s \
 				'f1:execute(echo {q}; echo --help)+abort,'\
 				'esc:cancel,'\
 				'f10:execute(echo ""; echo --quit)+abort,'\
@@ -1464,11 +1462,11 @@ function __qssh_multipick -d \
 			set skim_answer (\
 				__qssh_mru_pick_data | \
 				$opt_sort | \
-				$skim_cmd \
+				safe-fzf \
 					$opt_query \
 					--multi \
 					--color=header:\#ff0000 \
-					--bind "$skim_binds" \
+					--bind "$fzf_binds" \
 					--delimiter '\t' \
 					--header \
 						'Multipick Mode! F1:Help' \
