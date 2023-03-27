@@ -8,8 +8,5 @@ function __skimcmd
 	#end
 	
 	#echo "sk"
-	# fzf will not escape {} properly ("text\" becomes 'text\' <- this is invalid in fish )
-	# using tolerance from /bin/sh to workaround
-	set -x SHELL '/bin/sh'
-	echo "fzf"
+	echo "safe-fzf"
 end
