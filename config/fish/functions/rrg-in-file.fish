@@ -37,6 +37,7 @@ lines with context.
 	set opt_linenumber "--line-number"
 	set starting "start-with-cat"
 	set ending "end-with-less-multi"
+	set file_basename (basename "$_flag_file")
 	if set -q _flag_line
 		set ending "end-with-less-single"
 	end
@@ -85,7 +86,8 @@ lines with context.
 		--clear-screen \
 		"+/^$_flag_line:" \
 		-j 3 \
-		-R
+		-R \
+		-P "Matched context in $file_basename | less - q to quit, h for help"
 	end
 
 	function end-with-less-multi --no-scope-shadowing
@@ -94,7 +96,8 @@ lines with context.
 		--clear-screen \
 		"+/^[0-9]+:" \
 		-j 3 \
-		-R
+		-R \
+		-P "All matches with context in $file_basename | less - q to quit, h for help"
 	end
 
 	function end-with-tail --no-scope-shadowing
