@@ -1,0 +1,13 @@
+#! /usr/bin/env fish
+
+# a tiny subprocess generator for use in places where sed would go but fish is more portable
+# since fish is still sorting out buffering issues, this helps smooth the experience for now
+
+if set -q argv[2]
+	string replace --all --regex "$argv[1]" "$argv[2]" < /dev/stdin
+	exit 0
+else
+	echo 'Usage: cat data | '(status basename)' REGEX REPLACEMENT' >&2
+	echo 'See also: fish -c "help string replace"'
+	exit 1
+end
