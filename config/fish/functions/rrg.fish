@@ -43,8 +43,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 	# export query
 	set -x query "$query"
 	
-	set -l skim_cmd (__skimcmd)
-	set -l skim_binds (printf %s \
+	set -l fzf_binds (printf %s \
 		'ctrl-p:toggle-preview,'\
 		'ctrl-v:execute(nullerror vi +{2} {1}),'\
 		'f3:execute(nullerror fishcall mcview {1}),'\
@@ -59,8 +58,6 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
 		'right-click:toggle-preview'
 	)
-	# not fzf compatible
-	#	'shift-left:preview-left,shift-right:preview-right'
 	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
@@ -106,10 +103,15 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		# currently, the one bad character really is the NUL byte which if passed through,
 		# sabotages the ability to pass the line from fzf as argument to other tools down the line.
 		# fzf sanitizes control sequences, so we (thankfully) don't have to deal with them here.
-		| LC_ALL=C sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
-		| $skim_cmd \
+		# spawning filter as a fish subprocess to get instant results (fish 3.3.1 buffering issue)
+		| fishex-replace '[\x00-\x1A\x1C-\x1F]' '' \
+		# will buffer all content until stdin closed?
+		#| string replace --all --regex '[\x00-\x1A\x1C-\x1F]' '' \
+		# sed on macos Monterey does not support escapes in brackets
+		#| LC_ALL=C sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
+		| safe-fzf \
 			--no-multi \
-			--bind "$skim_binds" \
+			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:wrap:right:80%:~1' \
 			--delimiter '//' \
