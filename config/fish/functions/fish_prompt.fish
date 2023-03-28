@@ -670,41 +670,9 @@ end
 # begin silent updates (avoid reload)
 
 # from time to time, upgraded shells can be live patched here until a config.fish
-# upgrade becomes necessary, at which point stuff gets copied over
+# upgrade becomes necessary, at which point stuff gets copied over and live shells will
+# reload with a policeline
 
-# improvise OLDSHELL if not set - 2021 (*guess*)
-# NOTE: this is already handled in a better way in config.fish!
-if ! set -q OLDSHELL
-	# TODO: if getent is available, ask system for default shell, use if not fish?
-	if set -g OLDSHELL (which bash)
-	else if set -g OLDSHELL (which zsh)
-	else
-		# last resort, sh
-		set -g OLDSHELL (which sh)
-	end
-end
-
-# bind f10 to empty commandline, deactivate virtual env or exit - in this order of precedence
-bind -k f10 "if ! test (commandline | string collect) = ''; commandline ''; else if set -q VIRTUAL_ENV; commandline 'venv'; commandline --function execute; else; exit; end;"
-# bind Alt-Home to cd ~ | cd /
-bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
-# bind f4 to history edit
-bind -k f4 '__sp_history_delete_and_edit_prev'
-bind \e4 '__sp_history_delete_and_edit_prev'
-
-# bright yellow background in less highlights (improving manpage readability)
-if ! set -x -q LESS_TERMCAP_so
-	set -x -g LESS_TERMCAP_so (set_color -b "ff0" && set_color "black")
-	#set -x -g LESS_TERMCAP_so (echo -e "\e[48;5;226m\e[38;5;0m")
-end
-if ! set -x -q LESS_TERMCAP_se
-	set -x -g LESS_TERMCAP_se (set_color normal)
-	#set -x -g LESS_TERMCAP_se (echo -e "\e[0m")
-end
-
-# prompt already sports VIRTUAL_ENV support, disable activate.fish version
-if ! set -q VIRTUAL_ENV_DISABLE_PROMPT
-	set -g VIRTUAL_ENV_DISABLE_PROMPT yes
-end
+# currently none - 2023-03-28
 
 # end silent updates

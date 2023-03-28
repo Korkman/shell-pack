@@ -207,7 +207,7 @@ function load_shell_pack -d "Load shell-pack"
 	# activate powerline fonts only if set to 1 or higher
 
 	set -q LC_NERDLEVEL
-	or set -g LC_NERDLEVEL 1
+	or set -gx LC_NERDLEVEL 1
 
 	function __update_nerdlevel --on-variable LC_NERDLEVEL
 		# nerdlevel 1: bashrc launches fish
@@ -230,6 +230,7 @@ function load_shell_pack -d "Load shell-pack"
 	end
 
 	__update_nerdlevel
+	
 	# list of environment variables to be kept in-sync within tmux sessions
 	set -g __mmux_imported_environment \
 	LC_NERDLEVEL SHELL DISPLAY XAUTHORITY LANG SSH_AUTH_SOCK SSH_CLIENT \
@@ -245,6 +246,19 @@ function load_shell_pack -d "Load shell-pack"
 		source $__sp_config_fish_dir/iterm2_shell_integration.fish
 	end
 
+	# bright yellow background in less highlights (improving manpage readability)
+	if ! set -x -q LESS_TERMCAP_so
+		set -x -g LESS_TERMCAP_so (set_color -b "ff0" && set_color "black")
+	end
+	if ! set -x -q LESS_TERMCAP_se
+		set -x -g LESS_TERMCAP_se (set_color normal)
+	end
+
+	# prompt already sports VIRTUAL_ENV support, disable activate.fish version
+	if ! set -q VIRTUAL_ENV_DISABLE_PROMPT
+		set -g VIRTUAL_ENV_DISABLE_PROMPT yes
+	end
+	
 	if [ "$__sp_load_keybinds" = "yes" ]
 		# KEYBINDS
 		
@@ -327,6 +341,14 @@ function load_shell_pack -d "Load shell-pack"
 
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind -k f8 "__history_delete_commandline"
+		
+		# bind f10 to empty commandline, deactivate virtual env or exit - in this order of precedence
+		bind -k f10 "if ! test (commandline | string collect) = ''; commandline ''; else if set -q VIRTUAL_ENV; commandline 'venv'; commandline --function execute; else; exit; end;"
+		# bind Alt-Home to cd ~ | cd /
+		bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
+		# bind f4 to history edit
+		bind -k f4 '__sp_history_delete_and_edit_prev'
+		bind \e4 '__sp_history_delete_and_edit_prev'
 	end
 	
 	# use d-tab to quickly navigate in tagged dirs
