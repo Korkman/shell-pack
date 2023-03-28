@@ -44,12 +44,12 @@ fzf fuzzy search in RESULTS LIST:
    ctrl-r toggles regular expression search indicated by "/RE"
 
 rrg keybindings:
-   exit                             ctrl-q        esc
-   toggle pane                      ctrl-p
+   exit                             alt-q        esc
+   toggle pane                      alt-p
    show content in pane (default)   alt-o
    show result line in pane         alt-i
-   start vim on matched line        ctrl-v           
-   start less on matched line       ctrl-l
+   start vim on matched line        alt-v           
+   start less on matched line       alt-l
    start mcedit on matched line     f4
    start mcview on file             f3
    read all matches in file         enter

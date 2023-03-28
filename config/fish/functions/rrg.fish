@@ -44,17 +44,17 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 	set -x query "$query"
 	
 	set -l fzf_binds (printf %s \
-		'ctrl-p:toggle-preview,'\
-		'ctrl-v:execute(nullerror vi +{2} {1}),'\
+		'alt-p:toggle-preview,'\
+		'alt-v:execute(nullerror vi +{2} {1}),'\
 		'f3:execute(nullerror fishcall mcview {1}),'\
 		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
-		'ctrl-l:execute(clear; nullerror less +{2}g {1}),'\
-		'ctrl-h:execute(fishcall rrg-help),'\
-		'ctrl-q:abort,'\
+		'alt-l:execute(clear; nullerror less +{2}g {1}),'\
+		'alt-h:execute(fishcall rrg-help),'\
+		'alt-q:abort,'\
 		'f10:abort,'\
 		'esc:cancel,'\
-		'alt-i:change-preview(printf "Full line #{n}:\n\n%s" {} | less -R)+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
-		'alt-o:change-preview(clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
+		'alt-i:change-preview(printf "Result line #{n}:\nLine %s in file %s\nMatched content:\n%s" {2} {1} {3..})+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
+		'alt-o:change-preview(rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
 		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
 		'right-click:toggle-preview,'\
 		'home:pos(0),end:pos(-1)'\
@@ -121,7 +121,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 			--border-label-pos 3 \
 			--height (math $LINES-1) \
 			--delimiter '//' \
-			--header 'ctrl-h:help enter:results-in-file c-p:pane c-l:less c-v:vim f3:mcview f4:mcedit a-i:line a-o:content' \
+			--header 'alt-h:help enter:results-in-file a-p:pane a-l:less a-v:vim f3:mcview f4:mcedit a-i:line a-o:content' \
 			--ansi \
 			--prompt "Fuzzy search in list: " \
 			--layout reverse

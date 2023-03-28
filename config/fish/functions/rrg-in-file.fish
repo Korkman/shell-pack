@@ -86,11 +86,16 @@ lines with context.
 		
 		set -lx LESSHISTFILE '-'
 		less \
-		--clear-screen \
+		# ordering of commands passed to less seems flakey, sending the generic line search twice
+		"+/^[0-9]+:" \
+		# this search jumps to the focused line
 		'+/^'"$_flag_line"':' \
 		"+/^[0-9]+:" \
+		# move viewport a few lines down
 		-j 3 \
+		# allow ansi colors in source
 		-R \
+		# nice prompt
 		'-Ps '(rrg-in-file-desc)' | less - q to quit, h for help $'
 	end
 
@@ -99,7 +104,6 @@ lines with context.
 		
 		set -lx LESSHISTFILE '-'
 		less \
-		--clear-screen \
 		"+/^[0-9]+:" \
 		-j 3 \
 		-R \
