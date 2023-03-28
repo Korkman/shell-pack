@@ -106,7 +106,7 @@ Attach to or create a screen / tmux session SESSION.
 			set have_tmux false
 		end
 		if $have_tmux
-			if tmux has-session -t $shortuser
+			if tmux has-session -t $shortuser &> /dev/null
 				if [ (tmux list-clients -t $shortuser | wc -l) -gt 0 ]
 					if set -q _flag_force
 						tmux detach-client -P -s $shortuser
@@ -180,11 +180,15 @@ Attach to or create a screen / tmux session SESSION.
 		end
 	else
 		# normal shared attach to private tmux
-		if $have_tmux && $have_screen
-			# smooth transition from old screen to new tmux
-			screen -x $shortuser || __mmux_tmux_attach || __mmux_tmux_attach new
+		if $have_tmux && $have_screen && screen -list $shortuser > /dev/null
+			# smooth transition from old screen to new tmux: connect to screen if running
+			screen -x $shortuser
 		else if $have_tmux
-			__mmux_tmux_attach || __mmux_tmux_attach new
+			if tmux has-session -t $shortuser &> /dev/null
+				__mmux_tmux_attach
+			else
+				__mmux_tmux_attach new
+			end
 		else if $have_screen
 			screen -x $shortuser || screen -S $shortuser
 		else
