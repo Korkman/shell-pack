@@ -42,27 +42,45 @@ Attach to or create a screen / tmux session SESSION.
 					set -l tmux_env (tmux show-environment 2> /dev/null)
 					if test $status -eq 0
 						# tmux commands fail when env variable is set but not writable (su)
+						
+						# update environment
 						for v in $tmux_env
 							if [ (string sub --start 1 --length 1 -- $v) = "-" ]
-								set -l v (string sub --start 2 -- $v)
-								if contains -- $v $__mmux_imported_environment && set -q $v
-									#echo "tmux: unset $v"
-									set -e $v
+								# erase variables prefixed with minus which are currently set
+								set -l vminus (string sub --start 2 -- $v)
+								if contains -- $vminus $__mmux_imported_environment && set -q $vminus
+									#echo "tmux: unset $vminus"
+									set -ge $vminus
 								end
 							else
-								set -l v (string split --max 1 "=" -- $v)
-								set -l vname "$v[1]"
-								set -l vval "$v[2]"
-								if contains -- $vname $__mmux_imported_environment && [ "$$vname" != "$vval" ]
-									#echo "tmux: set $vname=$vval"
-									set -g $vname $vval
-								end
-							end
-						end
-					end
-				end
-			end
-		end
+								# update changed variables
+								set -l vsplit (string split --max 1 "=" -- $v)
+								set -l vname "$vsplit[1]"
+								set -l vval "$vsplit[2]"
+								if contains -- $vname $__mmux_imported_environment
+									# variable is on whitelist
+									if ! set -q $vname
+										# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
+										set -gx $vname $vval
+									else if [ "$$vname" != "$vval" ]
+										# value does not match, overwrite the global variable with the export flag kept as-is
+										#echo "tmux: set $vname=$vval"
+										if set --show "$vname" | string match --quiet --regex '.*: set in global scope, unexported.*'
+											set -g $vname $vval
+										else
+											set -gx $vname $vval
+										end
+									end # if
+								end # if
+								
+							end # if
+						end # for
+						
+					end # if
+				end # if
+			end # function
+			
+		end # if
 		
 		function __update_multiplexer_names --on-variable __multiplexer_names
 			if set -q __defined_multiplexer_names
