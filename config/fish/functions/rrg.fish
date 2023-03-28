@@ -115,7 +115,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:wrap:right:80%:~1' \
-			--preview-label 'Preview pane - toggle with ctrl-p' \
+			--preview-label 'Preview pane - toggle with alt-p' \
 			--border top \
 			--border-label 'Rapid Ripgrep' \
 			--border-label-pos 3 \

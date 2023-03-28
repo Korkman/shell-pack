@@ -123,7 +123,7 @@ lines with context.
 		-v cr=(set_color normal) \
 		'BEGIN { OFS="" } { print (i == l ? lh : ln), i, (i == l ? ":" : "-"), cr, "", $0; i++ }'
 		if set -q _flag_rrg_preview
-			echo (set_color -b ff00ff; set_color black)' End of match preview with context | ctrl-p to hide pane '(set_color normal)
+			echo (set_color -b ff00ff; set_color black)' End of match preview with context | alt-p to hide pane '(set_color normal)
 		end
 	end
 	
