@@ -33,7 +33,7 @@ function fish_right_prompt
 	
 	# jobs segment
 	if jobs -q
-		set ijobs (jobs -g)
+		set ijobs (__sp_get_pending_job_pids)
 		set njobs (count $ijobs)
 		echo -n ' '
 		set_color bryellow
@@ -41,7 +41,7 @@ function fish_right_prompt
 		set_color -b bryellow
 		set_color black
 		if [ $njobs -lt 4 ]
-			echo -n " $running_glyph" (string join ' ' $ijobs)
+			echo -n " $running_glyph" (string join -- ' ' $ijobs)
 		else
 			echo -n " $running_glyph x$njobs"
 		end

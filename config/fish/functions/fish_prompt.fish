@@ -87,10 +87,10 @@ function fish_prompt -d \
 		
 		# backgrounded jobs
 		if jobs -q
-			set -l ijobs (jobs -g)
+			set -l ijobs (__sp_get_pending_job_pids)
 			set -l njobs (count $ijobs)
 			if [ $njobs -lt 4 ]
-				fish_prompt_segment "bryellow" "black" "$running_glyph "(string join ' ' $ijobs)
+				fish_prompt_segment "bryellow" "black" "$running_glyph "(string join -- ' ' $ijobs)
 			else
 				fish_prompt_segment "bryellow" "black" "$running_glyph x$njobs"
 			end
@@ -370,12 +370,15 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	# detect new untracked jobs
 	if jobs -q
 		#set new_bg_tasks ""
-		for job_pid in (jobs -g)
+		for job_pid in (__sp_get_pending_job_pids)
+			# NOTE: multiple pids may be spawned within one job
+			# we take the naive approach to watch the last pid returned by jobs -p %x
+			# , hoping it will be the last command in pipe.
 			if ! functions -q job_watcher$job_pid
 				# untracked backgrounded task detected
 				set -g __watched_job_pids $__watched_job_pids $job_pid
 				set new_bg_tasks $job_pid $new_bg_tasks
-				function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit $job_pid
+				function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit "$job_pid"
 					# remove my pid from list
 					set -ge __watched_job_pids[(contains -i $job_pid $__watched_job_pids)]
 					__update_glyphs
@@ -412,12 +415,13 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				end
 			end
 		end
+		
 		if [ (count $new_bg_tasks) -gt 0 ]
 			# tracking new background tasks
 			if [ (count $new_bg_tasks) -gt 1 ]
-				set plural jobs
+				set plural PIDs
 			else
-				set plural job
+				set plural PID
 			end
 			set_color -b bryellow
 			set_color black
@@ -426,7 +430,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			set_color bryellow
 			echo -en "$right_black_arrow_glyph"
 			set_color normal
-			echo " New $plural $new_bg_tasks"
+			echo " New job $plural $new_bg_tasks"
 		end
 	end
 
@@ -665,6 +669,21 @@ end
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
 	"Reset exit status variables on enter"
 	__sp_reset_exit_status
+end
+
+function __sp_get_pending_job_pids -d \
+	"Return the last pid in each jobs process group to watch"
+	for job_row in (jobs)
+		set -l job_row (string split \t $job_row)
+		set -l last_line ""
+		for last_line in (jobs -p "%"$job_row[1] | string match -r '^[1-9]+[0-9]*$')
+		end
+		if [ "$last_line" != "" ]
+			echo "$last_line"
+		end
+		#	NOTE: gid -2 exists,
+		#	see: https://github.com/fish-shell/fish-shell/issues/9712
+	end
 end
 
 # begin silent updates (avoid reload)
