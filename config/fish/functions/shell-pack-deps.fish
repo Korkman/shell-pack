@@ -221,7 +221,7 @@ function shell-pack-deps-install-dool
 	echo "Project website: https://github.com/scottchiefbaker/dool"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "1.1.0"
+		set pversion "1.2.0"
 	end
 	set url "https://github.com/scottchiefbaker/dool/archive/refs/tags/vVERSION.tar.gz"
 	

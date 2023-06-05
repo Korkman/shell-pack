@@ -61,7 +61,15 @@ function shell-pack-check-deps -d \
 			set __shp_outdated_deps "$__shp_outdated_deps $product"
 			set -l product_url (string replace '$minver' "$minver" -- "$product_url")
 			echo "NOTE: $product is outdated - $version_found < $minver"
-			echo "$product_url"
+			if status --is-interactive && string match -qr '^Run: ' -- "$product_url"
+				read -n1 -P "$product_url ? (Y/n)" answer || set answer n
+				if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
+					return
+				end
+				eval (string replace -r '^Run: ' '' -- "$product_url")
+			else
+				echo "$product_url"
+			end
 		end
 	end
 	
@@ -69,7 +77,7 @@ function shell-pack-check-deps -d \
 	test_version_min "fzf"     "0.38.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
 	test_version_min "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
 	#test_version_min "skim"    "0.9.4"  "sk --version"       "Run: shell-pack-deps install skim \$minver"
-	test_version_min "dool"    "1.1.0"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
+	test_version_min "dool"    "1.2.0"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	
 	functions -e test_version_min
 	
