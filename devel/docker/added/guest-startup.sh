@@ -32,6 +32,10 @@ onexit_copy_downloads() {
 	if [ -e ~/.local/share/shell-pack/bin/dool.d ] && [ ! -e ~/Downloads/dool.d ]
 	then
 		cp -a ~/.local/share/shell-pack/bin/dool.d ~/Downloads/
+		# make world-writable so when Docker root created dool.d,
+		#  host user 1000 is able to rm -rf $XDG_RUNTIME_DIR/shell-pack-test-drive-$tagname
+		chmod ugo+rwX ~/Downloads/dool.d
+		chmod ugo+rwX ~/Downloads/dool.d/plugins
 	fi
 }
 
