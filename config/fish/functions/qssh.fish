@@ -125,7 +125,7 @@ function qssh -d \
 				clear
 				set -l no_exit
 				if [ "$__qssh_second_iteration" = "yes" ]
-					read -n1 -P "Press enter to continue, q to exit ... " --local answer
+					read -n1 -P "Press enter to continue, q to exit ... " --local answer || set -l answer n
 					if [ "$answer" = "q" ]
 						exit
 					else
@@ -529,11 +529,11 @@ function __qssh_master_connect
 		if string match -q -- "*REMOTE HOST IDENTIFICATION HAS CHANGED*" "$sshErrors"
 			if set -q __qssh_tmp_host_key
 				__qssh_echo_interactive "Attention: Host key mismatch (temporary known_hosts), eavesdropping possible."
-				read -n1 -P "(a)bort, (c)onnect anyways, (r)emove temporary host key information > " answer
+				read -P "(a)bort, (c)onnect anyways, (r)emove temporary host key information > " answer || set answer a
 			else
 				__qssh_echo_interactive "Attention: Host key mismatch, eavesdropping possible."
 				__qssh_fingerprint
-				read -n1 -P "(a)bort, (c)onnect anyways, (r)emove host key information, (t)emporary host key > " answer
+				read -P "(a)bort, (c)onnect anyways, (r)emove host key information, (t)emporary host key > " answer || set answer a
 			end
 			switch $answer
 				case c
@@ -569,7 +569,7 @@ function __qssh_master_connect
 			__qssh_master_connect $hostdef
 			set -l cmd_copy_id "ssh-copy-id $hostdef_user@$hostdef_hostname -p$hostdef_port -o ControlPath=$controlPath"
 			__qssh_echo_interactive "$cmd_copy_id"
-			read -n1 -P "Copy your public keys to authorized_keys file like this? (y/N) > " answer
+			read -P "Copy your public keys to authorized_keys file like this? (y/N) > " answer || set answer n
 			if [ "$answer" = "y" ]
 				eval $cmd_copy_id
 			end
@@ -589,7 +589,7 @@ function __qssh_master_connect
 			end
 			# old idea: scan fingerprints, ask user to accept key
 			#__qssh_fingerprint
-			#read -n1 -P "Accept fingerprint? (y)es / (n)o > " answer
+			#read -P "Accept fingerprint? (y)es / (n)o > " answer || set answer n
 			#if [ "$answer" = "y" ]
 			#	
 			#end
@@ -1868,7 +1868,7 @@ function __qssh_prompt --no-scope-shadowing -d \
 			__qssh_echo_interactive "Warning: not interactive! Ctrl-c will abort execution! See Fish issue #6649"
 		end
 		set -l esc_read_argv (string escape -- $read_argv)
-		fish -c "function fish_title; end; echo -ne '\e]2;qssh: ?\a'; read $esc_read_argv; echo (string escape -- \$$answer_varname) > \"$__qssh_prompt_answer_tmp\""
+		fish -c "function fish_title; end; echo -ne '\e]2;qssh: ?\a'; read $esc_read_argv || exit 1; echo (string escape -- \$$answer_varname) > \"$__qssh_prompt_answer_tmp\""
 		or return 15
 		if [ -e "$__qssh_prompt_answer_tmp" ]
 			cat "$__qssh_prompt_answer_tmp" | read $read_argv

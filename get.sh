@@ -81,7 +81,7 @@ then
 	if [ -t 0 ] && [ -e "${DOWNLOAD_FILENAME}" ]; then
 		# when in terminal, ask whether to re-use downloaded file
 		echo "Pre-downloaded file detected, use for installation? (y/N)"
-		read answer
+		read answer || answer=n
 		if [ "$answer" = "y" ]; then
 			PRE_DOWNLOADED=y
 		fi

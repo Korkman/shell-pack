@@ -113,7 +113,7 @@ function shell-pack-deps-install-skim
 		return 1
 	end
 	
-	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
+	read -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -178,7 +178,7 @@ function shell-pack-deps-install-ripgrep
 		return 1
 	end
 	
-	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
+	read -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end
@@ -227,7 +227,7 @@ function shell-pack-deps-install-dool
 	
 	set initial_dir "$PWD"
 	
-	read -n1 -P "OK to download and execute release file? (Y/n)" answer || set answer n
+	read -P "OK to download and execute release file? (Y/n)" answer || set answer n
 	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 		return 1
 	end

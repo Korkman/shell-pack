@@ -62,7 +62,7 @@ function shell-pack-check-deps -d \
 			set -l product_url (string replace '$minver' "$minver" -- "$product_url")
 			echo "NOTE: $product is outdated - $version_found < $minver"
 			if status --is-interactive && string match -qr '^Run: ' -- "$product_url"
-				read -n1 -P "$product_url ? (Y/n)" answer || set answer n
+				read -P "$product_url ? (Y/n)" answer || set answer n
 				if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 					return
 				end

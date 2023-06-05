@@ -87,7 +87,7 @@ function ggit -d \
 				git status
 				echo "Commit with message:"
 				cat "$msg_filename"
-				read -n1 -P "OK? [Y/n]" answer
+				read -P "OK? [Y/n]" answer || set answer n
 				if [ "$answer" = "" -o "$answer" = "y" -o "$answer" = "Y" ]
 					git commit -F "$msg_filename"
 					if test $status -eq 0
