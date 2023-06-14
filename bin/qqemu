@@ -6,6 +6,28 @@
 # ~pbeck 2020
 
 set -eu
+set -o pipefail
+
+if [ "${KEYBOARD:-""}" != "" ]
+then
+	if [ "${KEYBOARD:-""}" != "unset" ]
+	then
+		kbd=$KEYBOARD
+		keyboard="-k $KEYBOARD"
+	else
+		kbd=""
+		keyboard=""
+	fi
+else
+	# guess keyboard layout
+	# NOTE: using a bad hack when localectl is unavailable.
+	# either way, it is not guaranteed the layout is available in qemu.
+	kbd=$(localectl status | grep "X11 Layout" | awk '{print $3}') \
+	|| kbd=$(locale | grep LANG= | sed 's/.*=//;s/_.*//') \
+	|| kbd="de" \
+	;
+	keyboard="-k $kbd"
+fi
 
 if [ "${1:-""}" == "" ]; then
 	echo "Usage: qqemu DISK [DISK...]"
@@ -18,30 +40,30 @@ if [ "${1:-""}" == "" ]; then
 	echo " - 'commit drive-diskX' will persist changes to the named disk, 'all' for all"
 	echo
 	echo "Environment variables and their defaults:"
-	echo " KEYBOARD=de"
+	echo " KVM=yes                   # 'no' disables hw virtualization"
+	echo " KEYBOARD=(guessed)        # keyboard layout ($kbd)"
 	echo " MEMORY=1024"
-	echo " ENABLE_KVM=no"
-	echo " NET=no                    # 'yes' enables NAT network, MAC address cloned from host to virtual e1000"
+	echo " CPU=(half of host CPU)    # override the default cpu core count"
+	echo " NET=no                    # 'yes' enables NAT network, MAC cloned from host to virtual e1000"
 	echo " BIOS=legacy               # change to 'uefi' when required"
 	echo " VNC_DISPLAY=127.0.0.1:7   # (note how display 7 = port 5907)"
-	echo " DRIVE_TYPE=ide-hd         # (change to 'virtio-blk-pci' if supported by guest)"
+	echo " DISKBUS=ide               # (change to 'virtio' or 'scsi' if supported by guest)"
 	echo " CDROM=''                  # name a file to boot as CD-ROM in IDE drive 4 of 4"
 	echo " QQEMU_CUSTOM=''           # custom arguments to pass to qemu"
 	echo ""
 	echo "Prepend environment variables like this to launch with custom values:"
-	echo " MEMORY=4096 ENABLE_KVM=yes qqemu DISK"
+	echo " MEMORY=4096 KVM=yes qqemu DISK"
 	echo
 	exit 0
 fi
 
 memory=${MEMORY:-1024}
 vnc_display=${VNC_DISPLAY:-"127.0.0.1:7"}
-drive_type=${DRIVE_TYPE:-"ide-hd"} # virtio-blk-pci
-keyboard=${KEYBOARD:-"-k de"}
+drive_type=${DISKBUS:-"ide"} # virtio-blk-pci
 bios=${BIOS:-"legacy"}
 
 # TODO: detect KVM availability
-if [ "${ENABLE_KVM:-""}" = "yes" ]; then
+if [ "${KVM:-"yes"}" = "yes" ]; then
 	enable_kvm="-enable-kvm"
 	accel_kvm=",accel=kvm"
 else
@@ -56,7 +78,14 @@ else
 	bios_cmd=" -bios /usr/share/ovmf/OVMF.fd"
 fi
 
-vdisk_cmd=""
+# initialize virtual disk list
+if [ "$drive_type" = "scsi" ]
+then
+	vdisk_cmd="-device lsi,id=scsi0,addr=0x9 -device lsi,id=scsi1,addr=0x10"
+else
+	vdisk_cmd=""
+fi
+
 vdisk_idx0=0
 vdisk_idx1=1
 for vdisk in "$@"
@@ -70,19 +99,26 @@ do
 		echo "Disk does not exist: $vdisk"
 		exit 1
 	fi
-	if [ "$drive_type" = "ide-hd" ]
+	if [ "$drive_type" = "virtio" ]
 	then
+		pci_dev=$((vdisk_idx0 + 9))
+		vdisk_cmd="$vdisk_cmd \
+			-drive file=${vdisk},format=raw,if=none,id=drive-disk${vdisk_idx0},snapshot=on \
+			-device virtio-blk-pci,scsi=off,bus=pci.0,addr=${pci_dev},drive=drive-disk${vdisk_idx0},id=virtio-disk${vdisk_idx0},bootindex=${vdisk_idx1} \
+		"
+	elif [ "$drive_type" = "scsi" ]
+	then
+		scsi_bus=$((vdisk_idx0/7))
+		vdisk_cmd="$vdisk_cmd \
+			-drive file=${vdisk},format=raw,if=none,id=drive-disk${vdisk_idx0},snapshot=on \
+			-device scsi-hd,bus=scsi${scsi_bus}.0,drive=drive-disk${vdisk_idx0},id=scsi-disk${vdisk_idx0},bootindex=${vdisk_idx1} \
+		"
+	else
 		ide_bus=$((vdisk_idx0/2))
 		ide_drive=$((vdisk_idx0%2))
 		vdisk_cmd="$vdisk_cmd \
 			-drive file=${vdisk},format=raw,if=none,id=drive-disk${vdisk_idx0},snapshot=on \
 			-device ide-hd,bus=ide.${ide_bus},unit=${ide_drive},drive=drive-disk${vdisk_idx0},id=ide${ide_bus}-0-${ide_drive},bootindex=${vdisk_idx1} \
-		"
-	else
-		pci_dev=$((vdisk_idx0 + 9))
-		vdisk_cmd="$vdisk_cmd \
-			-drive file=${vdisk},format=raw,if=none,id=drive-disk${vdisk_idx0},snapshot=on \
-			-device virtio-blk-pci,scsi=off,bus=pci.0,addr=${pci_dev},drive=drive-disk${vdisk_idx0},id=virtio-disk${vdisk_idx0},bootindex=${vdisk_idx1} \
 		"
 	fi
 	((vdisk_idx0++)) || true
@@ -91,7 +127,8 @@ done
 
 if [ "${DISPLAY:-""}" != "" ]
 then
-	display_cmd2="-display gtk,show-tabs=on,window-close=off"
+	# NOTE: gtk was unstable in vbox + debian 12 + kde, using good 'ol sdl
+	display_cmd2="-display sdl"
 else
 	display_cmd2=""
 fi
@@ -119,7 +156,8 @@ fi
 if [ "${NET:-"no"}" = "yes" ]
 then
 	# clone first mac address of the host
-	macaddr=",macaddr=$(ip link | awk '/ether/ {print $2; exit}')" || macaddr=""
+	macaddr=",macaddr=$(ip link | awk '/ether/ {print $2; exit}')" \
+	|| macaddr=""
 	net_cmd="-net user -net nic,addr=0x3,model=e1000${macaddr}"
 else
 	net_cmd=""
@@ -131,6 +169,16 @@ then
 	custom_cmd="$QQEMU_CUSTOM"
 else
 	custom_cmd=""
+fi
+
+# pass half the cpu core count to guest by default
+if [ "${CPU:-""}" = "" ]
+then
+	cpu_cnt=$(nproc)
+	((cpu_cnt=(cpu_cnt+1)/2))
+	cpu_cnt=1
+else
+	cpu_cnt=$CPU
 fi
 
 # for modifications to be visible to the started guest on subsequent reboots,
@@ -147,6 +195,7 @@ qemu-system-x86_64 \
 	-S \
 	-machine pc-i440fx-2.1${accel_kvm},usb=off \
 	-cpu qemu64 \
+	-smp sockets=1,dies=1,cores=$cpu_cnt,threads=1 \
 	-m ${memory} \
 	${bios_cmd} \
 	-overcommit mem-lock=off \
