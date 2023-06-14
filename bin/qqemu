@@ -128,7 +128,8 @@ done
 if [ "${DISPLAY:-""}" != "" ]
 then
 	# NOTE: gtk was unstable in vbox + debian 12 + kde, using good 'ol sdl
-	display_cmd2="-display sdl"
+	# NOTE2: sdl is not available on older qemu releases?!
+	display_cmd2="-display gtk"
 else
 	display_cmd2=""
 fi
