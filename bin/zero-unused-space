@@ -1,0 +1,121 @@
+#! /bin/bash
+
+# zero-unused-space
+# write zeroes to 90% free space for increased disk image compression ratio
+# NOTE: using /bin/bash because /bin/sh failed to execute our trap on debian jessie, buster (it did work on bullseye)
+
+{
+	set -eu
+	
+	# get free space, calc 90% to write and 5% minimum to keep free
+	freeMiB=$(df -P -m . | tail -n1 | awk '{ print $4 }')
+	writeMiB=$(( freeMiB * 90 / 100 ))
+	if [ $writeMiB -gt 640 ]
+	then
+		blockSizeMiB=64
+	else
+		blockSizeMiB=1
+	fi
+	blocksToWrite=$((writeMiB / ${blockSizeMiB}))
+	writeMiB=$(( blocksToWrite * blockSizeMiB ))
+	minFreeMiB=$(( (freeMiB - writeMiB) / 2 ))
+	
+	# display warning message
+	echo "This will zero 90% of unused space ($writeMiB MiB) of the current filesystem."
+	echo "Press ENTER to continue or CTRL-C to abort ..."
+	# shellcheck disable=SC2034
+	read -r noop
+	
+	# double-check a given pid is in fact our backgrounded process
+	pid_is_our_child() {
+		child_pid=$1
+		parent_pid=$$
+		# NOTE: trimming is for old versions of ps (Jessie)
+		[ "$(ps -p "$child_pid" -o ppid= | tr -d ' \t')" = "$parent_pid" ] || return 1
+		return 0
+	}
+	
+	# trap SIGINT (ctrl-c) and SIGTERM to kill dd when this script is terminated
+	safe_interrupt() {
+		echo # blank line to place cursor nicely
+		echo "Check if dd is still running ..."
+		pid_is_our_child "$ddPid" || exit
+		echo "Kill dd ..."
+		kill "$ddPid" || echo
+		exit
+	}
+	trap safe_interrupt INT TERM
+	
+
+
+	# create file first, start dd in background, grab pid
+	touch zeros.nul
+	# switch to portable dd version if necessary
+	if dd --version 2>/dev/null | grep -q coreutils
+	then
+		dd if=/dev/zero of=zeros.nul oflag=dsync,nocache "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 &
+		ddPid=$!
+	else
+		dd if=/dev/zero of=zeros.nul oflag=sync "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 &
+		ddPid=$!
+	fi
+	
+	# show message, give dd 1 second to open the file, delete opened file
+	echo "dd pid is $ddPid, writing $writeMiB MiB. Press ctrl-c to abort ..."
+	sleep 1
+	rm -f zeros.nul
+	
+	# if "pv" is installed, run it to show a nice progress bar and ETA
+	if command -v pv > /dev/null && [ -e /proc/self/fdinfo ]
+	then
+		pv -d$ddPid:1 --size $((writeMiB * 1024 * 1024)) > /dev/null &
+		pvPid=$?
+	else
+		pvPid=""
+	fi
+	
+	# watch free space usage - if it drops below 5%, abort
+	while pid_is_our_child "$ddPid"
+	do
+		freeMiB=$(df . -P -m | tail -n1 | awk '{ print $4 }')
+		if [ "$freeMiB" -lt "$minFreeMiB" ]
+		then
+			if [ "$pvPid" != "" ] && pid_is_our_child "$pvPid"; then kill "$pvPid" || echo; fi
+			echo "" >&2
+			echo "" >&2
+			echo ""
+			echo ""
+			echo "Hit minimum free space watermark ($minFreeMiB MiB), aborting ..."
+			echo ""
+			echo ""
+			pid_is_our_child "$ddPid" || exit 2
+			kill "$ddPid" || echo
+			exit 3
+		fi
+		sleep 0.5
+	done
+	
+	# wait for dd (& pv) to exit
+	ddExitStatus=0
+	wait "$ddPid" || ddExitStatus=$?
+	if [ "$pvPid" != "" ]
+	then
+		if pid_is_our_child "$pvPid"; then kill "$pvPid" || echo; fi
+		# shellcheck disable=SC2034
+		wait "$pvPid" || pvExitStatus=$?
+	fi
+	
+	if [ $ddExitStatus -ne 0 ]
+	then
+		echo "" >&2
+		echo "" >&2
+		echo ""
+		echo ""
+		echo "Non-zero exit status from dd: $ddExitStatus"
+		echo ""
+		echo ""
+		exit 2
+	fi
+	
+	exit 0
+}
