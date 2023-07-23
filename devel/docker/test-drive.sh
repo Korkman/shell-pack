@@ -12,9 +12,10 @@ set -eu
 # initialize defaults
 AUTOSTART=${AUTOSTART:-yes} # run installer in guest-startup.sh
 FORCE_DOCKER=${FORCE_DOCKER:-no} # force use of docker although podman is available
+FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
-do_build="no"
-build_uncached="no"
+do_build="no" # perform docker build (append "build" to CLI to trigger)
+build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
 then
 	# XDG_RUNTIME_DIR missing, try fixing
@@ -54,7 +55,7 @@ then
 		fi
 	fi
 else
-	if [ "$(whoami)" = "root" ]
+	if [ "$FORCE_NO_SUDO" = "yes" ] || [ "$(whoami)" = "root" ]
 	then
 		echo "Using docker to run test-drive (I am root)"
 		docker="docker"
@@ -67,7 +68,7 @@ fi
 BUILD_FROM="${1:-debian:bullseye}"
 tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
 case "$BUILD_FROM" in
-	'debian:'*)
+	'debian:'*|'debian/eol:'*)
 		dockerfile="Dockerfile-Debian"
 		;;
 	ubuntu:*)
@@ -83,7 +84,7 @@ case "$BUILD_FROM" in
 		echo "Please provide distro name"
 		echo " - debian:bookworm"
 		echo " - debian:buster"
-		echo " - debian:stretch"
+		echo " - debian/eol:stretch"
 		echo " - ubuntu:xenial"
 		echo " - centos:8"
 		echo " - fedora:34"
@@ -124,7 +125,7 @@ fi
 # package src
 # exclude unnecessary .git and binaries potentially unsuitable for platform
 # also exclude dool.d to simulate first use experience (clear download cache for this)
-echo "Packaging ${srcdir}"
+echo "Package ${srcdir}"
 (cd "${srcdir}" && tar \
 	'--exclude=.git' \
 	'--exclude=rg' \
@@ -134,34 +135,39 @@ echo "Packaging ${srcdir}"
 	-czf "${tmpdir}/${download_file}" \
 ".")
 
+echo "Copy get.sh"
 cp -f "$srcdir/get.sh" "$tmpdir/get.sh"
 
-# create caching directory
+echo "Create caching directory"
 cachedir="$HOME/.cache/shell-pack-devel/docker/$tagname"
 mkdir -p "$cachedir"
 
-# copy over cached rg, sk, if present
+echo "Copy over cached rg, fzf, dool.d … if present"
 if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
 then
 	if [ -e "$cachedir/rg" ]
 	then
+		echo "found cached rg"
 		cp "$cachedir/rg" "$tmpdir/rg"
 	fi
 	if [ -e "$cachedir/fzf" ]
 	then
+		echo "found cached fzf"
 		cp "$cachedir/fzf" "$tmpdir/fzf"
 	fi
 	if [ -e "$cachedir/sk" ]
 	then
+		echo "found cached sk"
 		cp "$cachedir/sk" "$tmpdir/sk"
 	fi
 	if [ -e "$cachedir/dool.d" ]
 	then
+		echo "found cached dool.d"
 		cp -a "$cachedir/dool.d" "$tmpdir/"
 	fi
 fi
 
-# run
+echo "Run $docker"
 $docker run --rm \
 -e AUTOSTART="$AUTOSTART" \
 -e TERM="$TERM" \
@@ -170,7 +176,7 @@ $docker run --rm \
 --interactive \
 --tty "shell-pack:test-drive-${tagname}"
 
-# save downloaded rg, sk to cache
+echo "Save downloaded rg, fzf, dool.d, … to cache"
 if [ -e "$tmpdir/rg" ] && [ ! -e "$cachedir/rg" ]
 then
 	echo "Caching downloaded rg ..."
@@ -189,7 +195,7 @@ fi
 if [ -e "$tmpdir/dool.d" ] && [ ! -e "$cachedir/dool.d" ]
 then
 	echo "Caching downloaded dool.d ..."
-	cp -a "$tmpdir/dool.d" "$cachedir/"
+	cp -r "$tmpdir/dool.d" "$cachedir/"
 fi
 
 # clean-up

@@ -64,8 +64,11 @@ if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
 	cd ~
 	if [ -e ~/Downloads/dool.d ]
 	then
+		echo "distributing dool.d ..."
 		cp -a ~/Downloads/dool.d ~/.local/share/shell-pack/bin/
 		cp -a ~/Downloads/dool.d ~shpuser/.local/share/shell-pack/bin/
+	else
+		echo "dool.d not cached!"
 	fi
 	
 	echo "-------------------------------------------------"

@@ -3,7 +3,11 @@
 
 set -eu
 
-installer_log="$HOME/fish_installer_case.log"
+installer_log="$HOME/fish_installer.log"
+echo "fish installer started, logging to '$installer_log'"
+fish_latest="3.6.1"
+cmake_version="3.27.0"
+MAKE_J=${MAKE_J:-2} # NOTE: going beyond 2 gives OOM in default podman machines
 touch "$installer_log"
 echo "args: $0" >> "$installer_log"
 
@@ -38,7 +42,7 @@ else
 	exit
 fi
 
-if command -v sudo &> /dev/null
+if command -v sudo > /dev/null
 then
 	sudo() {
 		command sudo $@
@@ -51,40 +55,62 @@ else
 	}
 fi
 
+build_fish() {
+	version=$1
+	curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/$version/fish-$version.tar.xz" > fish.tar.xz
+	tar -xJf fish.tar.xz
+	cd fish-*
+	cmake .
+	make "-j$MAKE_J"
+	make install
+}
+
+install_cmake() {
+	curl -fsSL "https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-linux-x86_64.sh" > cmake.sh
+	chmod +x cmake.sh
+	./cmake.sh --prefix=/usr/local --exclude-subdir --skip-license
+}
 
 export DEBIAN_FRONTEND=noninteractive
 case "$distro-$version" in
-	'Debian-11'|'Kali-'*)
+	'Debian-n/a') # sid
+		installer_case='Debian-Sid'
+		# paste here
+		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_12/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
+		curl -fsSL 'https://download.opensuse.org/repositories/shells:fish:release:3/Debian_12/Release.key' | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+		sudo apt-get update
+		sudo apt-get -y install fish
+	;;
+	'Debian-12') # bookworm
+		installer_case='Debian-12'
+		# paste here
+		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_12/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
+		curl -fsSL 'https://download.opensuse.org/repositories/shells:fish:release:3/Debian_12/Release.key' | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+		sudo apt-get update
+		sudo apt-get -y install fish
+	;;
+	'Debian-11'|'Kali-'*) # bullseye
 		installer_case='Debian-11'
 		# paste here
 		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_11/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
-		curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_11/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
-		sudo apt update
-		sudo apt -y install fish
+		curl -fsSL 'https://download.opensuse.org/repositories/shells:fish:release:3/Debian_11/Release.key' | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+		sudo apt-get update
+		sudo apt-get -y install fish
 	;;
-	'Debian-10')
+	'Debian-10') # buster
 		installer_case='Debian-10'
 		# paste here
 		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_10/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
-		curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_10/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
-		sudo apt update
-		sudo apt -y install fish
+		curl -fsSL 'https://download.opensuse.org/repositories/shells:fish:release:3/Debian_10/Release.key' | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+		sudo apt-get update
+		sudo apt-get -y install fish
 	;;
-	'Debian-9')
-		installer_case='Debian-9'
-		# paste here
-		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_9.0/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
-		curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_9.0/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
-		sudo apt update
-		sudo apt -y install fish
-	;;
-	'Debian-8')
-		installer_case='Debian-8'
-		# paste here
-		echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_9.0/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
-		curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_9.0/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
-		sudo apt update
-		sudo apt -y install fish
+	'Debian-9'|'Debian-8') # stretch, jessie (NOTE: wheezy won't compile any 3.x release)
+		installer_case='Debian-Source-With-CMake'
+		apt-get -y install build-essential gettext libncurses5-dev git
+		cd /usr/local/src
+		install_cmake >> "$installer_log" 2>&1
+		build_fish "$fish_latest" >> "$installer_log" 2>&1
 	;;
 	'Ubuntu'*|'Pop'*)
 		installer_case='Ubuntu-any'
@@ -118,7 +144,9 @@ case "$distro-$version" in
 	;;
 	*)
 		installer_case='none'
+		echo "Unknown: $distro-$version"
 		echo "Cannot install fish :-("
+		exit 1
 	;;
 esac
 
