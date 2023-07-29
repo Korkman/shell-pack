@@ -545,16 +545,15 @@ function __qssh_master_connect
 				case r
 					for line in $sshErrors
 						#echo "!! $line"
-						if string match -q -- "*keygen*" "$line"
-							eval set sshKeyGenCmd $line
+						if string match --quiet --regex 'Offending.*key in ((?<offending_file>.*)):((?<offending_line>[0-9]+))' -- "$line"
+							set sshKeyGenCmd "-R" "$hostdef_hostname" "-f" "$offending_file"
 							break
 						end
 					end
 
 					if [ "$sshKeyGenCmd" != "" ]
+						# ssh-keygen -R doesn't remove related IP keys, so we improve ssh-keygen -R
 						__qssh_remove_keys $sshKeyGenCmd
-						# this doesn't remove related IP keys, so we improve ssh-keygen -R
-						#eval $sshKeyGenCmd
 						__qssh_master_connect $hostdef
 						return $status
 					else
