@@ -7,7 +7,7 @@ installer_log="$HOME/fish_installer.log"
 echo "fish installer started, logging to '$installer_log'"
 fish_latest="3.6.1"
 cmake_version="3.27.0"
-MAKE_J=${MAKE_J:-2} # NOTE: going beyond 2 gives OOM in default podman machines
+MAKE_J=${MAKE_J:-1} # NOTE: going beyond 1 sometimes deadlocks, 2 gives OOM in default podman machines
 touch "$installer_log"
 echo "args: $0" >> "$installer_log"
 
