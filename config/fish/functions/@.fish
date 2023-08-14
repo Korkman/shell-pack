@@ -45,9 +45,11 @@ function @ \
 	
 	set delay (math "$timestamp_target - "(date +%s))
 	echo "Sleeping $delay seconds ..."
-
-	# cut sleep to increase precision at end with the loop below
-	sleep (math "$delay - 2")
+	
+	if test $delay -gt 2
+		# cut sleep to increase precision at end with the loop below
+		sleep (math "$delay - 2")
+	end
 
 	# synchronize to the second
 	set idle 0
