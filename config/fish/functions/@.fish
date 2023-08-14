@@ -44,7 +44,7 @@ function @ \
 	end
 	
 	set delay (math "$timestamp_target - "(date +%s))
-	echo "Sleeping $delay seconds ..."
+	echo "Sleeping $delay seconds until "(date -d "@$timestamp_target" "+%Y-%m-%d %H:%M:%S")" …"
 	
 	if test $delay -gt 2
 		# cut sleep to increase precision at end with the loop below
