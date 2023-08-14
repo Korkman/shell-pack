@@ -15,7 +15,7 @@ function @ \
 		return 2
 	end
 
-	if ! isatty stdout
+	if ! isatty stdout || ! isatty stdin
 		echo "ERROR: Do not place '@' in a pipe." >&2
 		echo "Instead, enclose the entire pipe with quotes to make it a single commandline which will" >&2
 		echo "execute at the given time." >&2
