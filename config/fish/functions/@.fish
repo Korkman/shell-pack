@@ -30,7 +30,7 @@ function @ \
 	set command_and_args $argv[2..-1]
 
 	# interpret date / time
-	set timestamp_target (date -d "$at_time_human" +%s)
+	set timestamp_target (date -d "$at_time_human" +%s) || return 4
 	set timestamp_now (date +%s)
 
 	# correct +1day
