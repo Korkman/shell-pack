@@ -33,6 +33,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
    * ```ssmart```: shortcut to smartctl -x (skip /dev/)
    * ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
    * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
+   * ```@```: ad-hoc ```atd``` replacement for executing commands at a given time as if typed into the prompt
 
 ## Bundled tools
 On first startup, these tools will be downloaded and installed into a dedicated directory if not readily available
