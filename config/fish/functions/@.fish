@@ -1,14 +1,25 @@
-#! /usr/bin/fish
 function @ \
-	-d 'Execute command at a given time'
+	-d 'Execute command at a given time as if typed into the prompt'
 	if test (count $argv) -lt 2
-		echo "Usage: @ TIME COMMAND ...ARGS"
-		echo "Execute COMMAND with optional arguments ARGS at given TIME as if entered in the prompt"
-		echo "Examples for TIME (GNU compatible 'date'):"
-		echo "  14:00:00    -  execute at 14 'o clock this or next day"
-		echo "  '+1 hour'   -  execute 1 hour in the future"
-		echo "  'tue 01:00' -  execute Tuesday 1 o' clock"
-		exit 2
+		echo "Usage: @ TIME COMMAND ...ARGS" >&2
+		echo "" >&2
+		echo "Execute COMMAND with optional arguments ARGS at given TIME as if typed into the prompt" >&2
+		echo "" >&2
+		echo "Examples for TIME (GNU compatible 'date'):" >&2
+		echo "  14:00:00    -  execute at 14 'o clock this or next day" >&2
+		echo "  '+1 hour'   -  execute 1 hour in the future" >&2
+		echo "  'tue 01:00' -  execute Tuesday 1 o' clock" >&2
+		echo "" >&2
+		echo "Enclose pipes into quotes to execute them as a whole:" >&2
+		echo "  @ '+5 seconds' 'echo \"example\" | grep example'" >&2
+		return 2
+	end
+
+	if ! isatty stdout
+		echo "ERROR: Do not place '@' in a pipe." >&2
+		echo "Instead, enclose the entire pipe with quotes to make it a single commandline which will" >&2
+		echo "execute at the given time." >&2
+		return 3
 	end
 
 	if test "$TMUX" = ""
@@ -27,7 +38,7 @@ function @ \
 		set timestamp_target (date -d "+1 day $at_time_human" +%s)
 		if test $timestamp_target -lt $timestamp_now
 			echo "Requested time less than now, assuming user error!"
-			exit 1
+			return 1
 		end
 		echo "Requested time less than now, assuming +1 day"
 	end
