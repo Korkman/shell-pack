@@ -144,7 +144,7 @@ function __cheat_glyphs
 	set -l pl_a1 (set_color 711)""(set_color -b 711)" "(set_color normal; set_color 711)""(set_color normal)
 	set -l pl_a2 (set_color 171)""(set_color -b 171)" "(set_color normal; set_color 171)""(set_color normal)
 	set -l pl_a3 (set_color yellow)""(set_color -b yellow)" "(set_color normal; set_color yellow)""(set_color normal)
-	set -l policeline (set_color ff0)"    "(set_color normal)
+	set -l policeline (set_color ff0)""(set_color normal)
 	set -l style_b (echo -e '\e[1mBold\e[0m')
 	set -l style_i (echo -e '\e[3mItalic\e[0m')
 	set -l style_u (echo -e '\e[4mUnderline\e[0m')
@@ -156,7 +156,7 @@ function __cheat_glyphs
   │ Powerline Hollow Arrow
   │ Read-only lock
   │ Bookmark
-  │ Home
+ 󰋞 │ Home
   │ Debian Swirl Logo     Styles: $style_i, $style_s, $style_b and $style_u
   │ Exit OK
   │ Exit Error            Powerlines: $pl_a1 $pl_a2 $pl_a3

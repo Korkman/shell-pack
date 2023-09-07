@@ -140,7 +140,7 @@ function fish_prompt -d \
 	
 	if [ ! -z "$fish_private_mode" ]
 		if [ "$theme_nerd_fonts" = "yes" ]
-			set symbol \ufaf8
+			set symbol '󰗹'
 		else
 			set symbol '!'
 		end
@@ -336,7 +336,7 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 		__update_glyphs
 		fish_prompt_reset_segments
 		if [ "$theme_nerd_fonts" = "yes" ]
-			set symbol \ufaf8
+			set symbol 󰗹
 		else
 			set symbol '!'
 		end
@@ -464,7 +464,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		set_color $thisfg
 		if [ "$__shellpack_current_cmd_confidential" = "yes" ]
 			if [ "$theme_nerd_fonts" = "yes" ]
-				echo -n ' '\ufaf8' '
+				echo -n ' 󰗹 '
 			else
 				echo -n ' ! '
 			end
@@ -590,7 +590,7 @@ function __shellpack_cmd_duration -S -d 'Show command duration'
 	
 	if [ "$theme_nerd_fonts" = "yes" ]
 		# glyphs with some space
-		echo -n ' '\uf253' '
+		echo -n '  '
 	else
 		echo -n '  '
 	end
@@ -643,8 +643,8 @@ function __shellpack_timestamp -S -d 'Show the current timestamp'
 
 	if [ "$theme_nerd_fonts" = "yes" ]
 		# glyphs with some space
-		set __calendar_glyph \uf455" "
-		set __clock_glyph \uf43a" "
+		set __calendar_glyph " "
+		set __clock_glyph " "
 	else
 		set __calendar_glyph ""
 		set __clock_glyph ""

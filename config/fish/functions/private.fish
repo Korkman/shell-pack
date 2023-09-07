@@ -4,7 +4,7 @@ function private -d "Toggle private mode"
 		set_color -b "purple"
 		set_color "white"
 		if [ "$theme_nerd_fonts" = "yes" ]
-			set symbol ' '\ufaf8' '
+			set symbol ' 󰗹 '
 		else
 			set symbol ' ! '
 		end
