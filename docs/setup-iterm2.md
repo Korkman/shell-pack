@@ -1,8 +1,8 @@
 # Setting up iTerm2
 
 ## Nerd Font
- * Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansMono](https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DejaVuSansMono.zip)
- * Install the font, skip "Windows Compatible" named files
+* Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansM](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/DejaVuSansMono.zip)
+* Install the font on your system, skipping either all files named "Propo" or "Mono"
 
 ## iTerm2
 
@@ -11,7 +11,7 @@
 ```
 /usr/bin/env LC_NERDLEVEL=3 /usr/local/bin/fish -l
 ```
- * On profile tab "Text", set font to the installed Nerd Font with __only one__ "Mono" in the name
+ * On profile tab "Text", set font to the installed Nerd Font
  * On profile tab "Keys", set left option key to Esc+
  
  Note the iTerm2 fish integration script is included in shell-pack and automatically applied when iTerm2 is used.
