@@ -1,8 +1,8 @@
 # Setup any terminal
 
 ## Nerd Font
-* Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansMono](https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DejaVuSansMono.zip)
-* Install the font on your system, skipping either all files named "Windows Compatbile" or vice-versa
+* Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansM](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/DejaVuSansMono.zip)
+* Install the font on your system, skipping either all files named "Propo" or "Mono"
 
 ## Alternative: Powerline font
 If you failed to convince your terminal to use a Nerd Font, a Powerline font will at least show the most desired glyphs correctly.
