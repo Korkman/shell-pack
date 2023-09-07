@@ -10,7 +10,7 @@
   * Uncheck "Enable the menu accelerator key (F10)", because f10 is to exit mc
   * Set theme to a dark theme, because light themes for terminals are wrong
  * Add a new profile (+)
-  * On tab "Text", check custom font, select "DejaVuSansMono Nerd Font Mono", 11 point looks best (more on that later)
+  * On tab "Text", check custom font, select _any_ font, 11 point looks best (more on that later)
   * On tab "Command", check "Run a custom command", enter this:
 ```
 /usr/bin/env LC_NERDLEVEL=3 fish -l
@@ -19,18 +19,18 @@
   * Optionally make it default (click on triangle)
 
 ### Fix the font in dconf
-Since the picker will allow selecting monospaced fonts only, our initial pick was technically wrong. If you open a terminal now and run `cheat --glyphs`, you will see the policeline glyphs are cut half and spaced weird.
+Since the picker allows selecting monospaced fonts only, our initial pick is wrong.
 
-The fix is to edit the settings manually and set the font to "DejaVuSansMono Nerd Font" - note how it has one "mono" less in the name.
+Edit the settings manually and set the font to "DejaVuSansM Nerd Font".
 
  * Dump the dconf and edit the file
 ```
 dconf dump /org/gnome/terminal/ > ~/gnome-terminal.dconf
 edit ~/gnome-terminal.dconf
 ```
- * Spot the font setting, remove the "Mono" at the end
+ * Spot the font setting, change the name
 ```
-font='DejaVuSansMono Nerd Font 11'
+font='DejaVuSansM Nerd Font 11'
 ```
 * Import the dump
 ```
