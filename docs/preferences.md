@@ -18,7 +18,7 @@ mcedit
 * has ```ctrl-f``` mapped to search
 * has ```ctrl-l``` & ```alt-l``` mapped to "go to line"
 * has real tab characters, displayed as three spaces, set for indenting
-* for a full list, read [config/mc/ini](config/mc/ini) and [config/mc/mc.keymap](config/mc/mc.keymap)
+* for a full list, read [config/mc/ini](/config/mc/ini) and [config/mc/mc.keymap](/config/mc/mc.keymap)
 
 htop
 * displays memory usage as dedicated numbers
@@ -31,4 +31,4 @@ tmux
 * handles ssh agent forwarding properly (environment updates on attach)
 * shows a nice blue bar on the bottom
 * starts window index on 1
-* for a full list, read [.tmux.conf](config/.tmux.conf)
+* for a full list, read [.tmux.conf](/config/.tmux.conf)
