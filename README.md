@@ -39,6 +39,6 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
 On first startup, these tools will be downloaded and installed into a dedicated directory if not readily available
 on the system. Each tool will be presented and permission
 for download will be asked for:
-*  rg (ripgrep)
-*  fzf (fuzzy finder)
-*  dool (dstat replacement)
+ * [rg](https://github.com/BurntSushi/ripgrep) (ripgrep)
+ * [fzf](https://github.com/junegunn/fzf) (fuzzy finder)
+ * [dool](https://github.com/scottchiefbaker/dool) (dstat replacement)
