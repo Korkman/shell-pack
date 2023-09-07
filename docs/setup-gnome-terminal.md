@@ -1,9 +1,8 @@
 # Setting up gnome-terminal
 
 ## Nerd Font
-
- * Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansMono](https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/DejaVuSansMono.zip)
- * Place all \*.ttf files from the .zip file not named "Windows Compatible" in ~/.local/share/fonts/
+* Download your preferred Nerd Font from www.nerdfonts.com, for example [DejaVuSansM](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/DejaVuSansMono.zip)
+* Place all \*.ttf files from the .zip file not named "Propo" or "Mono" in ~/.local/share/fonts/
 
 ## Gnome Terminal
  * Shift + Right-click > Preferences
