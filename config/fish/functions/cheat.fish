@@ -145,8 +145,11 @@ function __cheat_glyphs
 	set -l pl_a2 (set_color 171)""(set_color -b 171)" "(set_color normal; set_color 171)""(set_color normal)
 	set -l pl_a3 (set_color yellow)""(set_color -b yellow)" "(set_color normal; set_color yellow)""(set_color normal)
 	set -l policeline (set_color ff0)"    "(set_color normal)
-	echo "For Nerdlevel 3, here's the Glyphs that your
-terminal should display properly:
+	set -l style_b (echo -e '\e[1mBold\e[0m')
+	set -l style_i (echo -e '\e[3mItalic\e[0m')
+	set -l style_u (echo -e '\e[4mUnderline\e[0m')
+	set -l style_s (echo -e '\e[9mStrike\e[0m')
+	echo -n "Terminal glyphs and capabilities test:
 
    ┌──────────────────────────┐
   │ Powerline Solid Arrow    └── This line is solid! (mc)
@@ -154,21 +157,19 @@ terminal should display properly:
   │ Read-only lock
   │ Bookmark
   │ Home
-  │ Debian Swirl Logo
+  │ Debian Swirl Logo     Styles: $style_i, $style_s, $style_b and $style_u
   │ Exit OK
   │ Exit Error            Powerlines: $pl_a1 $pl_a2 $pl_a3
-  │ Hourglass End         Fine lines in-between? Try font size.
+  │ Hourglass End                     Disrupted? Adjust font size.
   │ Calendar
   │ Walking man           Policeline: $policeline
  ↓ │ Arrow Down (mc)
  ✕ │ Close X (mc)
 ───┘   
- __
+ __ Glyphs must not be cut off - some symbols may be as wide as these two
+    underscores! If they don't, your font is monospace, which is wrong.
 
-The glyphs must not be cut off - some symbols appear as wide as these two
-underscores! If they don't, your font is monospace and many icons are tiny.
-
-And these fine colors should be distinguishable:
+Are these color gradients fine?
 "
 	# red
 	for i in 4 7 a c e
@@ -180,7 +181,7 @@ And these fine colors should be distinguishable:
 		echo -n "  "
 	end
 	set_color normal
-	echo
+	#echo
 	# yellow
 	for i in 4 7 a c e
 		set_color -b "$i""$i""$i""$i"00
@@ -191,7 +192,7 @@ And these fine colors should be distinguishable:
 		echo -n "  "
 	end
 	set_color normal
-	echo
+	#echo
 	# green
 	for i in 4 7 a c e
 		set_color -b 00"$i""$i"00
@@ -213,7 +214,7 @@ And these fine colors should be distinguishable:
 		echo -n "  "
 	end
 	set_color normal
-	echo
+	#echo
 	# blue
 	for i in 4 7 a c e
 		set_color -b 0000"$i""$i"
@@ -224,7 +225,7 @@ And these fine colors should be distinguishable:
 		echo -n "  "
 	end
 	set_color normal
-	echo
+	#echo
 	# magenta
 	for i in 4 7 a c e
 		set_color -b "$i""$i"00"$i""$i"
