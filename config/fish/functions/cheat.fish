@@ -45,14 +45,14 @@ Search args history           Alt-.
 
 Change directory
 ----------------
-cd ..                         Shift-Up
+cd ..                         Shift-Up          Alt-Up
 cd ~ | cd /                   Alt-Home
-Change directory              Shift-Down        Alt-X
+Change directory              Shift-Down        Alt-Down       Alt-X
 ... excluding dotfiles        Alt-Shift-Down    Alt-Shift-X
 ... recursive                 Alt-C
 ... recursive - dotfiles      Alt-Shift-C
-Navigate back                 Shift-Left        Alt-Y
-Navigate forward              Shift-Right       Alt-Shift-Y
+Navigate back                 Shift-Left        Alt-Left       Alt-Y
+Navigate forward              Shift-Right       Alt-Right      Alt-Shift-Y
 List tagged dirs              Alt-D
 
 Search files

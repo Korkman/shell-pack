@@ -692,6 +692,17 @@ end
 # upgrade becomes necessary, at which point stuff gets copied over and live shells will
 # reload with a policeline
 
-# currently none - 2023-03-28
+if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 1
+	#policeline "shell-pack silent update 1 applied"
+	set -g __sp_silent_update 1
+	# alt-left and -right in linux console (kmscon)
+	bind \e\e\[D "quick_dir_prev"
+	bind \e\e\[C "quick_dir_next"
+	# alt-down in linux console
+	bind \e\e\[B "skim-cd-widget-one"
+	# alt-up in linux console
+	bind \e\e\[A "quick_dir_up"
+end
+
 
 # end silent updates
