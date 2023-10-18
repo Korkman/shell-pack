@@ -112,11 +112,11 @@ case "$distro-$version" in
 		install_cmake >> "$installer_log" 2>&1
 		build_fish "$fish_latest" >> "$installer_log" 2>&1
 	;;
-	'Ubuntu'*|'Pop'*)
+	'Ubuntu'*|'Pop'*|'Linuxmint'*)
 		installer_case='Ubuntu-any'
 		sudo apt-get -y install software-properties-common
 		# paste here
-		sudo apt-add-repository -y --no-update ppa:fish-shell/release-3
+		sudo apt-add-repository -y ppa:fish-shell/release-3
 		sudo apt-get update
 		sudo apt-get -y install fish
 	;;
