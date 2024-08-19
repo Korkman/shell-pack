@@ -6,17 +6,19 @@
 {
 set -eu
 
+portToScan=22
 if [ -n "${1+x}" ]
 then
-	hostToScan=${1%:*}
-	portToScan=${1#*:}
-	[ "$hostToScan" = "$portToScan" ] && portToScan="22"
+	hostToScan="$1"
+	if [ -n "${2+x}" ]
+	then
+		portToScan="$2"
+	fi
 	echo "Connecting to '$hostToScan' on port '$portToScan' ..."
 else
 	hostToScan="localhost"
 	portToScan="22"
 fi
-
 
 # scan host for hostkeys, output in typical encodings to verify
 set +e

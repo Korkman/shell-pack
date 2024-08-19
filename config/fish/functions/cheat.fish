@@ -118,7 +118,7 @@ Toggle full private mode      private
 
 ========== for admins ==========
 
-List ssh fingerprints              ffingerprints
+List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports
 List established connections       lsnet
 dool with saved preset             ddool
