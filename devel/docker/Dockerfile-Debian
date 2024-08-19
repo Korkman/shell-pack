@@ -16,7 +16,7 @@ RUN apt-get update || \
 RUN apt-get install -y \
 	lsb-release gettext-base man-db xz-utils \
 	htop tmux procps mc screen curl ssh openssh-server netcat.openbsd aptitude \
-	less sudo vim pv
+	less sudo vim pv git
 RUN apt-get install -y iproute2 || echo "No iproute2 available, ss and consequently 'lsports' will not work"
 
 RUN apt-get install -y gpg || echo
@@ -37,5 +37,6 @@ RUN /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1)
 ENV LC_NERDLEVEL 3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

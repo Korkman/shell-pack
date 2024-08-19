@@ -24,18 +24,18 @@ function ggit -d \
 	set -l msg_filename "$__ggit_cache_dir/message.$fish_pid.txt"
 	
 	set -l fzf_binds (printf %s \
-	"enter:execute(echo {q} >> '$msg_filename')+clear-query+refresh-preview,"\
+	"enter:execute-silent(echo {q} >> '$msg_filename')+clear-query+refresh-preview,"\
 	"double-click:ignore,"\
 	"alt-s:preview(git -c color.ui=always status),"\
-	"alt-c:execute(echo commit; echo {q})+accept,"\
-	"alt-p:execute(echo commit_and_push; echo {q})+accept,"\
-	"alt-a:execute(echo add; echo {q})+accept,"\
-	"alt-d:execute(echo diff; echo {q})+accept,"\
-	"alt-x:execute(echo reset; echo {q})+accept,"\
-	"alt-i:execute(echo ignore; echo {q})+accept,"\
-	"f5:execute(echo refresh; echo {q})+accept,"\
-	"alt-m:execute(echo message)+accept,"\
-	"f4:execute(echo message)+accept,"\
+	"alt-c:print(commit)+accept,"\
+	"alt-p:print(commit_and_push)+accept,"\
+	"alt-a:print(add)+accept,"\
+	"alt-d:print(diff)+accept,"\
+	"alt-x:print(reset)+accept,"\
+	"alt-i:print(ignore)+accept,"\
+	"f5:print(refresh)+accept,"\
+	"alt-m:print(message)+accept,"\
+	"f4:print(message)+accept,"\
 	"f10:abort,"\
 	"esc:cancel,"\
 	'home:pos(-1),end:pos(0)'
@@ -53,7 +53,7 @@ function ggit -d \
 		end
 		set -e results
 		for line in $git_status; echo "$line"; end \
-		| safe-fzf \
+		| fzf \
 			--bind "$fzf_binds" \
 			--header "$fzf_help" \
 			--multi \
@@ -63,9 +63,10 @@ function ggit -d \
 			--preview "fishcall ggit diff_preview {} '$msg_filename'" \
 			--query "$msg_hold" \
 			--preview-window down \
+			--print-query \
 		| while read -l line; set -a results "$line"; end
 		
-		switch "$results[1]"
+		switch "$results[2]"
 			case "refresh"
 				__ggit_msg_hold
 				continue
@@ -144,14 +145,14 @@ function ggit -d \
 	builtin cd "$init_pwd"
 end
 
-function __ggit_msg_hold -S -d "Grab result[2] and hold in msg_hold"
-	if test "$results[2]" != ""
-		set msg_hold "$results[2]"
+function __ggit_msg_hold -S -d "Grab result[1] and hold in msg_hold"
+	if test "$results[1]" != ""
+		set msg_hold "$results[1]"
 	end
 end
-function __ggit_msg_append -S -d "Grab result[2] and append to msg_filename"
-	if test "$results[2]" != ""
-		echo "$results[2]" >> "$msg_filename"
+function __ggit_msg_append -S -d "Grab result[1] and append to msg_filename"
+	if test "$results[1]" != ""
+		echo "$results[1]" >> "$msg_filename"
 	end
 end
 

@@ -8,8 +8,10 @@ ARG BUILD_FROM
 ENV LC_ALL en_US.UTF-8
 
 RUN pacman -Sy
-RUN pacman --noconfirm -S lsb-release gettext man-db xz htop tmux procps mc screen curl less sudo ncurses
+RUN pacman --noconfirm -S lsb-release gettext man-db xz htop tmux procps mc \
+    screen curl less sudo ncurses openssh openbsd-netcat git
 
+RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 COPY added/fish-installer.sh /fish-installer.sh
 RUN /fish-installer.sh
 
@@ -17,5 +19,6 @@ RUN /fish-installer.sh
 ENV LC_NERDLEVEL 3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

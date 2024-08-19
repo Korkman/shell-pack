@@ -16,12 +16,12 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	set -l paste_absolute_path 'no'
 	
 	set -l skim_binds (printf %s \
-	"ctrl-v:execute(echo //paste:{})+accept,"\
-	"alt-l:execute(echo //list:{})+accept,"\
-	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
-	"shift-down:execute(echo //down:{})+accept,alt-down:execute(echo //down:{})+accept,"\
-	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
-	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
+	"ctrl-v:become(echo //paste:{})+accept,"\
+	"alt-l:become(echo //list:{})+accept,"\
+	"shift-up:become(echo //up)+accept,alt-up:become(echo //up)+accept,"\
+	"shift-down:become(echo //down:{})+accept,alt-down:become(echo //down:{})+accept,"\
+	"shift-left:become(echo //prev)+accept,alt-left:become(echo //prev)+accept,"\
+	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
 	"ctrl-q:abort"
 	)
 	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list'

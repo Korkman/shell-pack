@@ -110,7 +110,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		#| string replace --all --regex '[\x00-\x1A\x1C-\x1F]' '' \
 		# sed on macos Monterey does not support escapes in brackets
 		#| LC_ALL=C sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
-		| safe-fzf \
+		| fzf \
 			--no-multi \
 			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \

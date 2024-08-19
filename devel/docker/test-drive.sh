@@ -65,7 +65,7 @@ else
 	fi
 fi
 
-BUILD_FROM="${1:-debian:bullseye}"
+BUILD_FROM="${1:-debian:bookworm}"
 tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
 case "$BUILD_FROM" in
 	'debian:'*|'debian/eol:'*)

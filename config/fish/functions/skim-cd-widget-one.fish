@@ -19,12 +19,12 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	set -l paste_absolute_path 'no'
 
 	set -l skim_binds (printf %s \
-	"enter:execute(echo //final:{})+accept,"\
-	"alt-l:execute(echo //list:{})+accept,"\
-	"ctrl-v:execute(echo //paste:{})+accept,"\
-	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
-	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
-	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
+	"enter:become(echo //final:{})+accept,"\
+	"alt-l:become(echo //list:{})+accept,"\
+	"ctrl-v:become(echo //paste:{})+accept,"\
+	"shift-left:become(echo //prev)+accept,alt-left:become(echo //prev)+accept,"\
+	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
+	"shift-up:become(echo //up)+accept,alt-up:become(echo //up)+accept,"\
 	"shift-down:accept,alt-down:accept,"\
 	"ctrl-q:abort,"\
 	"esc:cancel"

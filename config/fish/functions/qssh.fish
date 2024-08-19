@@ -63,6 +63,9 @@ function qssh -d \
 			set -e argv[(contains --index -- --qssh-multipick $argv)]
 			set -x __qssh_multipick_cli_argv $argv
 			__qssh_multipick
+			if test $status -eq 2
+				return 2
+			end
 			return	
 		end
 		
@@ -1124,39 +1127,39 @@ function __qssh_mru_pick -d \
 		end
 		
 		set -l fzf_binds (printf %s \
-			'enter:execute(echo {q}; echo {1})+abort,'\
-			'alt-n:execute(echo {q}; echo --new)+abort,'\
-			'f1:execute(echo {q}; echo --help)+abort,'\
-			'f3:execute(echo {q}; echo --scp {1})+abort,'\
-			'f4:execute(echo {q}; echo --edit {1})+abort,'\
-			'f5:execute(echo {q}; echo --duplicate {1})+abort,'\
-			'f6:execute(echo {q}; echo --nickname {1})+abort,'\
-			'f8:execute(echo {q}; echo --remove {1})+abort,'\
-			'alt-a:execute(echo {q}; echo --agent-connect {1})+abort,'\
-			'alt-x:execute(echo {q}; echo --exit {1})+abort,'\
-			'alt-k:execute(echo {q}; echo --clear-keys {1})+abort,'\
-			'alt-t:execute(echo {q}; echo --toggle-key-check {1})+abort,'\
-			'alt-m:execute(echo {q}; echo --multipick {1})+abort,'\
-			'alt-p:execute(echo {q}; echo --toggle-persist {1})+abort,'\
-			'alt-s:execute(echo {q}; echo --sort)+abort,'\
-			'ctrl-r:execute(echo {q}; echo --reload)+abort,'\
-			'ctrl-o:execute(echo {q}; echo --local-shell)+abort,'\
-			'alt-q:execute(echo ""; echo --quit)+abort,'\
-			'ctrl-c:execute(echo ""; echo --quit)+abort,'\
-			'ctrl-d:execute(echo ""; echo --quit)+abort,'\
+			'enter:become(echo {q}; echo {1})+abort,'\
+			'alt-n:become(echo {q}; echo --new)+abort,'\
+			'f1:become(echo {q}; echo --help)+abort,'\
+			'f3:become(echo {q}; echo --scp {1})+abort,'\
+			'f4:become(echo {q}; echo --edit {1})+abort,'\
+			'f5:become(echo {q}; echo --duplicate {1})+abort,'\
+			'f6:become(echo {q}; echo --nickname {1})+abort,'\
+			'f8:become(echo {q}; echo --remove {1})+abort,'\
+			'alt-a:become(echo {q}; echo --agent-connect {1})+abort,'\
+			'alt-x:become(echo {q}; echo --exit {1})+abort,'\
+			'alt-k:become(echo {q}; echo --clear-keys {1})+abort,'\
+			'alt-t:become(echo {q}; echo --toggle-key-check {1})+abort,'\
+			'alt-m:become(echo {q}; echo --multipick {1})+abort,'\
+			'alt-p:become(echo {q}; echo --toggle-persist {1})+abort,'\
+			'alt-s:become(echo {q}; echo --sort)+abort,'\
+			'ctrl-r:become(echo {q}; echo --reload)+abort,'\
+			'ctrl-o:become(echo {q}; echo --local-shell)+abort,'\
+			'alt-q:become(echo ""; echo --quit)+abort,'\
+			'ctrl-c:become(echo ""; echo --quit)+abort,'\
+			'ctrl-d:become(echo ""; echo --quit)+abort,'\
 			'esc:cancel,'\
-			'f10:execute(echo ""; echo --quit)+abort,'\
+			'f10:become(echo ""; echo --quit)+abort,'\
 			'home:pos(0),end:pos(-1)'\
 		)
 		# not fzf compatible:
 		#	'enter:if-non-matched(execute:echo {q}; echo --instant-new+abort)+execute(echo {q}; echo {1})+abort,'\
-		#	'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
+		#	'esc:if-query-empty:become(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
 		
 		#	tee /tmp/debug_shellpack_skimlist | \
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
-			safe-fzf \
+			fzf \
 				$opt_query \
 				--no-multi \
 				--bind "$fzf_binds" \
@@ -1228,6 +1231,9 @@ function __qssh_exec --no-scope-shadowing
 	
 	if set -q _flag_multipick
 		__qssh_multipick $query
+		if test $status -eq 2
+			return 2
+		end
 		return 0
 		
 	else if set -q _flag_clear_keys
@@ -1450,20 +1456,20 @@ function __qssh_multipick -d \
 				set opt_sort cat
 			end
 			set -l fzf_binds (printf %s \
-				'f1:execute(echo {q}; echo --help)+abort,'\
+				'f1:become(echo {q}; echo --help)+abort,'\
 				'esc:cancel,'\
-				'f10:execute(echo ""; echo --quit)+abort,'\
-				'alt-m:execute(echo --mirror-keyboard)+accept,'\
-				'alt-o:execute(echo --one-window)+accept,'\
-				'alt-s:execute(echo --sort)+accept,'\
+				'f10:become(echo ""; echo --quit)+abort,'\
+				'alt-m:print(--mirror-keyboard)+accept,'\
+				'alt-o:print(--one-window)+accept,'\
+				'alt-s:print(--sort)+accept,'\
 				'home:pos(0),end:pos(-1)'\
 			)
 			# not fzf compatible
-			#	'esc:if-query-empty:execute(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
+			#	'esc:if-query-empty:become(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
 			set skim_answer (\
 				__qssh_mru_pick_data | \
 				$opt_sort | \
-				safe-fzf \
+				fzf \
 					$opt_query \
 					--multi \
 					--color=header:\#ff0000 \
@@ -1483,6 +1489,14 @@ function __qssh_multipick -d \
 			# not fzf compatible
 			# ,selected:\#ffff00
 			set sk_exit $status
+			set query $skim_answer[1]
+			set -e skim_answer[1]
+			
+			#for item in $skim_answer
+			#	echo "i:"
+			#	echo $item
+			#end
+			#return
 			
 			if string match -q -- '--sort' $skim_answer[1]
 				if [ "$_flag_sort" = "yes" ]
@@ -1505,16 +1519,6 @@ function __qssh_multipick -d \
 				set _flag_mirror_keyboard "yes"
 				set _flag_one_window "yes"
 			end
-			
-			# for item in $skim_answer
-			# 	echo "i:"
-			# 	echo $item
-			# end
-			# __qssh_pause
-			
-			echo "$skim_answer[1]" | read --export query
-			#set -x query (string unescape -- $answer[1])
-			set -e skim_answer[1]
 			
 			if string match -q -- '--quit' $skim_answer[1]
 				return
@@ -1554,6 +1558,8 @@ function __qssh_multipick -d \
 		# condition caused by self-launch
 		set -l qssh_base_delay (math 20 x (count $hostlist) )
 		set -l qssh_base_delay 0
+		set -l return_mode 0
+		
 		for answer in $hostlist
 			set i (math $i + 1)
 			set -l qssh_delay 0
@@ -1583,20 +1589,40 @@ function __qssh_multipick -d \
 			#set -l --prepend tmux_arg fish -il -c qssh -- 
 			
 			# method 5: try bad hack (qssh-self-launch)
-			set -l tmux_arg $answer
-			set -l --prepend tmux_arg qssh --qssh-self-launch
-			set -l tmux_arg (string escape -- $tmux_arg)
-			set -l tmux_arg "echo 'Launching qssh multipick pane $i ... ' && sleep $qssh_delay && $tmux_arg"
-			set -l --prepend tmux_arg fish -il -C
+			#set -l tmux_arg $answer
+			#set -l --prepend tmux_arg qssh --qssh-self-launch
+			#set -l tmux_arg (string escape -- $tmux_arg)
+			#set -l tmux_arg "echo 'Launching qssh multipick pane $i ... ' && sleep $qssh_delay && $tmux_arg"
+			#set -l --prepend tmux_arg fish -il -C
+			
+			# method 5 was previously working, including ctrl-c, but broke at some point in the past
+
+			# method 6: do simply run qssh as in method 2, but run it via commandline manipulation, see below
+			# this is the most straight-forward way I could think of to break out of the input confusion (who gets ctrl-c?) 
+			set -l tmux_arg (string escape -- $answer)
+			set -l --prepend tmux_arg qssh
+			
+			#echo "Multipick launcher is currently broken, sorry :-("
+			#__qssh_pause
+			#return
+			
+			#echo "$tmux_arg"
+			#return
 			
 			if [ $i -eq 1 ]
+				# first connection will decide new or existing session
 				if [ "$TMUX" = "" ]
+					if status is-interactive
+						# when executed as a fish function, we need some trickery down below
+						set return_mode 2
+					end
 					set -a tmux_arglist new-session
 				else
 					# already in tmux, open new window
 					set -a tmux_arglist new-window
 				end
 			else
+				# all other connections are part of what was decided earlier
 				if [ "$_flag_one_window" = "yes" ]
 					set -a tmux_arglist split-window
 				else
@@ -1622,13 +1648,16 @@ function __qssh_multipick -d \
 				setw pane-active-border-style bg=\#aaaa00,fg=\#000000 \; setw pane-border-style bg=\#aaaa00,fg=\#000000 \;
 		end
 		
-		#setw window-style bg=\#330101,fg=\#ffffff \; setw window-active-style bg=\#330101,fg=\#ffffff \; \
-		
-		#echo tmux (string escape -- $tmux_arglist)
-			
-		#__qssh_pause
-		tmux $tmux_arglist
-		return $status
+		if test $return_mode -eq 0
+			# existing tmux opens a new window - we need no trickery here
+			tmux $tmux_arglist
+		else
+			# launching tmux via user's commandline and exiting qssh function
+			set -l tmux_arglist (string escape -- $tmux_arglist)
+			commandline " tmux $tmux_arglist; clear"
+			commandline -f execute
+		end
+		return $return_mode
 	end
 	return 1
 end

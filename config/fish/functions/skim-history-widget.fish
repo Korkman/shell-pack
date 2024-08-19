@@ -4,9 +4,9 @@ function skim-history-widget -d "Show command history"
 	begin
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT $SKIM_DEFAULT_OPTIONS $SKIM_CTRL_R_OPTS -m"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
-		set -lx bind (string escape -- 'f8:execute[printf \'\0delete\0\' ]+accept')
+		set -lx bind (string escape -- 'f8:print()+print(delete)+accept')
 		history -z \
-		| eval (__skimcmd) --read0 --print0  --bind $bind --exact --tiebreak index \
+		| eval (__skimcmd) --read0 --print0 --bind $bind --exact --tiebreak index \
 		--header "'skim history. search for and select past cmd or esc to abort. f8 to delete.'" -q '(commandline)' \
 		| while read -zl result; set -a results (string escape -- $result); end
 		

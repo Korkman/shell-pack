@@ -25,12 +25,12 @@ function shell-pack-deps-install-fzf
 	echo "Project website: https://github.com/junegunn/fzf"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "0.38.0"
+		set pversion "0.54.3"
 	end
-	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv6.tar.gz"
-	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_armv7.tar.gz"
-	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-darwin_amd64.zip"
-	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/VERSION/fzf-VERSION-linux_amd64.tar.gz"
+	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv6.tar.gz"
+	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv7.tar.gz"
+	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-darwin_amd64.zip"
+	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_amd64.tar.gz"
 	
 	set initial_dir "$PWD"
 	
@@ -155,7 +155,7 @@ function shell-pack-deps-install-ripgrep
 	echo "Project website: https://github.com/BurntSushi/ripgrep"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "13.0.0"
+		set pversion "14.1.0"
 	end
 	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-arm-unknown-linux-gnueabihf.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-apple-darwin.tar.gz"
@@ -221,7 +221,7 @@ function shell-pack-deps-install-dool
 	echo "Project website: https://github.com/scottchiefbaker/dool"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "1.2.0"
+		set pversion "1.3.2"
 	end
 	set url "https://github.com/scottchiefbaker/dool/archive/refs/tags/vVERSION.tar.gz"
 	

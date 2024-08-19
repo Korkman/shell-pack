@@ -12,18 +12,19 @@ function skim-file-widget -d "List files and folders"
 	set -l paste_absolute_path 'no'
 
 	set -l skim_binds (printf %s \
-	"ctrl-p:toggle-preview,"\
-	"f4:execute(echo //mcedit)+accept,"\
-	"f3:execute(echo //mcview)+accept,"\
-	"ctrl-l:execute(echo //less)+accept,"\
+	"alt-p:toggle-preview,ctrl-p:toggle-preview,"\
+	"f4:execute(mcedit {}),"\
+	"f3:execute(mcview {}),"\
+	"ctrl-l:execute(less {}),"\
 	"ctrl-v:accept,"\
-	"alt-v:execute(echo //vi)+accept,"\
-	"shift-up:execute(echo //up)+accept,alt-up:execute(echo //up)+accept,"\
-	"shift-left:execute(echo //prev)+accept,alt-left:execute(echo //prev)+accept,"\
-	"shift-right:execute(echo //next)+accept,alt-right:execute(echo //next)+accept,"\
+	"alt-v:execute(vi {}),"\
+	"shift-up:print(//up)+accept,alt-up:print(//up)+accept,"\
+	"shift-down:print(//down)+accept,alt-down:print(//down)+accept,"\
+	"shift-left:print(//prev)+accept,alt-left:print(//prev)+accept,"\
+	"shift-right:print(//next)+accept,alt-right:print(//next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help 'search files | tab:select enter:paste c-v:paste c-p:preview c-l:less alt-v:vim f3:mcview f4:mcedit s-arrows:navigate'
+	set -l skim_help 'search files | tab:select enter:paste c-v:paste alt-p:preview c-l:less alt-v:vim f3:mcview f4:mcedit s-arrows:navigate'
 
 	# "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
 	# $dir itself, even if hidden.
@@ -46,24 +47,13 @@ function skim-file-widget -d "List files and folders"
 		--prompt "'Search filenames: '" \
 		| while read -l r; set result $result $r; end
 		
-		if [ "$result[1]" = "//mcedit" ]
-			mcedit "$result[2]"
-			set -e result
-			break
-		else if [ "$result[1]" = "//mcview" ]
-			mcview "$result[2]"
-			set -e result
-			break
-		else if [ "$result[1]" = "//less" ]
-			less "$result[2]"
-			set -e result
-			break
-		else if [ "$result[1]" = "//vi" ]
-			vi "$result[2]"
-			set -e result
-			break
-		else if [ "$result[1]" = "//up" ]
+		if [ "$result[1]" = "//up" ]
 			cd ..
+			set paste_absolute_path 'yes'
+			__force_redraw_prompt
+			continue
+		else if [ "$result[1]" = "//down" ]
+			cd "$result[2]"
 			set paste_absolute_path 'yes'
 			__force_redraw_prompt
 			continue

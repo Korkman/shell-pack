@@ -14,7 +14,7 @@ RUN yum -y install epel-release || echo
 RUN yum install -y \
 	man-db \
 	htop tmux procps mc screen \
-	less sudo vim
+	less sudo vim git
 RUN yum install -y xz gettext
 RUN yum install -y curl-minimal || yum install -y curl
 RUN yum install -y redhat-lsb-core --skip-broken
@@ -29,5 +29,6 @@ RUN /fish-installer.sh
 ENV LC_NERDLEVEL 3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

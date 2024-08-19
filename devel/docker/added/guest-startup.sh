@@ -53,6 +53,16 @@ chown -R shpuser:shpuser /home/shpuser
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
 chsh shpuser -s $(command -v fish) &> /dev/null || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
+# ggit testing grounds
+(cd ~
+mkdir ggit-test
+cd ggit-test
+git init
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+echo "New file" > newfile.txt
+)
+
 # autorun installer on first startup
 if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
 	echo "-------------------------------------------------"

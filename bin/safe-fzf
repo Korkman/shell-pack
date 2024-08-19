@@ -1,8 +1,0 @@
-#! /bin/sh
-
-# fzf will not escape {} properly ("text\" becomes 'text\' <- this is invalid in fish)
-# see https://github.com/junegunn/fzf/issues/3224
-# using SHELL=/bin/sh as workaround
-
-export SHELL=/bin/sh
-exec fzf "$@"

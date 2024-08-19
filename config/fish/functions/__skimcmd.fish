@@ -8,5 +8,5 @@ function __skimcmd
 	#end
 	
 	#echo "sk"
-	echo "safe-fzf"
+	echo "fzf"
 end
