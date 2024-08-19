@@ -1,0 +1,32 @@
+#! /bin/sh
+
+echo "Turn your current installation of shell-pack into a development environment?"
+echo "(this will link ~/.local/share/shell-pack/bin and ../config to this git chechkout)"
+printf "(y/N)> "
+read -r answer
+
+if [ "$answer" != "y" ]
+then
+	exit 2
+fi
+
+if [ ! -e "$HOME/.local/share/shell-pack/bin" ]
+then
+	echo "No shell-pack installed?"
+	exit 3
+fi
+
+if [ -e "$HOME/.local/share/shell-pack/bin.trueinstall" ] || [ -e "$HOME/.local/share/shell-pack/config.trueinstall" ]
+then
+	echo "This installation was previously converted."
+	exit 1
+fi
+
+DEVEL_DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
+
+mv "$HOME/.local/share/shell-pack/bin" "$HOME/.local/share/shell-pack/bin.trueinstall"
+mv "$HOME/.local/share/shell-pack/config" "$HOME/.local/share/shell-pack/config.trueinstall"
+ln -s "$DEVEL_DIR/bin" "$HOME/.local/share/shell-pack/bin"
+ln -s "$DEVEL_DIR/config" "$HOME/.local/share/shell-pack/config"
+
+echo "Now run shell-pack-check-deps"
