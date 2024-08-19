@@ -110,7 +110,7 @@ Search in file for content     rrg-in-file -f FILE REGEX
   share session 'one'         shareone
   custom session              mmux SESSION [ ... see usage ]
 
-Execute command at time       @ TIME COMMAND ...ARGS
+Execute commandline at time   @ 'TIME' ... | ...
 
 Toggle full private mode      private
 - no history read / written

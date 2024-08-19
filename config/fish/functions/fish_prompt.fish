@@ -314,8 +314,8 @@ end
 
 function __shellpack_erase_command_lines -d "Try to erase all lines a typed cmd took to display, assuming cursor is at the end"
 		__shellpack_get_string_term_lines | read linesburned
-		#set -l linesburned (cat | __shellpack_get_string_term_lines)
-		for i in (seq 1 $linesburned)
+		#set -l linesburned 2
+		for i in (seq 0 $linesburned)
 			# move cursor up
 			echo -en '\033[1A'
 			# clear line
@@ -330,7 +330,13 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 	end
 	
 	set -l __new_cmdline (echo "$argv[1]")
-	if [ (string length -- "$__new_cmdline") -gt 1 ] && string match -- " " (string sub -s 1 -l 1 -- "$__new_cmdline") ]
+	set -g __shellpack_current_cmd_user_hidden no
+	set -g __shellpack_current_cmd_confidential no
+	if [ (string length -- "$__new_cmdline") -gt 2 ] && string match -- "  " (string sub -s 1 -l 2 -- "$__new_cmdline") ]
+		# two spaces: internal code for "hidden from user"
+		echo "$argv[1]" | __shellpack_erase_command_lines
+		set -g __shellpack_current_cmd_user_hidden yes
+	else if [ (string length -- "$__new_cmdline") -gt 1 ] && string match -- " " (string sub -s 1 -l 1 -- "$__new_cmdline") ]
 		echo "$argv[1]" | __shellpack_erase_command_lines
 		# reminder to clear history
 		__update_glyphs
@@ -344,8 +350,6 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 		fish_prompt_print_segments
 		echo "Private history: 'up' to edit. Solo space or other cmd clears."
 		set -g __shellpack_current_cmd_confidential yes
-	else
-		set -g __shellpack_current_cmd_confidential no
 	end
 end
 
@@ -447,6 +451,10 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		set do_show_exit_status "no"
 	end
 
+	if [ "$__shellpack_current_cmd_user_hidden" = "yes" ]
+		# user hidden, no status line
+		set do_show_exit_status "no"
+	end
 
 	# ignore empty lines and backgrounding tasks
 	if [ "$do_show_exit_status" = "yes" ]
@@ -668,6 +676,9 @@ end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
 	"Reset exit status variables on enter"
+	if ! commandline --is-valid
+		return
+	end
 	__sp_reset_exit_status
 end
 
@@ -686,15 +697,91 @@ function __sp_get_pending_job_pids -d \
 	end
 end
 
+function __sp_delay_exec_hook -e sp_submit_commandline -d \
+	"Delay execution when commandline starts with @ 'timespec'"
+	
+	if ! commandline --is-valid
+		return
+	end
+	
+	set -l cmd (commandline)
+	echo "$cmd" | read -a --tokenize tokens
+	
+	if test "$tokens[1]" = '@'
+		set -l at_time_human "$tokens[2]"
+		echo ""
+		if __sp_delay_exec "$at_time_human"
+			# move cursor up
+			echo -en '\033[1A'
+			# clear line
+			echo -en '\033[2K'
+			# move cursor up
+			echo -en '\033[1A'
+			
+			#set cmd (string replace --regex "^ *@.*?: *" "" -- $cmd)
+			#commandline $cmd
+		else
+			echo ""
+			echo "Usage: @ 'TIME' COMMANDLINE" >&2
+			echo "" >&2
+			echo "Execute COMMANDLINE at given TIME" >&2
+			echo "" >&2
+			echo "Examples for TIME (GNU compatible 'date'):" >&2
+			echo "  14:00:00    -  execute at 14 'o clock this or next day" >&2
+			echo "  '1 hour'    - execute 1 hour in the future" >&2
+			echo "  'tue 01:00' -  execute Tuesday 1 o' clock" >&2
+			echo "" >&2
+			echo "Pipes are supported and will start on schedule:" >&2
+			echo "  @ '5 seconds' echo \"print my example\" | grep \"my example\"" >&2
+			commandline "  commandline "(string escape -- $cmd)
+		end
+	end
+end
+
+function __sp_delay_exec
+	set -l at_time_human $argv
+	if test "$at_time_human" = ""
+		echo "Time argument missing"
+		return 1
+	end
+	# interpret date / time
+	set timestamp_target (date -d "$at_time_human" +%s) || return 4
+	set timestamp_now (date +%s)
+	
+	# correct +1day
+	if test $timestamp_target -lt $timestamp_now
+		set timestamp_target (date -d "+1 day $at_time_human" +%s)
+		if test $timestamp_target -lt $timestamp_now
+			echo "Requested time less than now, assuming user error!"
+			return 1
+		end
+		echo "Requested time less than now, assuming +1 day"
+	end
+	
+	set delay (math "$timestamp_target - "(date +%s))
+	echo "Delay $delay seconds until "(date -d "@$timestamp_target" "+%Y-%m-%d %H:%M:%S")" …"
+	
+	if test $delay -gt 2
+		# cut sleep to increase precision at end with the loop below
+		sleep (math "$delay - 2")
+	end
+	
+	# synchronize to the second
+	set idle 0
+	while test (date +%s) -lt $timestamp_target
+		set idle (math $idle + 1)
+	end
+end
+
 # begin silent updates (avoid reload)
 
 # from time to time, upgraded shells can be live patched here until a config.fish
 # upgrade becomes necessary, at which point stuff gets copied over and live shells will
 # reload with a policeline
 
-if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 1
+if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 2
 	#policeline "shell-pack silent update 1 applied"
-	set -g __sp_silent_update 1
+	set -g __sp_silent_update 2
 	# alt-left and -right in linux console (kmscon)
 	bind \e\e\[D "quick_dir_prev"
 	bind \e\e\[C "quick_dir_next"
@@ -702,6 +789,8 @@ if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 1
 	bind \e\e\[B "skim-cd-widget-one"
 	# alt-up in linux console
 	bind \e\e\[A "quick_dir_up"
+	# custom event: pressing enter emits custom event before fish_preexec
+	bind \r "if ! commandline --paging-mode; emit sp_submit_commandline; end; commandline -f execute"
 end
 
 
