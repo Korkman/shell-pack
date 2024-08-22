@@ -676,7 +676,7 @@ end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
 	"Reset exit status variables on enter"
-	if ! commandline --is-valid
+	if test (__sp_vercmp "$FISH_VERSION" '3.7.1') -ge 0 && ! commandline --is-valid
 		return
 	end
 	__sp_reset_exit_status
@@ -700,7 +700,7 @@ end
 function __sp_delay_exec_hook -e sp_submit_commandline -d \
 	"Delay execution when commandline starts with @ 'timespec'"
 	
-	if ! commandline --is-valid
+	if test (__sp_vercmp "$FISH_VERSION" '3.7.1') -ge 0 && ! commandline --is-valid
 		return
 	end
 	
