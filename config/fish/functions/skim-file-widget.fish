@@ -50,19 +50,25 @@ function skim-file-widget -d "List files and folders"
 		if [ "$result[1]" = "//up" ]
 			cd ..
 			set paste_absolute_path 'yes'
+			echo
 			__force_redraw_prompt
 			continue
 		else if [ "$result[1]" = "//down" ]
-			cd "$result[2]"
+			if test -d "$result[2]"
+				cd "$result[2]"
+			end
 			set paste_absolute_path 'yes'
+			echo
 			__force_redraw_prompt
 			continue
 		else if [ "$result[1]" = "//prev" ]
 			quick_dir_prev
+			echo
 			__force_redraw_prompt
 			continue
 		else if [ "$result[1]" = "//next" ]
 			quick_dir_next
+			echo
 			__force_redraw_prompt
 			continue
 		end

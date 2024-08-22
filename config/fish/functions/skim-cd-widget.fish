@@ -70,7 +70,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				cd -- "$result"
 				break
 			end
-			
+			echo
 			__force_redraw_prompt
 		else
 			cd "$original_dir"

@@ -102,8 +102,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 			if test $cd_success
 				set skim_query ""
 				
-				# move cursor down (fzf)
-				echo -en '\033[1B'
+				echo
 				__force_redraw_prompt
 			else
 				#echo "cd failed."
