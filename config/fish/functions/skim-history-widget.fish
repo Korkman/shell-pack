@@ -39,5 +39,5 @@ function skim-history-widget -d "Show command history"
 		end
 		
 	end
-	__force_redraw_prompt
+	commandline -f repaint
 end
