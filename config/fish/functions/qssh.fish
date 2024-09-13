@@ -569,7 +569,7 @@ function __qssh_master_connect
 			__qssh_echo_interactive "Password required ..."
 			set -x __qssh_nobatch yes
 			__qssh_master_connect $hostdef
-			set -l cmd_copy_id "ssh-copy-id $hostdef_user@$hostdef_hostname -p$hostdef_port -o ControlPath=$controlPath"
+			set -l cmd_copy_id "ssh-copy-id -p $hostdef_port -o ControlPath=$controlPath $hostdef_user@$hostdef_hostname"
 			__qssh_echo_interactive "$cmd_copy_id"
 			read -P "Copy your public keys to authorized_keys file like this? (y/N) > " answer || set answer n
 			if [ "$answer" = "y" ]
