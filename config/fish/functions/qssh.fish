@@ -157,7 +157,7 @@ function qssh -d \
 			return
 		else if contains -- --qssh-autocomplete-host $argv
 			if __qssh_cache_valid "$__qssh_db_autocomplete_cache_file"
-				cat "$__qssh_db_autocomplete_cache_file"
+				flock "$__qssh_db_autocomplete_cache_file" cat "$__qssh_db_autocomplete_cache_file"
 			else
 				__qssh_db_mru_table __qssh_mru_autocomplete_host_table_cb
 			end
@@ -1101,7 +1101,7 @@ end
 function __qssh_mru_pick_data
 	set -x cnt_control_persist_checks $__qssh_mru_pick_control_persist_checks
 	if __qssh_cache_valid $__qssh_db_skim_cache_file
-		cat $__qssh_db_skim_cache_file | __qssh_mru_pick_refresh_data
+		flock "$__qssh_db_skim_cache_file" cat "$__qssh_db_skim_cache_file" | __qssh_mru_pick_refresh_data
 	else
 		# update cache in background
 		__qssh_cache_update
@@ -1949,8 +1949,8 @@ function __qssh_cache_valid --argument filename
 end
 
 function __qssh_cache_invalidate
-	rm $__qssh_db_autocomplete_cache_file
-	rm $__qssh_db_skim_cache_file
+	flock "$__qssh_db_skim_cache_file" rm "$__qssh_db_skim_cache_file"
+	flock "$__qssh_db_autocomplete_cache_file" rm "$__qssh_db_autocomplete_cache_file"
 end
 
 function __qssh_window_title_idle
