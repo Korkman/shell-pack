@@ -73,7 +73,10 @@ function skim-file-widget -d "List files and folders"
 			__force_redraw_prompt
 			continue
 		else if [ "$result[1]" = "//chdir" ]
-			set -l chdir_dest (dirname "$result[2]")
+			set -l chdir_dest "$result[2]"
+			if [ ! -d "$chdir_dest" ]
+				set chdir_dest (dirname "$chdir_dest")
+			end
 			cd "$chdir_dest"
 			commandline -f repaint
 			return
