@@ -42,6 +42,9 @@ function qunchroot -d "Tear down bind mounts in chroot"
 		if findmnt "$targetDir/dev" > /dev/null
 			set err3 (umount --recursive "$targetDir/dev" 2>&1) || set failed yes
 		end
+		if findmnt "$targetDir/run" > /dev/null
+			set err4 (umount --recursive "$targetDir/run" 2>&1) || set failed yes
+		end
 		if [ "$failed" = "no" ]
 			break
 		end
@@ -61,6 +64,10 @@ function qunchroot -d "Tear down bind mounts in chroot"
 		if [ "$err3" != "" ]
 			echo "dev:"
 			echo "$err3"
+		end
+		if [ "$err4" != "" ]
+			echo "run:"
+			echo "$err4"
 		end
 	end
 end

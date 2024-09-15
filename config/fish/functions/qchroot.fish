@@ -61,6 +61,9 @@ Do not speficy TARGET to use current directory.
 		mount --rbind /proc "$targetDir/proc"  || exit 3
 		mount --make-rslave "$targetDir/proc"
 	end
+	if ! findmnt "$targetDir/run" > /dev/null
+		mount -t tmpfs tmpfs "$targetDir/run"
+	end
 	if ! set -q _flag_mount_only
 		echo "Chroot ..."
 		set -l debian_chroot (string split -r -m1 / -- $targetDir)[2]
