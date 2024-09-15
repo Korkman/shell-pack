@@ -4,14 +4,11 @@
 function ssmart
   if test "$argv[1]" = ""
     echo "ssmart will 'smartctl -x | less' for a device name"
-    echo "set env like this for additional params: SSMART_EXTRA='-d sat'"
-    echo "arg #1: device name (without /dev) required"
+    echo "arg #1: device name (/dev may be omitted) required"
     return 1
   end
   
-  if test "$argv[2]" != ""
-    echo "no more than 1 argument allowed"
-    return 1
-  end
-  smartctl $SSMART_EXTRA -x /dev/$argv[1] | less
+  set -l dev "$argv[-1]"
+  
+  smartctl $argv[1..-2] -x $dev | less '+/.*(Reallocated_Sector_Ct|Wear_Leveling_Count|Uncorrectable_Error_Cnt|Seek_Error_Rate|Power_On_Hours|Current_Pending_Sector|Available Spare|Data Units Written|Power On Hours|Media and Data Integrity Errors).*$' +g
 end

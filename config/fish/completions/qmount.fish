@@ -1,1 +1,1 @@
-complete --no-files --command qmount --keep-order --arguments "(__sp_complete_qmount)"
+complete --no-files --command qmount --keep-order --arguments "(__sp_get_blockdevice_completion --unmounted)"

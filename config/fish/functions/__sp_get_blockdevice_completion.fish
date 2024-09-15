@@ -1,14 +1,15 @@
-function __sp_complete_qmount -d \
-	"Autocomplete for qmount, listing all currently unmounted blockdevices"
+function __sp_get_blockdevice_completion
+	argparse u/unmounted d/no-partitions -- $argv
 	
+	# using lsblk and parsing it with regex
 	# NOTE: --json is nice, but unreliably parsed until jq is included in deps
-
 	set -l lsblk_out
-
-
-	# using lsblk --json and parsing it with regex
-	set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
-
+	if set -ql _flag_no_partitions
+		set lsblk_out (command lsblk --nodeps --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
+	else
+		set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
+	end
+	
 	function __sp_complete_qmount_lineparser -S
 		string match --regex -q '^'\
 'NAME="(?<name>.*)"'\
@@ -50,8 +51,7 @@ function __sp_complete_qmount -d \
 			set identifiers "$identifiers""$size"
 			
 			set identifiers (string trim -- $identifiers)
-			if test "$mountpoint" = ""
-				# only suggest unmounted options
+			if not set -ql _flag_unmounted || test "$mountpoint" = ""
 				echo "$name"\t"$identifiers"
 			end
 		end
