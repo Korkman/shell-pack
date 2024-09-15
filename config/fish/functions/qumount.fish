@@ -34,8 +34,10 @@ function qumount -d \
 	# allow specifying either blockdevice or /run/q/ directory
 	set -l devshort (string replace --regex -- '^/(dev/|run/q/)?' '' "$devdisk")
 	
-	cd /run/q
+	if pwd | string match "/run/q/$devshort/*"
+		cd /run/q
+	end
 	umount /run/q/$devshort
-	rm -d /run/q/$devshort
+	and rm -d /run/q/$devshort
 end
 
