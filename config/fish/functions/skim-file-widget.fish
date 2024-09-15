@@ -13,6 +13,7 @@ function skim-file-widget -d "List files and folders"
 
 	set -l skim_binds (printf %s \
 	"alt-p:toggle-preview,ctrl-p:toggle-preview,"\
+	"alt-c:print(//chdir)+accept,"\
 	"f4:execute(mcedit {}),"\
 	"f3:execute(mcview {}),"\
 	"ctrl-l:execute(less {}),"\
@@ -24,7 +25,7 @@ function skim-file-widget -d "List files and folders"
 	"shift-right:print(//next)+accept,alt-right:print(//next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help 'search files | tab:select enter:paste c-v:paste alt-p:preview c-l:less alt-v:vim f3:mcview f4:mcedit s-arrows:navigate'
+	printf 'tab:select enter:paste c-v:paste alt-p:preview c-l:less\\nalt-v:vim f3:mcview f4:mcedit s-arrows:navigate alt-c:chdir' | read -lz skim_help
 
 	# "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
 	# $dir itself, even if hidden.
@@ -42,7 +43,7 @@ function skim-file-widget -d "List files and folders"
 		eval "$SKIM_CTRL_T_COMMAND | "(__skimcmd)' -m --query "'$skim_query'"' \
 		--header "'$skim_help'" \
 		--bind "'$skim_binds'" \
-		--preview "'grep \"\" -I {} | head -n4000'" \
+		--preview "'[ -d {} ] && ls -al {} || grep \"\" -I {} | head -n4000'" \
 		--preview-window "'hidden:right:80%'" \
 		--prompt "'Search filenames: '" \
 		| while read -l r; set result $result $r; end
@@ -71,6 +72,11 @@ function skim-file-widget -d "List files and folders"
 			echo
 			__force_redraw_prompt
 			continue
+		else if [ "$result[1]" = "//chdir" ]
+			set -l chdir_dest (dirname "$result[2]")
+			cd "$chdir_dest"
+			commandline -f repaint
+			return
 		end
 		
 		break

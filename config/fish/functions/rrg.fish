@@ -60,6 +60,8 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'home:pos(0),end:pos(-1)'\
 	)
 	
+	printf 'alt-h:help enter:results-in-file a-p:pane a-l:less\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | read -lz help_text
+	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
 	# mcview caused escape sequence mess at times
@@ -121,7 +123,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 			--border-label-pos 3 \
 			--height (math $LINES-1) \
 			--delimiter '//' \
-			--header 'alt-h:help enter:results-in-file a-p:pane a-l:less a-v:vim f3:mcview f4:mcedit a-i:line a-o:content' \
+			--header "$help_text" \
 			--ansi \
 			--prompt "Fuzzy search in list: " \
 			--layout reverse
