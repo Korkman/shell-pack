@@ -1,13 +1,13 @@
 function __sp_get_blockdevice_completion
-	argparse u/unmounted d/no-partitions -- $argv
+	argparse mountable unmounted physical -- $argv
 	
 	# using lsblk and parsing it with regex
 	# NOTE: --json is nice, but unreliably parsed until jq is included in deps
 	set -l lsblk_out
-	if set -ql _flag_no_partitions
-		set lsblk_out (command lsblk --nodeps --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
+	if set -ql _flag_physical
+		set lsblk_out (command lsblk --nodeps --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE,MODEL --pairs) || return 1
 	else
-		set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE --pairs) || return 1
+		set lsblk_out (command lsblk --nodeps --inverse --paths --output NAME,SIZE,TYPE,MOUNTPOINT,LABEL,PARTLABEL,FSTYPE,MODEL --pairs) || return 1
 	end
 	
 	function __sp_complete_qmount_lineparser -S
@@ -19,6 +19,7 @@ function __sp_get_blockdevice_completion
 ' LABEL="(?<label>.*)"'\
 ' PARTLABEL="(?<partlabel>.*)"'\
 ' FSTYPE="(?<fstype>.*)"'\
+' MODEL="(?<model>.*)"'\
 '' -- "$line"
 	end
 
@@ -34,6 +35,7 @@ function __sp_get_blockdevice_completion
 		set -l label ""
 		set -l partlabel ""
 		set -l fstype ""
+		set -l model ""
 		
 		if __sp_complete_qmount_lineparser
 			# debug outputs
@@ -47,13 +49,15 @@ function __sp_get_blockdevice_completion
 			if test "$label" != "";     set identifiers "$identifiers""$label | "; end
 			if test "$partlabel" != ""; set identifiers "$identifiers""$partlabel | "; end
 			if test "$fstype" != ""; set identifiers "$identifiers""$fstype | "; end
+			if test "$model" != ""; set identifiers "$identifiers""$model | "; end
 			
 			set identifiers "$identifiers""$size"
 			
 			set identifiers (string trim -- $identifiers)
-			if not set -ql _flag_unmounted || test "$mountpoint" = ""
-				echo "$name"\t"$identifiers"
-			end
+			if set -ql _flag_mountable && test "$fstype" = ""; continue; end
+			if set -ql _flag_unmounted && test "$mountpoint" != ""; continue; end
+			if set -ql _flag_physical && test "$model" = ""; continue; end
+			echo "$name"\t"$identifiers"
 		end
 	end
 end

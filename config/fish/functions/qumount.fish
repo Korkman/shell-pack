@@ -33,11 +33,25 @@ function qumount -d \
 	
 	# allow specifying either blockdevice or /run/q/ directory
 	set -l devshort (string replace --regex -- '^/(dev/|run/q/)?' '' "$devdisk")
-	
-	if pwd | string match "/run/q/$devshort/*"
-		cd /run/q
+	set -l mpoint "/run/q/$devshort"
+	if test "$PWD" = "$mpoint" || string match "$mpoint/*" "$PWD"
+		# we're blocking umount, cd elsewhere
+		if set -q __sp_qmount_return_dir && test -d "$__sp_qmount_return_dir"
+			cd "$__sp_qmount_return_dir"
+		else
+			cd "/run/q"
+		end
 	end
-	umount /run/q/$devshort
-	and rm -d /run/q/$devshort
+	
+	if umount "$mpoint"
+		rm -d "$mpoint"
+	else
+		command fuser -mv "$mpoint"
+		return 2
+	end
+	
+	if set -q __sp_qmount_return_dir
+		set --erase -g __sp_qmount_return_dir
+	end
 end
 

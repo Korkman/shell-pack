@@ -17,8 +17,12 @@ function qmount -d \
 	end
 
 	set -l devdisk "$argv[1]"
-	if test (string sub --start 1 --length 1 -- "$devdisk") != "/"
-		set devdisk "/dev/$devdisk"
+	if ! test -b "$devdisk" && ! string match '/*' "$devdisk"
+		# not an absolute path, does not exist: fix up path
+		if test -b "/dev/$devdisk"
+			# try prepend /dev/
+			set devdisk "/dev/$devdisk"
+		end
 	end
 
 	blkid "$devdisk"
@@ -37,6 +41,7 @@ function qmount -d \
 	
 	mkdir -p "/run/q/$devshort"
 	and mount "$devdisk" "/run/q/$devshort"
+	and set -g __sp_qmount_return_dir "$PWD"
 	and cd "/run/q/$devshort"
 	and ls -al
 end
