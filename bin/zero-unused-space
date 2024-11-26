@@ -90,7 +90,7 @@
 	if command -v pv > /dev/null && [ -e /proc/self/fdinfo ]
 	then
 		pv -d$ddPid:1 --size $((writeMiB * 1024 * 1024)) > /dev/null &
-		pvPid=$?
+		pvPid=$!
 	else
 		pvPid=""
 	fi
