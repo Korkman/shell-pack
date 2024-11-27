@@ -31,16 +31,18 @@
 		((i++))
 		zerosFile="zeros.nul.$i"
 	done
+	
 	if [ $i -gt 0 ]
 	then
-		echo "Leftover zeros.nul file, using $zerosFile instead!"
-		echo "You likely want to delete zeros.nul!"
+		echo "WARNING: File zeros.nul exists, will write to $zerosFile instead."
+		echo "If zeros.nul is garbage from a previous run, feel free to delete it."
 	fi
 	
 	# display warning message
-	echo "This will zero ${percFill}% of unused space ($writeMiB MiB) of the current"
-	echo "filesystem. It will create $zerosFile and delete it while writing to it so"
-	echo "chances are low it will persist even in case of an OS crash."
+	echo "Write and delete a file with $writeMiB MiB (${percFill}% of unused space) of zeroes?"
+	echo
+	echo "NOTE: This utility is generic. There are filesystem specific"
+	echo "tools (for example zerofill for extfs) which are much more efficient."
 	echo
 	echo "Press ENTER to continue or CTRL-C to abort ..."
 	# shellcheck disable=SC2034
@@ -74,10 +76,10 @@
 	# switch to portable dd version if necessary
 	if dd --version 2>/dev/null | grep -q coreutils
 	then
-		dd if=/dev/zero "of=$zerosFile" oflag=dsync,nocache "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 &
+		dd if=/dev/zero "of=$zerosFile" oflag=dsync,nocache "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 > /dev/null &
 		ddPid=$!
 	else
-		dd if=/dev/zero "of=$zerosFile" oflag=sync "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 &
+		dd if=/dev/zero "of=$zerosFile" oflag=sync "bs=${blockSizeMiB}M" "count=$blocksToWrite" 2>&1 > /dev/null &
 		ddPid=$!
 	fi
 	
