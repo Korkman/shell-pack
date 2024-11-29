@@ -42,7 +42,7 @@
 	echo "Write and delete a file with $writeMiB MiB (${percFill}% of unused space) of zeroes?"
 	echo
 	echo "NOTE: This utility is generic. There are filesystem specific"
-	echo "tools (for example zerofill for extfs) which are much more efficient."
+	echo "tools (for example zerofree for extfs) which are much more efficient."
 	echo
 	echo "Press ENTER to continue or CTRL-C to abort ..."
 	# shellcheck disable=SC2034
