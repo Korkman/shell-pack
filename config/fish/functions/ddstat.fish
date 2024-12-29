@@ -4,7 +4,7 @@
 function ddstat -w dstat
 	# if not set, set default base parameters
 	if test -z "$ddstat_base_args"
-		set -f ddstat_base_args --time -cdrn
+		set ddstat_base_args --time -cdrn
 	end
 	
 	if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"

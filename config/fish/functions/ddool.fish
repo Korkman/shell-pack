@@ -4,7 +4,7 @@
 function ddool -w dool
 	# if not set, set default base parameters
 	if test -z "$ddool_base_args"
-		set -f ddool_base_args --bytes --time -cdrn
+		set ddool_base_args --bytes --time -cdrn
 	end
 	
 	if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
