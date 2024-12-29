@@ -59,7 +59,7 @@ function ddstat -w dstat
 	if test "$argv[1]" = "--remove"
 		# shift argv to get remaining arguments, remove them from $ddstat_addon_params
 		set argv $argv[2..-1]
-		set -U ddstat_addon_params (string replace -r -- $argv $ddstat_addon_params)
+		set -U ddstat_addon_params (string replace -r -- "$argv" "$ddstat_addon_params")
 		# remove all arguments for remaining processing
 		set -e argv
 	end
@@ -79,7 +79,7 @@ function ddstat -w dstat
 	# print arguments as passed to dstat
 	echo -n "dstat"
 	for arg in $ddstat_base_args $ddstat_addon_params $ddstat_temp_args
-		echo -n " "(string escape --style script -- $arg)
+		echo -n " "(string escape --style script -- "$arg")
 	end
 	echo ""
 	dstat $ddstat_base_args $ddstat_addon_params $ddstat_temp_args

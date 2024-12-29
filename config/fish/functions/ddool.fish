@@ -68,7 +68,7 @@ function ddool -w dool
 	if test "$argv[1]" = "--remove"
 		# shift argv to get remaining arguments, remove them from $ddool_addon_args
 		set argv $argv[2..-1]
-		set -U ddool_addon_args (string replace -r -- $argv $ddool_addon_args)
+		set -U ddool_addon_args (string replace -r -- "$argv" "$ddool_addon_args")
 		# remove all arguments for remaining processing
 		set -e argv
 	end
@@ -88,7 +88,7 @@ function ddool -w dool
 	# print arguments as passed to dool
 	echo -n "dool"
 	for arg in $ddool_base_args $ddool_addon_args $ddool_temp_args
-		echo -n " "(string escape --style script -- $arg)
+		echo -n " "(string escape --style script -- "$arg")
 	end
 	echo ""
 	dool $ddool_base_args $ddool_addon_args $ddool_temp_args
