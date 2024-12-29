@@ -91,7 +91,7 @@ function shell-pack-deps-install-ripgrep
 	if test "$pversion" = ""
 		set pversion "14.1.1"
 	end
-	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-arm-unknown-linux-gnueabihf.tar.gz"
+	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-armv7-unknown-linux-gnueabihf.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-apple-darwin.tar.gz"
 	set tpl_x86_64_linux "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-unknown-linux-musl.tar.gz"
 	
