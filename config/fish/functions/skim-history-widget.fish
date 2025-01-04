@@ -1,6 +1,5 @@
 function skim-history-widget -d "Show command history"
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
-	__update_glyphs
 	begin
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT $SKIM_DEFAULT_OPTIONS $SKIM_CTRL_R_OPTS -m"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
@@ -17,7 +16,7 @@ function skim-history-widget -d "Show command history"
 				eval "history delete --exact --case-sensitive -- $result"
 			end
 			history save
-			echo (set_color red)"$deleted_glyph"(set_color normal)" Deleted "(math (count $results) - 2)" history item(s)"
+			echo (__spt deleted_fg)(__spt deleted)(set_color normal)" Deleted "(math (count $results) - 2)" history item(s)"
 		else
 			if test (count $results) -gt 1
 				# Triple-space prefix to prevent any special handling and also to not

@@ -21,8 +21,6 @@ function fish_right_prompt
 		functions -e fish_right_prompt
 		return
 	end
-
-	__update_glyphs
 	
 	# bookkeeping
 	if [ "$__display_cmd_stats" = "yes" ]
@@ -36,53 +34,38 @@ function fish_right_prompt
 		set ijobs (__sp_get_pending_job_pids)
 		set njobs (count $ijobs)
 		echo -n ' '
-		set_color bryellow
-		echo -n $left_black_arrow_glyph
-		set_color -b bryellow
-		set_color black
+		echo -n (__spt jobs_bg)(__spt left_black_arrow)
+		__spt jobs_bg bg
+		__spt jobs_fg
 		if [ $njobs -lt 4 ]
-			echo -n " $running_glyph" (string join -- ' ' $ijobs)
+			echo -n " "(__spt running) (string join -- ' ' $ijobs)
 		else
-			echo -n " $running_glyph x$njobs"
+			echo -n " "(__spt running)" x$njobs"
 		end
 	end
 	
 	# reload pending segment
 	if [ "$__reload_pending" = "yes" ]
-		set colorbg "eee"
-		set colorfg "f00"
-		set_color $colorbg
-		echo -n "$left_black_arrow_glyph"
-		set_color -b $colorbg
-		set_color $colorfg
-		echo -n " Update! Please 'reload' "
+		echo -n (__spt warning_bg)(__spt left_black_arrow)
+		echo -n (__spt warning_bg bg)(__spt warning_fg)" Update! Please 'reload' "
 	else
 		
 		# user segment
 		if fish_is_root_user
-			set colorbg "711"
-			set colorfg "fff"
+			set colorbg "user_root_bg"
+			set colorfg "user_root_fg"
 		else
-			#set colorbg "0087af"
-			#set colorfg "fff"
-			set colorbg brblack
-			set colorfg "fff"
+			set colorbg "user_normal_bg"
+			set colorfg "user_normal_fg"
 		end
-		set_color $colorbg
-		echo -n " $left_black_arrow_glyph"
-		set_color -b $colorbg
-		set_color $colorfg
-		echo -n " $USER@"$short_hostname" "
+		
+		echo -n " "(__spt $colorbg)(__spt left_black_arrow)
+		echo -n (__spt $colorbg bg)(__spt $colorfg)" $USER@"$short_hostname" "
 		
 		# pid segment (only once)
 		if set -q __right_prompt_pid_once
-			set colorbg "070"
-			set colorfg "fff"
-			set_color $colorbg
-			echo -n "$left_black_arrow_glyph"
-			set_color -b $colorbg
-			set_color $colorfg
-			echo -n " FISH pid $fish_pid "
+			echo -n (__spt pid_bg)(__spt left_black_arrow)
+			echo -n (__spt pid_bg bg)(__spt pid_fg)" FISH pid $fish_pid "
 			
 			# shlvl segment (also only once)
 			set -l offset_shlvl $SHLVL
@@ -92,13 +75,8 @@ function fish_right_prompt
 				set offset_shlvl_visual "+1"
 			end
 			if [ $offset_shlvl -gt 1 ]
-				set colorbg "3a3a3a"
-				set colorfg "ff0"
-				set_color $colorbg
-				echo -n "$left_black_arrow_glyph"
-				set_color -b $colorbg
-				set_color $colorfg
-				echo -n " Shlvl $offset_shlvl""$offset_shlvl_visual"" "
+				echo -n (__spt shlvl_bg)(__spt left_black_arrow)
+				echo -n (__spt shlvl_bg bg)(__spt shlvl_fg)" Shlvl $offset_shlvl""$offset_shlvl_visual"" "
 			end
 		end
 	end

@@ -12,8 +12,7 @@ function __history_delete_commandline \
 	# painting is terrible when clearing multiline buffer - borrowing the users keyboard
 	function __history_delete_commandline_info -e fish_prompt
 		functions -e __history_delete_commandline_info
-		__update_glyphs
-		echo (set_color red)"$deleted_glyph"(set_color normal)" F8: History item deleted."
+		echo (__spt deleted_fg)(__spt deleted)(set_color normal)" F8: History item deleted."
 	end
 	
 	commandline --replace " " # a space triggers postexec

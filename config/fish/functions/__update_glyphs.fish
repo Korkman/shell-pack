@@ -1,4 +1,4 @@
-function __update_glyphs -S -d "Sets glyphs in the scope of the calling function"
+function __update_glyphs -S -d "(obsolete, subject to removal, see __spt) Sets glyphs in the scope of the calling function"
 	set right_arrow_glyph ''
 	set left_arrow_glyph ''
 	set right_black_arrow_glyph ''

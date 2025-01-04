@@ -78,8 +78,6 @@ function fish_prompt -d \
 		return
 	end
 	
-	__update_glyphs
-	
 	fish_prompt_reset_segments
 	set -l pwd_budget 40
 	if ! functions -q fish_right_prompt
@@ -90,15 +88,15 @@ function fish_prompt -d \
 			set -l ijobs (__sp_get_pending_job_pids)
 			set -l njobs (count $ijobs)
 			if [ $njobs -lt 4 ]
-				fish_prompt_segment "bryellow" "black" "$running_glyph "(string join -- ' ' $ijobs)
+				fish_prompt_segment "jobs_bg" "jobs_fg" (__spt running)" "(string join -- ' ' $ijobs)
 			else
-				fish_prompt_segment "bryellow" "black" "$running_glyph x$njobs"
+				fish_prompt_segment "jobs_bg" "jobs_fg" (__spt running)" x$njobs"
 			end
 		end
 		
 		# reload pending segment
 		if [ "$__reload_pending" = "yes" ]
-			fish_prompt_segment "eee" "f00" "New FISH! Reload!"
+			fish_prompt_segment "warning_bg" "warning_fg" "New FISH! Reload!"
 		end
 	end
 	
@@ -107,7 +105,7 @@ function fish_prompt -d \
 		set -l chroot_tag "($debian_chroot)"
 		fish_prompt_shorten_string chroot_tag 12
 		__fish_prompt_reduce_pwd_budget chroot_tag
-		fish_prompt_segment "000" "fff" "$chroot_tag"
+		fish_prompt_segment "chroot_bg" "chroot_fg" "$chroot_tag"
 	end
 
 	# python virtual_env support
@@ -122,7 +120,7 @@ function fish_prompt -d \
 		set -l venv_prefix "venv:"
 		__fish_prompt_reduce_pwd_budget _SP_VENV_TAG
 		__fish_prompt_reduce_pwd_budget venv_prefix
-		fish_prompt_segment "3a3a3a" "ff0" "$venv_prefix""$_SP_VENV_TAG"
+		fish_prompt_segment "venv_bg" "venv_fg" "$venv_prefix""$_SP_VENV_TAG"
 	else
 		if set -q _SP_VENV_TAG
 			set -g -e _SP_VENV_TAG
@@ -134,22 +132,17 @@ function fish_prompt -d \
 		fish_prompt_shorten_string visual_session_tag 20
 		# subtract taken space from pwd budget
 		__fish_prompt_reduce_pwd_budget visual_session_tag
-		fish_prompt_segment "ff0" "000" "$tag_glyph""$visual_session_tag"
+		fish_prompt_segment "tag_bg" "tag_fg" (__spt tag)"$visual_session_tag"
 	else
 	end
 	
 	if [ ! -z "$fish_private_mode" ]
-		if [ "$theme_nerd_fonts" = "yes" ]
-			set symbol '󰗹'
-		else
-			set symbol '!'
-		end
-		fish_prompt_segment "purple" "white" "$symbol"
+		fish_prompt_segment "confidential_bg" "confidential_fg" (__spt confidential)
 	end
 	
 	if [ "$PWD" = "/" ]
 		# special case root-dir
-		fish_prompt_segment "3a3a3a" "fff" "/"
+		fish_prompt_segment "pwd_bg" "pwd_fg" "/"
 	else
 		# find longest matching tagged dir
 		set matched_len_tagged_dir_path 0
@@ -171,13 +164,13 @@ function fish_prompt -d \
 			if [ "$_SP_VENV_TAG" = "$matched_tagged_dir_name" ]
 				# shortcut: if virtual environment matches directory tag, skip the directory tag
 			else
-				fish_prompt_segment "0087af" "fff" "$bookmark_glyph""$matched_tagged_dir_name"
+				fish_prompt_segment "bookmark_bg" "bookmark_fg" (__spt bookmark)"$matched_tagged_dir_name"
 			end
 		else if [ $len_home -gt 0 -a (string sub --start 1 --length $len_home -- "$PWD") = "$HOME" ]
 			# home indicator
 			# prefix replace ~
 			set visual_pwd (string sub --start (math $len_home + 1) -- "$PWD")
-			fish_prompt_segment "0087af" "fff" "$home_glyph"
+			fish_prompt_segment "bookmark_bg" "bookmark_fg" (__spt home)
 		else
 			set visual_pwd "$PWD"
 		end
@@ -186,7 +179,7 @@ function fish_prompt -d \
 			fish_prompt_shorten_path visual_pwd $pwd_budget
 			if [ "$theme_powerline_fonts" = "no" ]
 				# simply leave slashes as-is with no powerline fonts
-				fish_prompt_segment "3a3a3a" "fff" "$visual_pwd"
+				fish_prompt_segment "pwd_bg" "pwd_fg" "$visual_pwd"
 			else
 				# split into segments
 				set visual_pwd (string trim --left --chars '/' -- "$visual_pwd")
@@ -196,11 +189,11 @@ function fish_prompt -d \
 				for path_segment in $path_segments
 					set idx_path_segments (math $idx_path_segments + 1)
 					if [ $idx_path_segments -eq $cnt_path_segments ]
-						set segment_color "fff"
+						set segment_color "pwd_fg"
 					else
-						set segment_color "bbb"
+						set segment_color "pwd_fg_dim"
 					end
-					fish_prompt_segment "3a3a3a" "$segment_color" "$path_segment" "888"
+					fish_prompt_segment "pwd_bg" "$segment_color" "$path_segment" "pwd_fg_dim_sep"
 				end
 			end
 		end
@@ -208,7 +201,7 @@ function fish_prompt -d \
 	
 	# lock-icon for write-protected
 	if [ ! -w "$PWD" ]
-		fish_prompt_segment "711" "fff" "$lock_glyph"
+		fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lock)
 	end
 	
 	fish_prompt_print_segments
@@ -275,24 +268,22 @@ function fish_prompt_print_segments --no-scope-shadowing
 		set --local bgcolor $__fish_prompt_segments_bgcolor_list[$segment]
 		set --local fgcolor $__fish_prompt_segments_fgcolor_list[$segment]
 		set --local dim_fgcolor $__fish_prompt_segments_dim_fgcolor_list[$segment]
-		set_color -b $bgcolor
+		__spt $bgcolor bg
 		if [ $segment -gt 1 ]
 			if [ "$bgcolor" = "$prev_bgcolor" ]
-				set_color $dim_fgcolor
-				echo -n "$right_arrow_glyph"
+				echo -n (__spt $dim_fgcolor)(__spt right_arrow)
 			else
-				set_color $prev_bgcolor
-				echo -n "$right_black_arrow_glyph"
+				echo -n (__spt $prev_bgcolor)(__spt right_black_arrow)
 			end
 		end
-		set_color $fgcolor
+		__spt $fgcolor
 		echo -n -- "$space""$__fish_prompt_segments_content_list[$segment]""$space"
 		
 		set prev_bgcolor $bgcolor
 	end
 	set_color normal
-	set_color $prev_bgcolor
-	echo -n "$right_black_arrow_glyph"
+	
+	echo -n (__spt $prev_bgcolor)(__spt right_black_arrow)
 	set_color normal
 	echo -n "$space"
 end
@@ -339,14 +330,8 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 	else if [ (string length -- "$__new_cmdline") -gt 1 ] && string match -- " " (string sub -s 1 -l 1 -- "$__new_cmdline") ]
 		echo "$argv[1]" | __shellpack_erase_command_lines
 		# reminder to clear history
-		__update_glyphs
 		fish_prompt_reset_segments
-		if [ "$theme_nerd_fonts" = "yes" ]
-			set symbol 󰗹
-		else
-			set symbol '!'
-		end
-		fish_prompt_segment "purple" "white" "$symbol"
+		fish_prompt_segment "confidential_bg" "confidential_fg" (__spt confidential)
 		fish_prompt_print_segments
 		echo "Private history: 'up' to edit. Solo space or other cmd clears."
 		set -g __shellpack_current_cmd_confidential yes
@@ -360,7 +345,6 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	set -g __saved_duration "$CMD_DURATION"
 	set -x __job_start_time (__sp_getnanoseconds)
 	set -g __saved_cmdline (echo "$argv[1]" | begin set -l d ''; while read line; echo -n "$d""$line"; set d '; '; end; end)
-	__update_glyphs
 	
 	# detect tracked, but lost jobs (e.g. by kill)
 	if [ "$__watched_job_pids" != "" ]
@@ -385,28 +369,27 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit "$job_pid"
 					# remove my pid from list
 					set -ge __watched_job_pids[(contains -i $job_pid $__watched_job_pids)]
-					__update_glyphs
 
 					set job_status $argv[3]
 					set duration (math "round(("(__sp_getnanoseconds)" - $__job_start_time ) / 1000 / 1000)")
 
 					echo
-					set_color -b bryellow
-					set_color black
+					__spt jobs_bg bg
+					__spt jobs_fg
 					if [ (string length -- "$__saved_cmdline") -gt 20 ]
 						echo -n ' '(string sub -l 9 -- "$__saved_cmdline")'…'(string sub -s -9 -- "$__saved_cmdline")' '
 					else
 						echo -n " "$__saved_cmdline" "
 					end
 					set_color normal
-					set_color bryellow
-					echo -n "$right_black_arrow_glyph "
+					__spt jobs_bg
+					echo -n (__spt right_black_arrow)" "
 					if [ $job_status -eq 0 ]
-						set_color "0b0"
-						echo -n "$happy_glyph "
+						__spt status_ok
+						echo -n (__spt happy)" "
 					else
-						set_color "c00"
-						echo -n "$unhappy_glyph $job_status "
+						__spt status_fail
+						echo -n (__spt unhappy)" $job_status "
 					end
 					set_color $fish_color_autosuggestion
 					echo -n "$argv[1] "
@@ -427,12 +410,12 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			else
 				set plural PID
 			end
-			set_color -b bryellow
-			set_color black
-			echo -en " $running_glyph "
+			__spt jobs_bg bg
+			__spt jobs_fg
+			echo -n " "(__spt running)" "
 			set_color normal
-			set_color bryellow
-			echo -en "$right_black_arrow_glyph"
+			__spt jobs_bg
+			echo -n (__spt right_black_arrow)
 			set_color normal
 			echo " New job $plural $new_bg_tasks"
 		end
@@ -462,20 +445,18 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 
 		# output cmd
 		if [ $__saved_status -eq 0 ]
-			set thisbg "171"
-			set thisfg "fff"
+			set thisbg (__spt cmd_ok_bg bg)
+			set thisfg (__spt cmd_ok_fg)
+			set thisfg_inv (__spt cmd_ok_bg)
 		else
-			set thisbg "711"
-			set thisfg "fff"
+			set thisbg (__spt cmd_fail_bg bg)
+			set thisfg (__spt cmd_fail_fg)
+			set thisfg_inv (__spt cmd_fail_bg)
 		end
-		set_color -b $thisbg
-		set_color $thisfg
+		echo -n "$thisbg"
+		echo -n "$thisfg"
 		if [ "$__shellpack_current_cmd_confidential" = "yes" ]
-			if [ "$theme_nerd_fonts" = "yes" ]
-				echo -n ' 󰗹 '
-			else
-				echo -n ' ! '
-			end
+			echo -n ' '(__spt confidential)' '
 		else
 			if [ (string length -- "$__saved_cmdline") -gt 40 ]
 				echo -n ' '(string sub -l 19 -- "$__saved_cmdline")'…'(string sub -s -19 -- "$__saved_cmdline")' '
@@ -484,17 +465,15 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			end
 		end
 		set_color -b normal
-		set_color $thisbg
-		echo -n "$right_black_arrow_glyph "
+		echo -n "$thisfg_inv"(__spt right_black_arrow)" "
 
 		if [ $__saved_status -eq 0 ]
-			set_color "0b0"
-			echo -n "$happy_glyph "
+			echo -n (__spt status_ok)(__spt happy)" "
 		else
-			set_color "c00"
+			__spt status_fail
 			# ring the bell
 			echo -n \a
-			echo -n "$unhappy_glyph ""$__saved_status "
+			echo -n (__spt unhappy)" ""$__saved_status "
 		end
 		set_color $fish_color_autosuggestion
 		__shellpack_cmd_duration
@@ -510,27 +489,22 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				end
 			end
 			if [ $total_pipestatus -gt 0 ]
-				set thisbg "711"
-				set thisfg "fff"
-				set_color -b $thisbg
-				set_color $thisfg
-				echo -n " Non-zero exit status in pipe "
-				set_color normal
-				set_color $thisbg
-				echo -n "$right_black_arrow_glyph "
+				echo -n (__spt cmd_fail_bg bg)(__spt cmd_fail_fg)" Non-zero exit status in pipe "
+				set_color -b normal
+				echo -n (__spt cmd_fail_bg)(__spt right_black_arrow)" "
 				set forcount 0
 				for substatus in $__saved_pipestatus
 					set forcount (math $forcount + 1)
 
 					if [ $substatus -gt 0 ]
-						set_color "b00"
+						__spt status_fail
 					else
-						set_color "0b0"
+						__spt status_ok
 					end
 					echo -n "$substatus "
 					if [ $forcount -lt (count $__saved_pipestatus) ]
 						set_color $fish_color_autosuggestion
-						echo -ne "$right_arrow_glyph "
+						echo -ne (__spt right_arrow)" "
 					end
 				end
 				set_color normal
@@ -596,12 +570,7 @@ function __shellpack_cmd_duration -S -d 'Show command duration'
 	[ -z "$duration" -o "$duration" -lt 100 ]
 	and return
 	
-	if [ "$theme_nerd_fonts" = "yes" ]
-		# glyphs with some space
-		echo -n '  '
-	else
-		echo -n '  '
-	end
+	echo -n (__spt duration)
 
 	if [ "$duration" -lt 5000 ]
 		echo -ns $duration 'ms'
@@ -648,23 +617,14 @@ function __shellpack_timestamp -S -d 'Show the current timestamp'
 	or set -l theme_date_format "+%c"
 
 	set -l current_day (date $theme_date_format)
-
-	if [ "$theme_nerd_fonts" = "yes" ]
-		# glyphs with some space
-		set __calendar_glyph " "
-		set __clock_glyph " "
-	else
-		set __calendar_glyph ""
-		set __clock_glyph ""
-	end
 	
-	echo -n " $__calendar_glyph$current_day"
+	echo -n " "(__spt calendar)"$current_day"
 
 	set -q theme_time_format
 	or set -l theme_time_format "+%c"
 
 	# UTF8 clock icon here
-	echo -n " $__clock_glyph"
+	echo -n " "(__spt clock)
 	date $theme_time_format
 end
 
