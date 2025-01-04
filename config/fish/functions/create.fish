@@ -38,11 +38,11 @@ function create -d "Creates a new text file with a basic template and opens it i
 	set -l suggested_path ""
 	switch "$file_type"
 		case "bash"
-			set template "#!/bin/bash\n{\n\tset -eu\n\n\texit\n}"
+			set template "#!/bin/bash\n{\nset -eu\n\nexit\n}"
 			set executable 1
 			set line 4
 		case "sh"
-			set template "#!/bin/sh\n{\n\tset -eu\n\n\texit\n}"
+			set template "#!/bin/sh\n{\nset -eu\n\nexit\n}"
 			set executable 1
 			set line 4
 		case "fish"
@@ -66,7 +66,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 			set line 3
 			set suggested_path "/etc/cron.d/"
 		case "desktop"
-			set template "[Desktop Entry]\nVersion=1.0\nName=Example\nComment=This is an example\nExec=/usr/bin/example\nIcon=example\nTerminal=false\nType=Application\nCategories=Utility;"
+			set template "[Desktop Entry]\nVersion=1.0\nName=Example\nComment=This is an example\nExec=/usr/bin/example\nIcon=example\nTerminal=false\nType=Application\nCategories=Utility;\nMimeType=text/html;"
 			set line 1
 			set suggested_path "$HOME/.local/share/applications/"
 		case '*'
