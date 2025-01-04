@@ -12,14 +12,14 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 		case status_fail
 			$scolor "c00"
 			return
-		case cmd_ok_bg
+		case cmd_ok_bg pid_bg
 			if test $__cap_colors -ge 256
 				$scolor "171"
 			else
 				$scolor "green"
 			end
 			return
-		case cmd_ok_fg
+		case cmd_ok_fg pid_fg
 			if test $__cap_colors -ge 256
 				$scolor "fff"
 			else
@@ -116,12 +116,6 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 		case user_normal_fg
 			$scolor "fff"
 			return
-		case pid_bg
-			$scolor "070"
-			return
-		case pid_fg
-			$scolor "fff"
-			return
 		case shlvl_bg
 			$scolor "3a3a3a"
 			return
@@ -141,7 +135,11 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			echo -n "00ff87"
 			return
 		case fish_autosuggestion
-			echo -n "9e9e9e"
+			if test $__cap_colors -ge 256
+				echo -n "9e9e9e"
+			else
+				echo -n "white"
+			end
 			return
 	end
 
@@ -193,7 +191,7 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 				echo '~'
 				return
 			case deleted
-				echo '🛇'
+				echo 'X'
 				return
 			case confidential
 				echo '!'
@@ -202,10 +200,10 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 				echo '  '
 				return
 			case calendar
-				echo ' '
+				echo ' '
 				return
 			case clock
-				echo ' '
+				echo ' '
 				return
 		end
 	end
