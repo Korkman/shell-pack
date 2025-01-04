@@ -136,6 +136,7 @@ mount --rbind /dev, /proc, /sys    qchroot TARGET
 
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit
+create and edit a template         create [ bash | fish | service | ... ] FILE
 
 	" | less -P "cheat --shell-pack | less - q to quit, h for help"
 end
@@ -280,31 +281,37 @@ tmux
 keys:
 
 ctrl-a: is synonym for ctrl-b, because it is more accessible (and tradition)
-ctrl-a, then
-r: reload config
-|: split window into left and right
--: split window into top and bottom
-   alias: shift-s
-c: create new window
-esc: enter copy mode to scroll up to 10000 lines back
-     alias: pgup
-v: paste
-arrow-left, arrow-right: move window left / right on task bar, renumber
-shift-b: enter broadcast mode, sending keystrokes to all panes
-bspace, space: jump to previous, next window
-ctrl-a: jump to most recent window
-shift-Q: break out a pane into a dedicated window
-         alias: !
-k: kill pane (if confirmed)
-tab: jump to next pane
-shift-k: kill all windows and exit (if confirmed)
-         alias: \
-shift-n: show window number and name
-shift-a: rename window
+ctrl-a, lift keys, then
+  r: reload config
+  |: split window into left and right
+  -: split window into top and bottom
+  alias: shift-s
+  c: create new window
+  esc: enter copy mode to scroll up to 10000 lines back
+  	alias: pgup
+	in copy mode, select text with space and enter
+  v: paste
+  arrow-left, arrow-right: move window left / right on task bar, renumber
+  shift-b: enter broadcast mode, sending keystrokes to all panes
+  backspace, space: jump to previous, next window
+  ctrl-a: jump to most recent window
+  shift-Q: break out a pane into a dedicated window
+  		alias: !
+  k: kill pane (if confirmed)
+  m: mark pane
+  s: swap pane with marked
+  tab: jump to next pane
+  shift-k: kill all windows and exit (if confirmed)
+  		alias: \
+  shift-n: show window number and name
+  shift-a: rename window
+ctrl-a, keep ctrl pressed, then
+  arrows: resize current pane
 
 notes:
 
 * mouse works, can scroll in history when in copy mode and resize panes
+* alt-right-click opens a context menu in recent tmux versions
 * window numbering starts at 1, ends on 0 to be more natural on keyboard
 * environment variables are being taken care of, most notably enabling 
   ssh agent forwarding
