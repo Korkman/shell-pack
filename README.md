@@ -25,15 +25,16 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `rrg` (`alt-g`), an easy to use ripgrep file content search with preview
  * `ggit`, quickly review changes, add files to the commit
  * `venv`, activate / deactivate Python virtual env corresponding to current directory
+ * `create`, create and edit a file according to template (bash, fish, sh, systemd-service, systemd-mount, docker-compose, cron, desktop)
  * Linux only
-   * ```lsports```: list open ports in compact manner
-   * ```lsnet```: list active network connections in compact manner
-   * ```ddool```: a dool wrapper with "sticky" arguments
-   * ```qmount```: mount a partition to /run/q/name (blockdevice autocomplete)
-   * ```ssmart```: shortcut to smartctl -x (skip /dev/)
-   * ```qchroot```: enter a Linux chroot, mounting all the necessities of modern Linux life
-   * ```qqemu```: start a disk or partition in a temporary VM without modifying the disk or network connectivity
-   * ```@```: ad-hoc ```atd``` replacement for executing commands at a given time as if typed into the prompt
+   * `lsports`: list open ports in compact manner
+   * `lsnet`: list active network connections in compact manner
+   * `ddool`: a dool wrapper with "sticky" arguments
+   * `qmount`: mount a partition to /run/q/name (blockdevice autocomplete)
+   * `ssmart`: shortcut to smartctl -x (skip /dev/)
+   * `qchroot`: enter a Linux chroot, mounting all the necessities of modern Linux life
+   * `qqemu`: start a disk or partition in a temporary VM without modifying the disk or network connectivity
+   * `@`: ad-hoc ```atd``` replacement for executing commands at a given time as if typed into the prompt
 
 ## Bundled tools
 On first startup, these tools will be downloaded and installed into a dedicated directory if not readily available
