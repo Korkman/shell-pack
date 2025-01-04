@@ -35,7 +35,7 @@ function fish_title
 
 	set curcmd (status current-command)
 	fish_prompt_shorten_string curcmd $cmd_budget
-	if [ "$curcmd" = "fish" ]
+	if test "$curcmd" = "fish" || test "$curcmd" = "tag"
 		set curcmd ""
 		set spccmd ""
 	end
