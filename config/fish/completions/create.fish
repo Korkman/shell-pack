@@ -7,3 +7,5 @@ complete -c create -d "Creates a new systemd service file" -a "systemd-service" 
 complete -c create -d "Creates a new systemd mount file" -a "systemd-mount" --no-files
 complete -c create -d "Creates a new cron file" -a "cron" --no-files
 complete -c create -d "Creates a new desktop entry file" -a "desktop" --no-files
+complete -c create -d "Creates a new markdown file" -a "md" --no-files
+complete -c create -d "Creates a new text file" -a "txt" --no-files

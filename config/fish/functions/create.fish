@@ -28,6 +28,12 @@ function create -d "Creates a new text file with a basic template and opens it i
 			case "desktop"
 				set argv[2] $argv[1]
 				set argv[1] "desktop"
+			case "md"
+				set argv[2] $argv[1]
+				set argv[1] "md"
+			case "txt"
+				set argv[2] $argv[1]
+				set argv[1] "txt"
 		end
 		set file_type $argv[1]
 	end
@@ -69,8 +75,14 @@ function create -d "Creates a new text file with a basic template and opens it i
 			set template "[Desktop Entry]\nVersion=1.0\nName=Example\nComment=This is an example\nExec=/usr/bin/example\nIcon=example\nTerminal=false\nType=Application\nCategories=Utility;\nMimeType=text/html;"
 			set line 1
 			set suggested_path "$HOME/.local/share/applications/"
+		case "md"
+			set template "# Headline\n\nThis is a paragraph with `inline code` example.\n\n## Link\n[Example](https://example.com)\n\n## Bullet Points\n- Item 1\n- Item 2\n- Item 3\n\n## Table\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n\n## Formatting\n**Bold Text**\n*Italic Text*\n\n## Code\n```bash\n# This is a code block\n\necho 'Hello, World!'\n```"
+			set line 1
+		case "txt"
+			set template "This is a text file.\n\nYou can write anything here."
+			set line 1
 		case '*'
-			echo "Error: Unsupported type '$file_type'. Supported types are: bash, sh, fish, docker-compose, systemd-service, systemd-mount, cron, desktop."
+			echo "Error: Unsupported type '$file_type'. Supported types are: bash, sh, fish, docker-compose, systemd-service, systemd-mount, cron, desktop, md, txt."
 			return 1
 	end
 
@@ -83,11 +95,11 @@ function create -d "Creates a new text file with a basic template and opens it i
 
 	# ask if cd into suggested_path is okay
 	if test -n "$suggested_path" && test "$suggested_path" != "$PWD"
-		read -l -P "Would you like to create the file in $suggested_path? (Y/n) " REPLY
+		read -l -P "Change directory to $suggested_path? (Y/n) " REPLY
 		or return 1
 		if test -z "$REPLY" -o "$REPLY" = "y"
 			if ! test -d "$suggested_path"
-				read -l -P "Directory does not exist. Would you like to create it? (Y/n) " REPLY
+				read -l -P "Directory does not exist. Create? (Y/n) " REPLY
 				or return 1
 				if test -z "$REPLY" -o "$REPLY" = "y"
 					mkdir -p "$suggested_path"
@@ -108,7 +120,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 	# check if the file already exists
 	if test -e "$filename"
 		echo "Error: File '$filename' already exists."
-		read -l -P "Would you like to open it instead? (Y/n) " REPLY
+		read -l -P "Edit it? (Y/n) " REPLY
 		or return 1
 		if test -z $REPLY -o $REPLY = "y"
 			"$EDITOR" "$filename"
@@ -140,7 +152,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 
 	# check if the file still matches the template after editing
 	if string match --quiet -- (echo -e "$template" | string join '\n') (cat "$filename" | string join '\n')
-		read -l -P "The file still matches the template. Would you like to delete it? (Y/n) " REPLY
+		read -l -P "Delete unmodified template? (Y/n) " REPLY
 		or return 1
 		if test -z $REPLY -o $REPLY = "y"
 			rm "$filename"
