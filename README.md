@@ -21,11 +21,12 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * tmux shortcuts, including exclusive session ```one``` for shared access
 
 ## Custom tools
- * `qssh`, a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
- * `rrg` (`alt-g`), an easy to use ripgrep file content search with preview
- * `ggit`, quickly review changes, add files to the commit
- * `venv`, activate / deactivate Python virtual env corresponding to current directory
- * `create`, create and edit a file according to template (bash, fish, sh, systemd-service, systemd-mount, docker-compose, cron, desktop)
+ * `qssh`: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
+ * `rrg` (`alt-g`): an easy to use ripgrep file content search with preview
+ * `ggit`: quickly review changes, add files to the commit
+ * `venv`: activate / deactivate Python virtual env corresponding to current directory
+ * `zero-unused-space`: fill 90% of free space with null-bytes
+ * `create`, create and edit boilerplate files of various types
  * Linux only
    * `lsports`: list open ports in compact manner
    * `lsnet`: list active network connections in compact manner
