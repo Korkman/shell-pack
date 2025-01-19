@@ -23,7 +23,7 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			if test $__cap_colors -ge 256
 				$scolor "fff"
 			else
-				$scolor "black"
+				$scolor black
 			end
 			return
 		case cmd_fail_bg
@@ -36,7 +36,11 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			$scolor black
 			return
 		case jobs_bg
-			$scolor bryellow
+			if test $__cap_colors -ge 256
+				$scolor "dd0"
+			else
+				$scolor bryellow
+			end
 			return
 		case chroot_bg
 			$scolor "000"
@@ -110,8 +114,11 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			$scolor "fff"
 			return
 		case user_normal_bg
-			$scolor brblack
-			#$scolor "0087af"
+			if test $__cap_colors -ge 256
+				$scolor "777"
+			else
+				$scolor black
+			end
 			return
 		case user_normal_fg
 			$scolor "fff"

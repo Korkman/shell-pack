@@ -453,8 +453,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			set thisfg (__spt cmd_fail_fg)
 			set thisfg_inv (__spt cmd_fail_bg)
 		end
-		echo -n "$thisbg"
-		echo -n "$thisfg"
+		echo -n "$thisbg"$thisfg
 		if [ "$__shellpack_current_cmd_confidential" = "yes" ]
 			echo -n ' '(__spt confidential)' '
 		else
