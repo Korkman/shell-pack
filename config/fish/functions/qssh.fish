@@ -496,11 +496,30 @@ function __qssh_master_connect
 			__qssh_echo_interactive "Notice: Resolved IP changed from $mru_last_ip to $resolved_host"
 		end
 		if ! nc -w 1 -z $resolved_host $connect_port &> /dev/null
+			# the host is down, wait for it to come up
 			__qssh_echo_interactive "Host is down: $resolved_host port $connect_port"
-			__qssh_echo_interactive -n "Waiting for connectivity ..."
-			while ! nc -w 1 -z $resolved_host $connect_port &> /dev/null
-				sleep 1
-				__qssh_echo_interactive -n '.'
+			set -l wait_start (__sp_getnanoseconds)
+			set -l spinner ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
+			set -l i 1
+			set -l prev_nanoseconds "$wait_start"
+			while true
+				set -l wait_time (math "round(("(__sp_getnanoseconds)" - $wait_start) / 1000 / 1000 / 1000)")
+				__qssh_echo_interactive -ne "\r\033[K"$spinner[$i]" | "$wait_time"s waiting for connectivity ..."
+				set i (math "$i + 1")
+				if test $i -gt (count $spinner)
+					set i 1
+				end
+				if nc -w 1 -z $resolved_host $connect_port &> /dev/null
+					break
+				end
+				# sleep the remaining time of 1s minus the time spent in this loop
+				# this is to adjust for nc returning early when the host rejects the connection
+				set -l now_nanoseconds (__sp_getnanoseconds)
+				if [ (math "round(($now_nanoseconds - $prev_nanoseconds) / 1000 / 1000)") -lt 1000 ]
+					set -l missing_ms (math "round(1000 - ($now_nanoseconds - $prev_nanoseconds) / 1000 / 1000)")
+					sleep "0.$missing_ms"
+				end
+				set prev_nanoseconds "$now_nanoseconds"
 			end
 			__qssh_echo_interactive
 		end
