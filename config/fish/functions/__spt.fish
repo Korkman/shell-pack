@@ -27,7 +27,7 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			end
 			return
 		case cmd_fail_bg
-			$scolor "c00"
+			$scolor "711"
 			return
 		case cmd_fail_fg
 			$scolor "fff"
