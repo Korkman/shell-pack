@@ -814,7 +814,7 @@ function __qssh_db_mru_write --no-scope-shadowing -d \
 		# escaping as a single operation to prevent corruption (by cartesian product?)
 		set -l escaped (string escape -- $$vname)
 		set line "$line""$sep""$escaped"
-		set -l sep \t
+		set sep \t
 	end
 	# lock file before writing to it (closes #23)
 	echo "$line" | flock "$__qssh_db_mru_file" sh -c "cat >> '$__qssh_db_mru_file'"
@@ -1005,7 +1005,7 @@ function __qssh_mru_export_table_cb --no-scope-shadowing
 		else
 			set line "$line""$sep"(string escape -- $$vname)
 		end
-		set -l sep \t
+		set sep \t
 	end
 	echo "$line"
 end
@@ -1013,7 +1013,6 @@ end
 function __qssh_mru_autocomplete_host_table_cb --no-scope-shadowing -d \
 	'Outputs a list of autocomplete options for completion. Adds :qssh suffix where necessary to expand properly.'
 	set -l line
-	set -l sep ""
 	if [ (count $mru_hostdef) -gt 1 ]
 		set -l unesc_hostdef (string escape -- $mru_hostdef | string join -- ' ')
 		echo $unesc_hostdef':qssh'\t$mru_nickname
