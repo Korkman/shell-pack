@@ -1,32 +1,30 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=almalinux:latest
 FROM $BUILD_FROM
 
-ARG BUILD_FROM
-
 # upgrade from LC_ALL "C" to add utf-8 support (prompt does not display glyphs otherwise)
-ENV LC_ALL C.UTF-8
+ENV LC_ALL=C.UTF-8
 
-RUN yum makecache
+RUN dnf makecache
 
-# for htop on centos:
-RUN yum -y install epel-release || echo
+# for packages screen, htop on rhel 8
+RUN dnf -y install epel-release || true
 
-RUN yum install -y \
+RUN dnf install -y \
 	man-db \
 	htop tmux procps mc screen \
-	less sudo vim git
-RUN yum install -y xz gettext
-RUN yum install -y curl-minimal || yum install -y curl
-RUN yum install -y redhat-lsb-core --skip-broken
+	less sudo vim git python3 xz gettext netcat wget
+RUN dnf install -y curl-minimal || dnf install -y curl
 
 # NOTE: use cache to run more apt-get lines during development, then
 #       move them to the combined line above.
 
 COPY added/fish-installer.sh /fish-installer.sh
-RUN /fish-installer.sh
+ARG FISH_STATIC=no
+ARG FISH_NIGHTLY=no
+RUN export FISH_NIGHTLY=${FISH_NIGHTLY}; export FISH_STATIC=${FISH_STATIC}; /fish-installer.sh ||(less -R "/root/fish_installer.log" && exit 1)
 
 # nerdlevel 3 by default
-ENV LC_NERDLEVEL 3
+ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh

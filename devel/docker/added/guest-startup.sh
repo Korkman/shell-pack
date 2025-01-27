@@ -1,6 +1,12 @@
 #! /bin/sh
 {
 
+command -v fish > /dev/null || {
+	echo "Fish not in PATH, installer failed!"
+	cat "$HOME/fish_installer.log"
+	exit 1
+}
+
 # simulate pre-installed binaries
 if [ -e ~/Downloads/rg ]
 then
@@ -45,11 +51,24 @@ if [ -z "$LC_NERDLEVEL" ]; then
 	export LC_NERDLEVEL=3
 fi
 # setup an unprivileged user
-useradd shpuser
+if command -v useradd > /dev/null; then
+	useradd shpuser
+else
+	adduser --disabled-password --gecos "" shpuser
+fi
 mkdir -p /home/shpuser
 cp -aT /etc/skel /home/shpuser
 cp -a /root/Downloads /home/shpuser/
+if [ -e /root/.local/bin ]
+then
+	cp -a /root/.local/bin /home/shpuser/.local/bin
+fi
 chown -R shpuser:shpuser /home/shpuser
+# if fish version is 4 (or higher), run --install again for shpuser
+if ! fish --version | grep -Eq "version [23]\."
+then
+	su shpuser -c "/bin/sh -c 'fish --install --version'"
+fi
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
 chsh shpuser -s $(command -v fish) &> /dev/null || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
@@ -57,7 +76,7 @@ chsh shpuser -s $(command -v fish) &> /dev/null || echo "chsh failed, might be u
 (cd ~
 mkdir ggit-test
 cd ggit-test
-git init
+git init -q
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 echo "New file" > newfile.txt

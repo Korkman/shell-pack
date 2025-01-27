@@ -14,6 +14,8 @@ AUTOSTART=${AUTOSTART:-yes} # run installer in guest-startup.sh
 FORCE_DOCKER=${FORCE_DOCKER:-no} # force use of docker although podman is available
 FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
+FISH_STATIC=${FISH_STATIC:-no} # install fish static binary (4.0 beta and up)
+FISH_NIGHTLY=${FISH_NIGHTLY:-no} # install fish nightly
 do_build="no" # perform docker build (append "build" to CLI to trigger)
 build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
@@ -65,33 +67,47 @@ else
 	fi
 fi
 
-BUILD_FROM="${1:-debian:bookworm}"
-tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
+BUILD_FROM="${1:-help}"
 case "$BUILD_FROM" in
-	'debian:'*|'debian/eol:'*)
+	debian:* | debian/eol:* | ubuntu:* )
 		dockerfile="Dockerfile-Debian"
 		;;
-	ubuntu:*)
-		dockerfile="Dockerfile-Debian"
-		;;
-	fedora:* | centos:* | redhat/*:* | rockylinux:* )
+	fedora:* | centos:* | redhat/*:* | rockylinux:* | almalinux:* )
 		dockerfile="Dockerfile-Redhat"
 		;;
-	archlinux:*)
+	archlinux:* )
 		dockerfile="Dockerfile-Archlinux"
 		;;
+	alpine:* )
+		dockerfile="Dockerfile-Alpine"
+		;;
 	*)
-		echo "Please provide distro name"
-		echo " - debian:bookworm"
-		echo " - debian:buster"
-		echo " - debian/eol:stretch"
-		echo " - ubuntu:xenial"
-		echo " - centos:8"
-		echo " - fedora:34"
+		echo "Please provide a distro name, examples:"
+		echo " - debian:latest"
+		echo " - debian:unstable"
+		echo " - alpine:latest"
+		echo " - fedora:latest"
 		echo " - archlinux:latest"
+		echo " - almalinux:latest"
+		echo "Specific releases like:"
+		echo " - debian:bookworm"
+		echo " - debian/eol:jessie"
+		echo " - ubuntu:xenial"
+		echo " - redhat/ubi9:latest"
 		exit 1
 		;;
 esac
+
+tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
+# append "fish4" to tagname if SP_FISH4 is yes
+if [ "$FISH_STATIC" = "yes" ]
+then
+	tagname="${tagname}-fish-static"
+fi
+if [ "$FISH_NIGHTLY" = "yes" ]
+then
+	tagname="${tagname}-fish-nightly"
+fi
 
 # script location
 whereiam="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
@@ -118,7 +134,10 @@ then
 	cache_arg=""
 	[ "$build_uncached" = "yes" ] && cache_arg="--no-cache "
 	$docker build \
-		$cache_arg --build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
+		$cache_arg \
+		--build-arg "FISH_STATIC=$FISH_STATIC" \
+		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
+		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
 		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
 fi
 

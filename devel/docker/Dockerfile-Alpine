@@ -1,14 +1,9 @@
-ARG BUILD_FROM=archlinux:latest
+ARG BUILD_FROM=alpine:latest
 FROM $BUILD_FROM
 
-# upgrade from LC_ALL "C" to add utf-8 support (prompt does not display glyphs otherwise)
-# NOTE: the arch docker image does not have C.UTF-8, but provides en_US.UTF-8
-RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
-ENV LC_ALL=en_US.UTF-8
-
-RUN pacman -Sy
-RUN pacman --noconfirm -S gettext man-db xz htop tmux procps mc \
-    screen curl wget less sudo ncurses openssh openbsd-netcat git python3
+RUN apk add coreutils mc htop curl netcat-openbsd openssh-server bash ncurses \
+    procps openssh-client tmux screen wget
+RUN apk add python3
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG FISH_STATIC=no

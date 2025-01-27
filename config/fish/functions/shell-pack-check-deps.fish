@@ -25,11 +25,6 @@ function shell-pack-check-deps -d \
 		else
 			shell-pack-deps install dool
 		end
-		#if command -q sk
-		#	echo "Skim pre-installed, skipping ..."
-		#else
-		#	shell-pack-deps install skim
-		#end
 		reinstall-shell-pack-prefs
 		set --universal __sp_first_startup_done 1
 		return
