@@ -550,12 +550,18 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
 		
 		# auto-update
-		echo "Autoupdate triggered! Remember your most recent cmd:"
+		echo "Autoupdate triggered! History may be merged, your most recent cmd was:"
 		echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
 		policeline "new fish config loaded - env reset"
 		reload
 	end
-
+	
+	# monitor keybinds file mtime, reload if changed
+	if [ "$__sp_keybinds_mtime" != "" ]
+		if [ (__sp_getmtime $__sp_keybinds_file) -ne $__sp_keybinds_mtime ]
+			__sp_keybinds
+		end
+	end
 end
 
 function __shellpack_cmd_duration -S -d 'Show command duration'
@@ -738,19 +744,10 @@ end
 # upgrade becomes necessary, at which point stuff gets copied over and live shells will
 # reload with a policeline
 
-if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 2
+#if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 2
 	#policeline "shell-pack silent update 1 applied"
-	set -g __sp_silent_update 2
-	# alt-left and -right in linux console (kmscon)
-	bind \e\e\[D "quick_dir_prev"
-	bind \e\e\[C "quick_dir_next"
-	# alt-down in linux console
-	bind \e\e\[B "skim-cd-widget-one"
-	# alt-up in linux console
-	bind \e\e\[A "quick_dir_up"
-	# custom event: pressing enter emits custom event before fish_preexec
-	bind \r "if ! commandline --paging-mode; emit sp_submit_commandline; end; commandline -f execute"
-end
+	#set -g __sp_silent_update 2
+#end
 
 
 # end silent updates
