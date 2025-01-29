@@ -12,7 +12,8 @@ RUN dnf -y install epel-release || true
 RUN dnf install -y \
 	man-db \
 	htop tmux procps mc screen \
-	less sudo vim git python3 xz gettext netcat wget
+	less sudo vim git python3 gettext netcat wget \
+	xz zip zstd lz4 p7zip
 RUN dnf install -y curl-minimal || dnf install -y curl
 
 # NOTE: use cache to run more apt-get lines during development, then

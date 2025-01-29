@@ -69,8 +69,9 @@ if ! fish --version | grep -Eq "version [23]\."
 then
 	su shpuser -c "/bin/sh -c 'fish --install --version'"
 fi
+mkdir -p "/etc/sudoers.d"
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
-chsh shpuser -s $(command -v fish) &> /dev/null || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
+chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
 # ggit testing grounds
 (cd ~

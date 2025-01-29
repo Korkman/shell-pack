@@ -21,6 +21,9 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * tmux shortcuts, including exclusive session ```one``` for shared access
 
 ## Custom tools
+ * `dl`: download URL with either curl or wget as backend
+ * `cfc`: compressed file creation, shortcut for tar, 7z, zstd, etc.
+ * `cfd`: compressed file decompression
  * `qssh`: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`): an easy to use ripgrep file content search with preview
  * `ggit`: quickly review changes, add files to the commit

@@ -7,8 +7,9 @@ RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 ENV LC_ALL=en_US.UTF-8
 
 RUN pacman -Sy
-RUN pacman --noconfirm -S gettext man-db xz htop tmux procps mc \
-    screen curl wget less sudo ncurses openssh openbsd-netcat git python3
+RUN pacman --noconfirm -S gettext man-db htop tmux procps mc \
+    screen curl wget less sudo ncurses openssh openbsd-netcat git python3 \
+    xz zip zstd lz4 7zip
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG FISH_STATIC=no

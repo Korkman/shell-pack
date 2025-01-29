@@ -134,6 +134,9 @@ mount --rbind /dev, /proc, /sys    qchroot TARGET
   into TARGET, then chroot,
   then umount on exit
 
+Download with curl or wget         dl URL [ FILENAME ]
+Compressed file creation           cfc FILE|DIR [ FILE|ALGO ]
+Compressed file decompression      cfd FILE [ DESTINATION ]
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit
 create and edit a template         create [ bash | fish | service | ... ] FILE

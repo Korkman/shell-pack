@@ -2,8 +2,9 @@ ARG BUILD_FROM=alpine:latest
 FROM $BUILD_FROM
 
 RUN apk add coreutils mc htop curl netcat-openbsd openssh-server bash ncurses \
-    procps openssh-client tmux screen wget
-RUN apk add python3
+    procps openssh-client tmux screen python3 wget zstd xz zip 7zip gzip bzip2 tar \
+    git shadow findutils
+#RUN apk add 
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG FISH_STATIC=no
