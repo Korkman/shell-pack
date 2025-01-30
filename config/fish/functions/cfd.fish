@@ -30,7 +30,7 @@ function cfd -d \
 	else if string match -qr '\.(tar\.[^\.]+|tgz)$' -- "$filename"
 		__sp_require_cmd tar || return 1
 		if test -z "$dst"; set dst (dirname -- "$filename"); end
-		tar -xaf "$filename" -C "$dst"
+		tar -xf "$filename" -C "$dst"
 	else if string match -qr '\.tar$' -- "$filename"
 		__sp_require_cmd tar || return 1
 		if test -z "$dst"; set dst (dirname -- "$filename"); end

@@ -27,7 +27,7 @@ function shell-pack-deps-install-fzf
 	end
 	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv6.tar.gz"
 	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv7.tar.gz"
-	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-darwin_amd64.zip"
+	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-darwin_amd64.tar.gz"
 	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_amd64.tar.gz"
 	
 	set initial_dir "$PWD"
@@ -60,9 +60,9 @@ function shell-pack-deps-install-fzf
 	rm -f fzf.tar.gz
 	
 	echo "Downloading $url ..."
-	curl --silent --location "$url" > fzf.tar.gz || return 3
+	dl -q "$url" > fzf.tar.gz || return 3
 	
-	tar -xzf fzf.tar.gz || return 4
+	cfd fzf.tar.gz || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/fzf ..."
 	rm -f "$__sp_dir/bin/fzf"
@@ -125,9 +125,9 @@ function shell-pack-deps-install-ripgrep
 	rm -f ripgrep.tar.gz
 	
 	echo "Downloading $url ..."
-	curl --silent --location "$url" > ripgrep.tar.gz || return 3
+	dl -q "$url" > ripgrep.tar.gz || return 3
 	
-	tar -xzf ripgrep.tar.gz || return 4
+	cfd ripgrep.tar.gz || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/rg ..."
 	cd "ripgrep-""$pversion""-"* || return 5
@@ -174,9 +174,9 @@ function shell-pack-deps-install-dool
 	rm -f dool.tar.gz
 	
 	echo "Downloading $url ..."
-	curl --silent --location "$url" > dool.tar.gz || return 3
+	dl -q "$url" > dool.tar.gz || return 3
 	
-	tar -xzf dool.tar.gz || return 4
+	cfd dool.tar.gz || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/dool ..."
 	cd "dool-""$pversion" || return 5

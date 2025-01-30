@@ -187,7 +187,7 @@ function cfc -d \
 				echo "Unsupported file extension" >&2
 				return 1
 		end
-		set -l filesize (stat -c%s "$filename")
+		set -l filesize (__sp_get_filesize "$filename")
 		set -l filesize_mb (math "round($filesize / 1024 / 1024)")
 		echo "Created $filename, $filesize bytes ($filesize_mb MiB)" >&2
 	else

@@ -155,7 +155,7 @@ function dl -d "Download a file, via https:// by default, use either curl or wge
 		
 	else if test "$use_tool" = "wget"
 		test "$silent" = "yes" || echo "Download with wget ..." >&2
-		set -l base_opt --max-redirect=10 --tries 3
+		set -l base_opt --max-redirect=10 --tries 3 --no-use-server-timestamps
 		set -l silent_opt
 		set -l show_prog_opt "--show-progress"
 		set -l resume_opt -c
