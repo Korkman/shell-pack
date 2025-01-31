@@ -47,14 +47,10 @@ if command -v "podman" > /dev/null && [ "$FORCE_DOCKER" != "yes" ]
 then
 	echo "Using podman to run test-drive (if you prefer docker, run with env FORCE_DOCKER=yes)"
 	docker="podman"
-	# check if podman help mentions "machine", and if so, ensure it is running
-	if podman help | grep -q -E '\s+machine\s+'
+	if podman machine inspect | grep -qE "State.*stopped"
 	then
-		if ! podman machine info | grep -q -E '\s*MachineState:\s+Running'
-		then
-			echo "podman machine start"
-			podman machine start
-		fi
+		echo "podman machine start"
+		podman machine start
 	fi
 else
 	if [ "$FORCE_NO_SUDO" = "yes" ] || [ "$(whoami)" = "root" ]
