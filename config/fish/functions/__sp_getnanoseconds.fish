@@ -21,7 +21,7 @@ function __sp_getnanoseconds -d \
 		# using python3 (µs precision)
 		function __sp_getnanoseconds -d \
 			'Get nanoseconds since epoch (detected python3, precision µs)'
-			python3 -c 'import datetime; import time; print(str(int(time.time())) + datetime.datetime.utcnow().strftime("%f") + "000")'
+			python3 -c 'import datetime; import time; print(str(int(time.time())) + datetime.datetime.now(datetime.UTC).strftime("%f") + "000")'
 		end
 		__sp_getnanoseconds
 	else if command -sq python
