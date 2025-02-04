@@ -152,7 +152,7 @@ function qmount -d \
 	end
 	
 	# Recurse MBR/GPT partitions
-	if ! test -e $devdisk"p1"
+	if ! test -e "$devdisk""p1" && ! string match -qr 'p[0-9]+$' -- "$devdisk"
 		kpartx -a "$devdisk"
 	end
 	for i in "$devdisk"p*
