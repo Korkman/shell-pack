@@ -11,6 +11,7 @@ function qumount -d \
 		return
 	end
 	
+	# accept or imply first argument DEVICE
 	if test "$argv[1]" != ""
 		set devdisk "$argv[1]"
 	else if string match -q "/run/q/*" -- "$PWD"
@@ -27,15 +28,14 @@ function qumount -d \
 		if test "$prefix_found" = "no"
 			builtin cd "$original_pwd"
 		end
-	end
-	
-	if test "$devdisk" = ""
-		echo "arg 1: device required (/dev may be omitted) when not inside /run/q/"
+	else
+		echo "Missing argument 1 for qumount: device or device shorthand"
 		return 1
 	end
 	
-	# allow specifying either blockdevice or /run/q/ directory
+	# allow specifying either blockdevice or /run/q/ directory or short version
 	set -l devshort (string replace --regex -- '^/(dev/|run/q/)?' '' "$devdisk")
+	set -l devdisk "/dev/$devshort"
 	set -l mpoint "/run/q/$devshort"
 	set -l userdir "$PWD"
 	if test "$PWD" = "$mpoint" || string match "$mpoint/*" "$PWD"
@@ -43,15 +43,29 @@ function qumount -d \
 		cd "/run/q"
 	end
 	
+	# attempt umount
 	if umount "$mpoint"
 		rm -d "$mpoint"
 	else
-		cd "$userdir"
+		echo (__spt status_fail)"Umount failed. Showing fuser for the mountpoint."(set_color normal)
 		command fuser -mv "$mpoint"
+		cd "$userdir"
 		return 2
 	end
 	
-	if string match -qr '^(?<nbd>nbd[0-9]+)($|p[0-9]$)' -- "$devshort"
+	if string match -qr '^/dev/mapper/(?<qmountLuks>qmountLuks.*?)($|p[0-9]$)' -- "$devdisk"
+		# find if there are mounted partitions left
+		if ! mount | string match -qr '^/dev/mapper/'$qmountLuks
+			echo "Last filesystem of $qmountLuks closed, closing luks"
+			kpartx -d "/dev/mapper/$qmountLuks"
+			cryptsetup luksClose "$qmountLuks"
+			# reset $devshort, a quick and dirty method to close nbd as well
+			string match -qr '^qmountLuks(?<devshort>.*)' -- "$qmountLuks"
+			set devdisk "/dev/$devshort"
+		end
+	end
+	
+	if string match -qr '^/dev/(?<nbd>nbd[0-9]+)($|p[0-9]$)' -- "$devdisk"
 		# find if there are mounted partitions left
 		if ! mount | string match -qr '^/dev/'$nbd'[^0-9]'
 			echo "Last filesystem of /dev/$nbd closed, disconnecting"
