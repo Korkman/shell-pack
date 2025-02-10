@@ -18,5 +18,5 @@ function __sp_complete_cfc_first_arg_is_file
 end
 
 complete -c cfc -d 'Compressed file creation'
-complete -c cfc -n '__sp_complete_cfc_first_arg_is_dir' -f -a 'tar tar.gz tar.xz tar.zst tar.bz2 tar.lz4'
-complete -c cfc -n '__sp_complete_cfc_first_arg_is_file' -f -a 'gz xz bz2 zst 7z zip lz4'
+complete -c cfc -n '__sp_complete_cfc_first_arg_is_dir' -f -a 'tar tar.gz taz tgz tar.xz txz tar.zst tzst tar.bz2 tb2 tbz tbz2 tz2 tar.lz4 tar.lz tar.lzma tlz tar.lzo tar.Z tZ taZ'
+complete -c cfc -n '__sp_complete_cfc_first_arg_is_file' -f -a 'gz xz bz2 zst 7z zip lz4 lz lzma lzo Z'

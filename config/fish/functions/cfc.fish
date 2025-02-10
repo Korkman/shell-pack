@@ -26,7 +26,34 @@ function cfc -d \
 	set argv $args
 	
 	set -l ext
-	set -l comprext '(tar|tar\.gz|tar\.xz|tar\.zst|tar\.bz2|tar\.lz4|7z|zip|gz|bz2|xz|lz4|zst)$'
+	set -l comprext '('
+	# tar and its many filename extensions
+	set comprext $comprext'tar'
+	set comprext $comprext'|tar\.gz|taz|tgz'
+	set comprext $comprext'|tar\.zst|tzst'
+	set comprext $comprext'|tar\.bz2|tb2|tbz|tbz2|tz2'
+	set comprext $comprext'|tar\.lz'
+	set comprext $comprext'|tar\.lzma|tlz'
+	set comprext $comprext'|tar\.lzo'
+	set comprext $comprext'|tar\.lz4'
+	set comprext $comprext'|tar\.xz|txz'
+	set comprext $comprext'|tar\.Z|tZ|taZ'
+	# more directory compressors
+	set comprext $comprext'|7z'
+	set comprext $comprext'|zip'
+	# single file compressors
+	set comprext $comprext'|gz'
+	set comprext $comprext'|bz2'
+	set comprext $comprext'|lz'
+	set comprext $comprext'|lzma'
+	set comprext $comprext'|lzo'
+	set comprext $comprext'|xz'
+	set comprext $comprext'|Z'
+	set comprext $comprext'|lz4'
+	set comprext $comprext'|zst'
+	set comprext $comprext')$'
+	
+	# choose a default compression method if none is given
 	set -l defext 'gz'
 	set -l defdirext 'tar.gz'
 	if type -q zstd
@@ -129,8 +156,10 @@ function cfc -d \
 	
 	if test "$src" = "/"
 		set tar_base_opts --one-file-system -c /
-	else
+	else if test -d "$src"
 		set tar_base_opts --one-file-system -C "$src/.." -c (basename "$src")
+	else
+		set tar_base_opts --one-file-system -C (dirname $src) -c (basename "$src")
 	end
 	
 	if [ "$to_stdout" != "yes" ]
@@ -139,23 +168,39 @@ function cfc -d \
 			case 'tar'
 				__sp_require_cmd tar || return 1
 				tar $tar_base_opts > "$filename"
-			case 'tar.gz'
+			case 'tar.gz' 'taz' 'tgz'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd gzip || return 1
 				tar $tar_base_opts | gzip $passed_args > "$filename"
-			case 'tar.bz2'
+			case 'tar.bz2' 'tb2' 'tbz' 'tbz2' 'tz2'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd bzip2 || return 1
 				tar $tar_base_opts | bzip2 $passed_args > "$filename"
-			case 'tar.xz'
+			case 'tar.lz'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzip || return 1
+				tar $tar_base_opts | lzip $passed_args > "$filename"
+			case 'tar.lzma' 'tlz'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzma || return 1
+				tar $tar_base_opts | lzma $passed_args > "$filename"
+			case 'tar.lzo'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzop || return 1
+				tar $tar_base_opts | lzop $passed_args > "$filename"
+			case 'tar.xz' 'txz'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd xz || return 1
 				tar $tar_base_opts | xz $passed_args > "$filename"
+			case 'tar.Z' 'tZ' 'taZ'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd compress || return 1
+				tar $tar_base_opts | compress $passed_args > "$filename"
 			case 'tar.lz4'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lz4 || return 1
 				tar $tar_base_opts | lz4 $passed_args > "$filename"
-			case 'tar.zst'
+			case 'tar.zst' 'tzst'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args > "$filename"
@@ -174,9 +219,21 @@ function cfc -d \
 			case 'bz2'
 				__sp_require_cmd bzip2 || return 1
 				bzip2 $passed_args -c "$src" > "$filename"
+			case 'lz'
+				__sp_require_cmd lzip || return 1
+				lzip $passed_args -c "$src" > "$filename"
+			case 'lzma'
+				__sp_require_cmd lzma || return 1
+				lzma $passed_args -c "$src" > "$filename"
+			case 'lzo'
+				__sp_require_cmd lzop || return 1
+				lzop $passed_args -c "$src" > "$filename"
 			case 'xz'
 				__sp_require_cmd xz || return 1
 				xz $passed_args -c "$src" > "$filename"
+			case 'Z'
+				__sp_require_cmd compress || return 1
+				compress $passed_args -c "$src" > "$filename"
 			case 'lz4'
 				__sp_require_cmd lz4 || return 1
 				lz4 $passed_args -c "$src" > "$filename"
@@ -187,6 +244,12 @@ function cfc -d \
 				echo "Unsupported file extension" >&2
 				return 1
 		end
+		set -l comp_pipestatus $pipestatus
+		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
+			echo "Error compressing $src to $filename" >&2
+			echo "Pipestatus: $comp_pipestatus" >&2
+			return 1
+		end
 		set -l filesize (__sp_get_filesize "$filename")
 		set -l filesize_mb (math "round($filesize / 1024 / 1024)")
 		echo "Created $filename, $filesize bytes ($filesize_mb MiB)" >&2
@@ -196,23 +259,39 @@ function cfc -d \
 			case 'tar'
 				__sp_require_cmd tar || return 1
 				tar $tar_base_opts
-			case 'tar.gz'
+			case 'tar.gz' 'taz' 'tgz'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd gzip || return 1
 				tar $tar_base_opts | gzip $passed_args
-			case 'tar.bz2'
+			case 'tar.bz2' 'tb2' 'tbz' 'tbz2' 'tz2'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd bzip2 || return 1
 				tar $tar_base_opts | bzip2 $passed_args
-			case 'tar.xz'
+			case 'tar.lz'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzip || return 1
+				tar $tar_base_opts | lzip $passed_args
+			case 'tar.lzma' 'tlz'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzma || return 1
+				tar $tar_base_opts | lzma $passed_args
+			case 'tar.lzo'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd lzop || return 1
+				tar $tar_base_opts | lzop $passed_args
+			case 'tar.xz' 'txz'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd xz || return 1
 				tar $tar_base_opts | xz $passed_args
+			case 'tar.Z' 'tZ' 'taZ'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd compress || return 1
+				tar $tar_base_opts | compress $passed_args
 			case 'tar.lz4'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lz4 || return 1
 				tar $tar_base_opts | lz4 $passed_args
-			case 'tar.zst'
+			case 'tar.zst' 'tzst'
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args
@@ -232,9 +311,21 @@ function cfc -d \
 			case 'bz2'
 				__sp_require_cmd bzip2 || return 1
 				bzip2 $passed_args -c "$src"
+			case 'lz'
+				__sp_require_cmd lzip || return 1
+				lzip $passed_args -c "$src"
+			case 'lzma'
+				__sp_require_cmd lzma || return 1
+				lzma $passed_args -c "$src"
+			case 'lzo'
+				__sp_require_cmd lzop || return 1
+				lzop $passed_args -c "$src"
 			case 'xz'
 				__sp_require_cmd xz || return 1
 				xz $passed_args -c "$src"
+			case 'Z'
+				__sp_require_cmd gzip || return 1
+				gzip -d $passed_args -c "$src"
 			case 'lz4'
 				__sp_require_cmd lz4 || return 1
 				lz4 $passed_args -c "$src"
@@ -244,6 +335,12 @@ function cfc -d \
 			case '*'
 				echo "Unsupported file extension" >&2
 				return 1
+		end
+		set -l comp_pipestatus $pipestatus
+		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
+			echo "Error compressing $src to $filename" >&2
+			echo "Pipestatus: $comp_pipestatus" >&2
+			return 1
 		end
 	end
 	
