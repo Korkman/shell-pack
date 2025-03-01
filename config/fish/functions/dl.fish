@@ -167,9 +167,9 @@ function dl -d "Download a file, via https:// by default, use either curl or wge
 			set -e show_prog_opt
 		end
 		if test "$verbose" = "yes"
-			set -a base_opt --show-progress --server-response
+			set -a base_opt --server-response
 		else
-			set -a base_opt --no-verbose --show-progress
+			set -a base_opt --no-verbose
 		end
 		if test -n "$output_file"
 			set final_opt -O "$output_file" "$url"
@@ -178,7 +178,11 @@ function dl -d "Download a file, via https:// by default, use either curl or wge
 		else
 			set final_opt -O - "$url"
 		end
-		wget $base_opt $silent_opt $resume_opt $final_opt || return 1
+		# switch to --verbose for very old versions of wget (Debian Wheezy)
+		if set -q show_prog_opt && ! wget --help | string match -q -- "*--show-progress*"
+			set show_prog_opt "--verbose"
+		end
+		wget $base_opt $silent_opt $show_prog_opt $resume_opt $final_opt || return 1
 		
 		
 	else
