@@ -64,11 +64,6 @@ then
 	cp -a /root/.local/bin /home/shpuser/.local/bin
 fi
 chown -R shpuser:shpuser /home/shpuser
-# if fish version is 4 (or higher), run --install again for shpuser
-if ! fish --version | grep -Eq "version [23]\."
-then
-	su shpuser -c "/bin/sh -c 'fish --install --version'"
-fi
 mkdir -p "/etc/sudoers.d"
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
 chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."

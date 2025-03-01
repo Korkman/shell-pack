@@ -3,17 +3,22 @@
 
 set -eu
 
+# automatically installs fish shell on various (all?) distros
+# notable environment variables:
+# - FISH_NIGHTLY=yes - install latest nightly build
+# - FISH_STATIC=yes - force static release binary
+
 main() {
 	installer_log="$HOME/fish_installer.log"
 	echo "fish installer started, logging to '$installer_log'"
 	touch "$installer_log"
 	echo "args: $0" >> "$installer_log"
 	# TODO: find latest release versions on github https://github.com/fish-shell/fish-shell/releases/
-	fish_latest="3.7.1"
-	fish_static_latest="4.0b1"
+	fish_latest="4.0.0"
+	fish_static_latest="4.0.0"
 	cmake_version="3.27.0"
 	deploy_channel="release"
-	deploy_branch="3"
+	deploy_branch="4"
 	if [ "${FISH_NIGHTLY:-no}" = "yes" ]
 	then
 		deploy_channel="nightly"
@@ -175,10 +180,10 @@ run_installer() {
 			sudo pacman -Sy --noconfirm fish
 		;;
 		'Static')
-			install_arch="$(uname -m)"
-			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_static_latest/fish-static-linux-$install_arch.tar.xz"
-			
-			# test if /usr/local/bin is writable, cd there
+			install_arch="$(uname -m | sed -e 's/x86_64/amd64/')"
+			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_static_latest/fish-static-$install_arch-$fish_static_latest.tar.xz"
+			echo "installing static release from $static_release_file" | tee -a "$installer_log"
+			# test if /usr/local/bin is writable, cd and install there
 			if [ -w /usr/local/bin ]
 			then
 				cd /usr/local/bin
@@ -190,7 +195,7 @@ run_installer() {
 				if ! echo "$PATH" | grep -q "$HOME/.local/bin"
 				then
 					echo "Warning: $HOME/.local/bin not in PATH, adding temporarily"
-					echo "It may appear in PATH after next login."
+					echo "It may appear in PATH after next login (depends on distro)."
 					echo "If it doesn't, add it manually to your shell rc file."
 					export PATH="$HOME/.local/bin:$PATH"
 				fi
@@ -211,7 +216,13 @@ run_installer() {
 			# extract and install
 			tar -xJf fish-static.tar.xz
 			ls -al
-			./fish --install --version
+			
+			if [ -w "/usr/local/bin" ]
+			then
+				echo 'yes' | ./fish --install=/usr/local
+			else
+				echo 'yes' | ./fish "--install=$HOME/.local"
+			fi
 			rm fish-static.tar.xz
 		;;
 		*)
