@@ -88,7 +88,7 @@ get_installer_for_distro() {
 				installer_case="Debian-12"
 			elif [ "$distro_version" -lt 10 ]
 			then
-				installer_case="Debian-Make"
+				installer_case="Static"
 			else
 				installer_case="Debian-$distro_version"
 			fi
@@ -112,7 +112,7 @@ get_installer_for_distro() {
 				installer_case="Ubuntu-Any"
 			elif echo "$distro_like" | grep -Fwq "debian"
 			then
-				installer_case="Debian-Make"
+				installer_case="Static"
 			elif echo "$distro_like" | grep -Fwq "arch"
 			then
 				installer_case="Archlinux-Any"
@@ -160,7 +160,7 @@ run_installer() {
 			sudo apt-get update
 			sudo apt-get -y install fish
 		;;
-		'Debian-Make') # stretch, jessie (NOTE: wheezy won't compile any 3.x release)
+		'Debian-Make') # deprecated method, use static binary build by default
 			apt-get -y install build-essential gettext libncurses5-dev git
 			cd /usr/local/src
 			install_cmake >> "$installer_log" 2>&1
