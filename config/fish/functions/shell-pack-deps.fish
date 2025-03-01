@@ -4,11 +4,11 @@ function shell-pack-deps -d \
 		shell-pack-check-deps
 	else if test "$argv[1]" = "install"
 		if test "$argv[2]" = "fzf"
-			shell-pack-deps-install-fzf $argv[3]
+			shell-pack-deps-install-fzf $argv[3] || echo "Failed with status $status"
 		else if test "$argv[2]" = "ripgrep"
-			shell-pack-deps-install-ripgrep $argv[3]
+			shell-pack-deps-install-ripgrep $argv[3] || echo "Failed with status $status"
 		else if test "$argv[2]" = "dool"
-			shell-pack-deps-install-dool $argv[3]
+			shell-pack-deps-install-dool $argv[3] || echo "Failed with status $status"
 		else
 			echo "Invalid argument"
 			return 2
