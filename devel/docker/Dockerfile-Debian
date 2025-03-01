@@ -25,6 +25,7 @@ RUN apt-get install -y lz4 || apt-get install -y liblz4-tool || true
 RUN apt-get install -y zstd || true
 RUN apt-get install -y zip || true
 RUN apt-get install -y 7zip || apt-get install -y p7zip || true
+RUN apt-get install -y python3 || true
 # NOTE: use cache to run more apt-get lines during development, then
 #       move them to the combined line above.
 
