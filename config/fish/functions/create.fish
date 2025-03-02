@@ -150,10 +150,6 @@ function create -d "Creates a new text file with a basic template and opens it i
 		chmod +x "$filename"
 	end
 
-	if test -z "$EDITOR"
-		set -f EDITOR "mcedit"
-	end
-	
 	# open the file in the default editor with cursor position for supported editors
 	switch "$EDITOR"
 		case "*mcedit" "*vi" "*vim" "*nano"

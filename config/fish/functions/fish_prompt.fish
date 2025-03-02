@@ -744,6 +744,10 @@ end
 # upgrade becomes necessary, at which point stuff gets copied over and live shells will
 # reload with a policeline
 
+if test -z "$EDITOR"
+	set EDITOR "mcedit"
+end
+
 #if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 2
 	#policeline "shell-pack silent update 1 applied"
 	#set -g __sp_silent_update 2
