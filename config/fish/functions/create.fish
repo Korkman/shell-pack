@@ -42,6 +42,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 	set -l executable 0
 	set -l line 1
 	set -l suggested_path ""
+	set -l suggested_ext ""
 	switch "$file_type"
 		case "bash"
 			set template "#!/bin/bash\n{\nset -eu\n\nexit\n}"
@@ -63,24 +64,31 @@ function create -d "Creates a new text file with a basic template and opens it i
 			set template "[Unit]\nDescription=Example Service\n\n[Service]\nExecStart=/usr/bin/example\nRestart=always\n\n[Install]\nWantedBy=multi-user.target"
 			set line 2
 			set suggested_path "/etc/systemd/system/"
+			set suggested_ext ".service"
 		case "systemd-mount"
 			set template "[Unit]\nDescription=Example Mount\n\n[Mount]\nWhat=/dev/sdX1\nWhere=/mnt/example\nType=ext4\nOptions=defaults\n\n[Install]\nWantedBy=multi-user.target"
 			set line 2
 			set suggested_path "/etc/systemd/system/"
+			set suggested_ext ".mount"
 		case "cron"
 			set template "# Example cron job\n# <minute> <hour> <day_of_month> <month> <day_of_week> <user> <command>\n* * * * * root /usr/bin/example"
 			set line 3
 			set suggested_path "/etc/cron.d/"
 		case "desktop"
 			set template "[Desktop Entry]\nVersion=1.0\nName=Example\nComment=This is an example\nExec=/usr/bin/example\nIcon=example\nTerminal=false\nType=Application\nCategories=Utility;\nMimeType=text/html;"
-			set line 1
 			set suggested_path "$HOME/.local/share/applications/"
+			set suggested_ext ".desktop"
 		case "md"
 			set template "# Headline\n\nThis is a paragraph with `inline code` example.\n\n## Link\n[Example](https://example.com)\n\n## Bullet Points\n- Item 1\n- Item 2\n- Item 3\n\n## Table\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n\n## Formatting\n**Bold Text**\n*Italic Text*\n\n## Code\n```bash\n# This is a code block\n\necho 'Hello, World!'\n```"
-			set line 1
+			set suggested_ext ".md"
 		case "txt"
-			set template "This is a text file.\n\nYou can write anything here."
-			set line 1
+			set template "This is a text file. You can write anything here."
+		case "ini"
+			set template "[section]\n; comment\nsome_key=value"
+			set suggested_ext ".ini"
+		case ".env"
+			set template "# comment\nKEY=value"
+			if test (count $argv) -lt 2; set -a argv ".env"; end
 		case '*'
 			echo "Error: Unsupported type '$file_type'. Supported types are: bash, sh, fish, docker-compose, systemd-service, systemd-mount, cron, desktop, md, txt."
 			return 1
@@ -109,6 +117,10 @@ function create -d "Creates a new text file with a basic template and opens it i
 			end
 			cd "$suggested_path"
 		end
+	end
+	
+	if test -n "$suggested_ext" && ! string match -q "*$suggested_ext" -- "$filename"
+		set filename "$filename$suggested_ext"
 	end
 	
 	# test if directory is writable

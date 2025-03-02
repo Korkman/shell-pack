@@ -9,3 +9,5 @@ complete -c create -d "Creates a new cron file" -a "cron" --no-files
 complete -c create -d "Creates a new desktop entry file" -a "desktop" --no-files
 complete -c create -d "Creates a new markdown file" -a "md" --no-files
 complete -c create -d "Creates a new text file" -a "txt" --no-files
+complete -c create -d "Creates a new ini file" -a "ini" --no-files
+complete -c create -d "Creates a new .env file" -a ".env" --no-files
