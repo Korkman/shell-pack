@@ -70,7 +70,13 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			$scolor "purple"
 			return
 		case confidential_fg
-			$scolor "white"
+			$scolor "fff"
+			return
+		case fiddle_bg
+			$scolor "070"
+			return
+		case fiddle_fg
+			$scolor "fff"
 			return
 		case pwd_bg
 			$scolor "3a3a3a"
@@ -203,6 +209,9 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			case confidential
 				echo '!'
 				return
+			case fiddle
+				echo 'fiddle'
+				return
 			case duration
 				echo '  '
 				return
@@ -266,6 +275,9 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			return
 		case confidential
 			echo '󰗹'
+			return
+		case fiddle
+			echo 'fiddle '
 			return
 		case duration
 			echo '  '

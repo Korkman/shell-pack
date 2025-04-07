@@ -98,17 +98,21 @@ function __sp_keybinds \
 	if test (__sp_vercmp "$FISH_VERSION" "3.999.999") -gt 0
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind f8 "__history_delete_commandline"
-		# bind f10 to empty commandline, deactivate virtual env or exit - in this order of precedence
-		bind f10 "if ! test (commandline | string collect) = ''; commandline ''; else if set -q VIRTUAL_ENV; commandline 'venv'; commandline --function execute; else; exit; end;"
+		# bind f10 to empty commandline, leave modes, exit - in this order of precedence
+		bind f10 "__sp_exit"
 		# bind f4 to history edit
 		bind f4 '__sp_history_delete_and_edit_prev'
+		bind f11 'fiddle --instant'
+		bind f5 'echo; policeline Reload; reload'
 	else
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind -k f8 "__history_delete_commandline"
-		# bind f10 to empty commandline, deactivate virtual env or exit - in this order of precedence
-		bind -k f10 "if ! test (commandline | string collect) = ''; commandline ''; else if set -q VIRTUAL_ENV; commandline 'venv'; commandline --function execute; else; exit; end;"
+		# bind f10 to empty commandline, leave modes, exit - in this order of precedence
+		bind -k f10 "__sp_exit"
 		# bind f4 to history edit
 		bind -k f4 '__sp_history_delete_and_edit_prev'
 		bind \e4 '__sp_history_delete_and_edit_prev'
+		bind -k f11 'fiddle --instant'
+		bind -k f5 'echo; policeline Reload; reload'
 	end
 end

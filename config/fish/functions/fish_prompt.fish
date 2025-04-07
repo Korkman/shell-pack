@@ -140,6 +140,17 @@ function fish_prompt -d \
 		fish_prompt_segment "confidential_bg" "confidential_fg" (__spt confidential)
 	end
 	
+	if set -q __sp_fiddle_mode
+		# show fiddling mode
+		fish_prompt_segment "fiddle_bg" "fiddle_fg" (__spt fiddle)" "
+	else
+		__sp_prompt_add_path_segments
+	end
+	
+	fish_prompt_print_segments
+end
+
+function __sp_prompt_add_path_segments --no-scope-shadowing
 	if [ "$PWD" = "/" ]
 		# special case root-dir
 		fish_prompt_segment "pwd_bg" "pwd_fg" "/"
@@ -204,7 +215,6 @@ function fish_prompt -d \
 		fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lock)
 	end
 	
-	fish_prompt_print_segments
 end
 
 function fish_prompt_shorten_path --no-scope-shadowing -d "Shorten path to percentage of COLUMNS: string percentage"
