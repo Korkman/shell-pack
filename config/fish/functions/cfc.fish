@@ -8,7 +8,7 @@ function cfc -d \
 		return 1
 	end >&2
 	
-	# filter out passed args and keep own
+	# separate args passed to compressor from cfc args
 	set -l passed_args
 	set -l args
 	set -l search_passed_args no
@@ -25,7 +25,7 @@ function cfc -d \
 	end
 	set argv $args
 	
-	set -l ext
+	# construct a regex to match all supported compressor extensions
 	set -l comprext '('
 	# tar and its many filename extensions
 	set comprext $comprext'tar'
@@ -54,6 +54,7 @@ function cfc -d \
 	set comprext $comprext')$'
 	
 	# choose a default compression method if none is given
+	set -l ext
 	set -l defext 'gz'
 	set -l defdirext 'tar.gz'
 	if type -q zstd
@@ -77,18 +78,23 @@ function cfc -d \
 	end
 	
 	if isatty 1
+		# a terminal is attached to stdout
+		
+		# if not arg given, prompt for a filename to compress to
 		if test (count $argv) -eq 0
 			read -c '../'(basename (realpath .))".tar.$defext" -P "Compress current dir to filename: " -l answer
 			set argv[1] "$answer"
 		end
 		
 		if test (count $argv) -eq 1
+			# only one arg given - determine what it is
+			
 			if string match -q -r "^$comprext" "$argv[1]"
-				# a compressor was given - compressing pwd
-				set src .
-				set filename ../(basename (realpath .))"$argv[1]"
+				# only arg is a compressor spec - compressing pwd to a file in the parent dir
+				set src (realpath .)
+				set filename ../(basename (realpath .))".$argv[1]"
 			else if ! string match -q -r "\.$comprext" "$argv[1]"
-				# an existing file or directory was given
+				# only arg is a src dir or file (does not end with a compressor ext) - compressing to a file in pwd
 				set src (realpath "$argv[1]")
 				if test "$src" = "/"
 					set filename "/rootfs.$defdirext"
@@ -98,17 +104,19 @@ function cfc -d \
 					set filename "$src.$defext"
 				end
 			else
-				# only a destination file was given - compressing pwd
+				# only arg is a destination file (name does end with a compressor ext) - compressing pwd to a file
 				if not string match -q -r '/' "$argv[1]"
-					# only a filename? compress to one dir up
-					set src .
+					# filename with no path - compressing pwd to specified filename in the parent dir
+					set src (realpath .)
 					set filename ../"$argv[1]"
 				else
-					set src .
+					# filename with path - compressing pwd to specified filename
+					set src (realpath .)
 					set filename "$argv[1]"
 				end
 			end
 		else if test (count $argv) -eq 2
+			# two args given - src and dest - compressing src to dest
 			set src (realpath "$argv[1]")
 			set filename "$argv[2]"
 		else
@@ -116,10 +124,12 @@ function cfc -d \
 			return 1
 		end
 		
+		# if dest is only a compressor spec, set filename to the src with the compressor extension
 		if string match -q -r "^$comprext" "$filename"
 			set filename (basename "$src")".$filename"
 		end
 		
+		# prompt for overwrite if the file exists
 		if test -e "$filename"
 			read -P "File '$filename' exists. Overwrite? (Y/n): " -l answer || set -l answer n
 			if not string match -q -i 'y' "$answer" && ! test -z "$answer"
@@ -127,17 +137,23 @@ function cfc -d \
 				return 1
 			end
 		end
+		
+		# grab compressor spec from destination filename
 		set ext (string match -r "\.$comprext" "$filename")
 		set ext $ext[2]
 	else
+		# no terminal attached to stdout - sending compressed data to stdout
 		set to_stdout yes
 		if test (count $argv) -eq 0
+			# no args given and sending to stdout, currently unsupported (would require stdin as src)
 			set ext "$defext"
 		else if test (count $argv) -eq 1
 			if string match -q -r "^$comprext" "$argv[1]"
+				# only arg is a compressor spec - compressing pwd to stdout with specified compressor
 				set ext "$argv[1]"
-				set src .
+				set src (realpath .)
 			else
+				# only arg is a dir or file - compressing to stdout with matching default compressor
 				set src (realpath "$argv[1]")
 				if test -d "$src"
 					set ext "$defdirext"
@@ -146,7 +162,8 @@ function cfc -d \
 				end
 			end
 		else if test (count $argv) -eq 2
-			set src "$argv[1]"
+			# two args given - src and compressor spec - compressing src to stdout with specified compressor
+			set src (realpath "$argv[1]")
 			set ext "$argv[2]"
 		else
 			echo "Too many arguments" >&2
@@ -154,15 +171,19 @@ function cfc -d \
 		end
 	end
 	
+	# special treatment for src being rootfs, a directory or a file
 	if test "$src" = "/"
 		set tar_base_opts --one-file-system -c /
 	else if test -d "$src"
+		# src is a directory, compress with parent dir as base
 		set tar_base_opts --one-file-system -C "$src/.." -c (basename "$src")
 	else
+		# src is a file, compress with parent dir as base
 		set tar_base_opts --one-file-system -C (dirname $src) -c (basename "$src")
 	end
 	
 	if [ "$to_stdout" != "yes" ]
+		# compose compression commandline with a file destination
 		echo "Compressing $src to $filename ..." >&2
 		switch "$ext"
 			case 'tar'
@@ -244,16 +265,19 @@ function cfc -d \
 				echo "Unsupported file extension" >&2
 				return 1
 		end
+		# both tar and compressor must return 0 for success (if zip or 7z were used, the pipestatus is only one exit code)
 		set -l comp_pipestatus $pipestatus
 		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
 			echo "Error compressing $src to $filename" >&2
 			echo "Pipestatus: $comp_pipestatus" >&2
 			return 1
 		end
+		# show output file size
 		set -l filesize (__sp_get_filesize "$filename")
 		set -l filesize_mb (math "round($filesize / 1024 / 1024)")
 		echo "Created $filename, $filesize bytes ($filesize_mb MiB)" >&2
 	else
+		# compose compression commandline with stdout destination
 		echo "Compressing $src to stdout ..." >&2
 		switch "$ext"
 			case 'tar'
@@ -336,6 +360,7 @@ function cfc -d \
 				echo "Unsupported file extension" >&2
 				return 1
 		end
+		# both tar and compressor must return 0 for success (if zip or 7z were used, the pipestatus is only one exit code)
 		set -l comp_pipestatus $pipestatus
 		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
 			echo "Error compressing $src to $filename" >&2
