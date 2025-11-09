@@ -45,7 +45,7 @@ function skim-file-widget -d "List files and folders"
 		--bind "'$skim_binds'" \
 		--preview "'[ -d {} ] && ls -al {} || grep \"\" -I {} | head -n4000'" \
 		--preview-window "'hidden:right:80%'" \
-		--prompt "'Search filenames: '" \
+		--prompt "'Filter paths: '" \
 		| while read -l r; set result $result $r; end
 		
 		if [ "$result[1]" = "//up" ]
