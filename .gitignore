@@ -3,3 +3,5 @@ bin/fzf
 bin/rg
 bin/sk
 bin/dool.d
+devel/test-qmount-files
+

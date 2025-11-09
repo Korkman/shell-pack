@@ -20,7 +20,7 @@ function qmount -d \
 	
 	if test -f "$devdisk"
 		# a file was specified: treat as a disk image and mount it with qemu-nbd
-		echo "Attemting to mount disk image"
+		echo "Attempting to mount disk image"
 		
 		# detect nbd module presence (this also serves as a barrier to stop non-linux users)
 		modinfo nbd > /dev/null
@@ -50,7 +50,7 @@ function qmount -d \
 			return 1
 		end
 		if ! type -q qemu-nbd || ! type -q qemu-img
-			echo "a file was specified, presumable a disk image, which qmount would mount with qemu-nbd"
+			echo "a file was specified, presumably a disk image, which qmount would mount with qemu-nbd"
 			echo "for safety and compatibility, but qemu-nbd or qemu-img is not available - exiting"
 			return 1
 		end
@@ -72,10 +72,19 @@ function qmount -d \
 		end
 		
 		# connect nbd device
-		echo "Connecting $qemu_img_format disk image to /dev/$freenbd ..."
+		echo "Connecting $qemu_img_format disk image $devdisk to /dev/$freenbd ..."
 		qemu-nbd -f $qemu_img_format $qemu_readonly --connect=/dev/$freenbd "$devdisk"
 		or qemu-nbd -f $qemu_img_format --read-only --connect=/dev/$freenbd "$devdisk"
 		or echo "failed to connect qemu-nbd" && return 1
+		
+		# we need a moment to let the kernel notice the new device
+		# partprobe seems to do the trick, opposed to udevadm settle
+		partprobe "/dev/$freenbd"
+		# as a plan B, sleep for a second
+		if string match "*empty*" -- (file -s "/dev/$freenbd")
+			echo "waiting for /dev/$freenbd to appear ..."
+			sleep 1
+		end
 		
 		# Recurse into created block device
 		qmount /dev/$freenbd
@@ -99,8 +108,10 @@ function qmount -d \
 		echo "Not a blockdevice: $devdisk"
 		return 1
 	end
-	set -l blkid_rs (blkid "$devdisk")
-	echo "$blkid_rs"
+	set -l lsblk_rs (lsblk --nodeps --pairs -o NAME,PATH,FSTYPE,PTTYPE "$devdisk")
+	echo "lsblk: $lsblk_rs"
+	set -l lsblk_children_rs (lsblk --pairs -o NAME,PATH,FSTYPE,PTTYPE "$devdisk" | tail -n +2)
+	echo "lsblk children: $lsblk_children_rs"
 	set -l rs $status
 	if not test $rs -eq 0
 		echo "$devdisk is not recognized by blkid"
@@ -108,7 +119,7 @@ function qmount -d \
 	end
 	
 	# Unlock, recurse dm-crypt volume
-	if string match -q '*TYPE="crypto_LUKS"*' -- "$blkid_rs"
+	if string match -q '* FSTYPE="crypto_LUKS"*' -- "$lsblk_rs"
 		set -l cryptname "qmountLuks"(basename $devdisk)
 		set -l cryptdev "/dev/mapper/$cryptname"
 		if test -e "$cryptdev"
@@ -116,7 +127,7 @@ function qmount -d \
 			return 1
 		end
 		cryptsetup luksOpen "$devdisk" "$cryptname"
-		or echo "cryptsetup failed" && return 1
+		or echo "Cryptsetup failed" && return 1
 		qmount "$cryptdev"
 		or begin
 			set -l rs $status
@@ -134,7 +145,7 @@ function qmount -d \
 	set -l parts_failed
 	
 	# Recurse LVM2 partitions
-	if string match -q '*TYPE="LVM2_member"*' -- "$blkid_rs"
+	if string match -q '* FSTYPE="LVM2_member"*' -- "$lsblk_rs"
 		set pvinfo (pvdisplay --colon "$devdisk" | string split ':')
 		or echo "pvdisplay failed for $devdisk" && return 1
 		set vgname "$pvinfo[2]"
@@ -151,14 +162,28 @@ function qmount -d \
 		echo "You will have to vgchange -an $vgname and dismantle the chain from there"
 	end
 	
-	# Recurse MBR/GPT partitions
-	if ! test -e "$devdisk""p1" && ! string match -qr 'p[0-9]+$' -- "$devdisk"
-		kpartx -a "$devdisk"
-	end
-	for i in "$devdisk"p*
+	# if partition table type is dos and no filesystem detected, try kpartx to map partitions
+	# (partitions inherit PTTYPE from their parent, but have a filesystem FSTYPE in lsblk output)
+	# specifically DON'T recurse into iso9660 EFI structures
+	if string match -qr ' PTTYPE="(dos|gpt)"' -- "$lsblk_rs" && string match -qr ' FSTYPE=""' -- "$lsblk_rs"
 		set has_parts yes
-		qmount "$i" && set -a parts "$i"
-		or set -a parts_failed "$i"
+		if test "$lsblk_children_rs" = ""
+			echo "Applying kpartx because a partition table was detected but kernel did not map them"
+			kpartx -a "$devdisk"
+			# re-fetch children
+			set lsblk_children_rs (lsblk --pairs -o NAME,PATH,FSTYPE,PTTYPE "$devdisk" | tail -n +2)
+			echo "lsblk children: $lsblk_children_rs"
+		end
+		for i in $lsblk_children_rs
+			set has_parts yes
+			echo "Processing partition: $i"
+			# extract child device path
+			string match -qr ' PATH="(?<partpath>[^"]+)"' -- "$i"
+			string match -qr '^NAME="(?<partname>[^"]+)"' -- "$i"
+			echo "Recursing into partition $partname"
+			qmount "$partpath" && set -a parts "$partname"
+			or set -a parts_failed "$partname"
+		end
 	end
 	
 	# Inform about recursion, exit
