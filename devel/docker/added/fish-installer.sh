@@ -81,12 +81,11 @@ get_installer_for_distro() {
 	# select installer_case for specific distros
 	case "$distro" in
 		'debian')
-			# if version is lower than 10, we need to compile
-			# if version is 12 or higher, we use 12
-			if [ "$distro_version" = "" ] || [ "$distro_version" -ge 12 ]
+			# only the two most recent releases have repos. for anything older, use static binary
+			if [ "$distro_version" = "" ] || [ "$distro_version" -ge 13 ]
 			then
-				installer_case="Debian-12"
-			elif [ "$distro_version" -lt 10 ]
+				installer_case="Debian-13"
+			elif [ "$distro_version" -lt 12 ]
 			then
 				installer_case="Static"
 			else
