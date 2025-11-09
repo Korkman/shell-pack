@@ -94,7 +94,7 @@ Attach to or create a screen / tmux session SESSION.
 						echo "Warning: \$__multiplexer_names conflicts with function $shortuser"
 						continue
 					end
-					alias $shortuser "mmux $shortuser \$argv"
+					alias $shortuser "mmux $shortuser"
 				end
 			end
 			set -g __defined_multiplexer_names $__multiplexer_names
