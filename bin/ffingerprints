@@ -22,7 +22,7 @@ fi
 
 # scan host for hostkeys, output in typical encodings to verify
 set +e
-scanResult="$(ssh-keyscan -t ed25519,rsa,dsa,ecdsa -p$portToScan $hostToScan 2> /dev/null)"
+scanResult="$(ssh-keyscan -t ed25519,rsa,ecdsa -p$portToScan $hostToScan 2> /dev/null)"
 exitStatus=$?
 set -e
 if [ $exitStatus -gt 0 ]
