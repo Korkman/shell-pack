@@ -295,7 +295,17 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 end
 
 
-set -g __cap_colors (tput colors)
+set -g __cap_colors (tput colors) || begin
+	# if tput fails, fix $TERM and retry
+	if test "$TERM" = "tmux-256color"
+		set -g TERM "screen-256color"
+	else if test "$TERM" = "tmux"
+		set -g TERM "screen"
+	else
+		set -g TERM "linux"
+	end
+	set -g __cap_colors (TERM=$TERM tput colors)
+end
 set -g fish_color_command (__spt fish_command)
 set -g fish_color_autosuggestion (__spt fish_autosuggestion)
 
