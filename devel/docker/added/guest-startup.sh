@@ -66,6 +66,7 @@ fi
 chown -R shpuser:shpuser /home/shpuser
 mkdir -p "/etc/sudoers.d"
 echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
+echo "$(command -v fish)" >> /etc/shells
 chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
 # ggit testing grounds
