@@ -1,6 +1,25 @@
 function fiddle -d "A 'fiddle' mode where executing a command will not clear the commandline"
 	if ! set -q __sp_fiddle_mode
 		set -g __sp_fiddle_mode 1
+		
+		# attach ctrl-c handler to exit fiddle mode intuitively
+		function __sp_fiddle_ctrl_c -e fish_cancel
+			if set -q __sp_fiddle_mode
+				fiddle
+			end
+			# discard ctrl-c handler when no longer needed
+			functions -e __sp_fiddle_ctrl_c
+		end
+		
+		# save current history filter
+		if functions -q fish_should_add_to_history
+			functions -c fish_should_add_to_history __sp_fish_should_add_to_history_backup
+		end
+		
+		function fish_should_add_to_history
+			return 1
+		end
+		
 		if test "$argv[1]" = "--instant"
 			# noop when enabled during commandline editing
 		else
@@ -10,17 +29,20 @@ function fiddle -d "A 'fiddle' mode where executing a command will not clear the
 			set -g __sp_fiddle_cmd (string collect -- $__sp_fiddle_cmd)
 			set -g __sp_fiddle_cursor 0
 		end
-		builtin history merge
 		clear
 	else
-		set -e -g __sp_fiddle_mode
-		set -e -g __sp_fiddle_cmd
-		# TODO: utilize fish_should_add_to_history once fish 4.x is deployed more widely
-		read -l -P "Discard history created in fiddle mode? (Y/n) " REPLY
-		or set -l REPLY "n"
-		if test "$REPLY" = "Y" -o "$REPLY" = "y" -o "$REPLY" = ""
-			builtin history clear-session
+		functions -e fish_should_add_to_history
+		# restore previous history filter, if any
+		if functions -q __sp_fish_should_add_to_history_backup
+			functions -c __sp_fish_should_add_to_history_backup fish_should_add_to_history
+			functions -e __sp_fish_should_add_to_history_backup
 		end
+		
+		set -e -g __sp_fiddle_mode
+		# keep the final executed command in history
+		history append -- "$__sp_fiddle_cmd"
+		set -e -g __sp_fiddle_cmd
+		
 	end
 	commandline -f repaint
 	return 0
