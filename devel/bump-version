@@ -14,7 +14,7 @@ if ! test -e "$func_path"
 	exit 1
 end
 
-read -c "$cur_ver" -P "Edit version: " new_ver
+read -c "$cur_ver" -P "Edit version: " new_ver || exit
 
 if test "$new_ver" != "$cur_ver"
 	echo "Patching and committing shell-pack-version.fish"
