@@ -11,12 +11,12 @@ function fiddle -d "A 'fiddle' mode where executing a command will not clear the
 			functions -e __sp_fiddle_ctrl_c
 		end
 		
-		# save current history filter
+		# save current history filter, install ours
 		if functions -q fish_should_add_to_history
 			functions -c fish_should_add_to_history __sp_fish_should_add_to_history_backup
 		end
-		
 		function fish_should_add_to_history
+			# keep no history while fiddling
 			return 1
 		end
 		
@@ -38,11 +38,10 @@ function fiddle -d "A 'fiddle' mode where executing a command will not clear the
 			functions -e __sp_fish_should_add_to_history_backup
 		end
 		
-		set -e -g __sp_fiddle_mode
+		set -eg __sp_fiddle_mode
 		# keep the final executed command in history
 		history append -- "$__sp_fiddle_cmd"
-		set -e -g __sp_fiddle_cmd
-		
+		set -eg __sp_fiddle_cmd
 	end
 	commandline -f repaint
 	return 0

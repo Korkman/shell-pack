@@ -165,6 +165,10 @@ end
 
 function __sp_right_prompt_repaint --on-event "sp_timer_right_prompt_repaint"
 	set -eg __skip_right_prompt_until_reset
+	# do not repaint while in fiddle mode, clears output, as observed in fish 4.2.1
+	set -q __sp_fiddle_mode
+	and return
+	
 	commandline -f repaint
 end
 
