@@ -132,8 +132,8 @@ mount /dev/NAME /run/q/NAME        qmount NAME
   ex. NAME for LVM: vg/lv
 umount /run/q/NAME                 qumount NAME
 
-mount --rbind /dev, /proc, /sys    qchroot TARGET
-  into TARGET, then chroot,
+mount --rbind /dev, /proc, /sys    qchroot [ OPTS.. ] [ DIR [ CMD [ ARGS ] ] ]
+  into DIRECTORY, then chroot,
   then umount on exit
 
 Download with curl or wget         dl URL [ FILENAME ]
