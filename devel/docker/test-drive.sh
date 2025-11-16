@@ -16,6 +16,13 @@ FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
 FISH_STATIC=${FISH_STATIC:-no} # install fish static binary (4.0 beta and up)
 FISH_NIGHTLY=${FISH_NIGHTLY:-no} # install fish nightly
+PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
+PLATFORM_TAG_SUFFIX=""
+if [ "$PLATFORM" != "" ]
+then
+	PLATFORM_TAG_SUFFIX=$(echo "-$PLATFORM" | sed 's/[/]/-/g')
+	PLATFORM="--platform $PLATFORM"
+fi
 do_build="no" # perform docker build (append "build" to CLI to trigger)
 build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
@@ -94,7 +101,7 @@ case "$BUILD_FROM" in
 		;;
 esac
 
-tagname=$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')
+tagname="$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')${PLATFORM_TAG_SUFFIX}"
 # append "fish4" to tagname if SP_FISH4 is yes
 if [ "$FISH_STATIC" = "yes" ]
 then
@@ -134,6 +141,7 @@ then
 		--build-arg "FISH_STATIC=$FISH_STATIC" \
 		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
 		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
+		$PLATFORM \
 		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
 fi
 
@@ -188,6 +196,7 @@ $docker run --rm \
 -e TERM="$TERM" \
 --hostname "test-${tagname}" \
 --volume "$tmpdir:/root/Downloads:rw" \
+$PLATFORM \
 --interactive \
 --tty "shell-pack:test-drive-${tagname}"
 
