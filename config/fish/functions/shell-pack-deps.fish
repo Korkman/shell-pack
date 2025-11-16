@@ -27,6 +27,7 @@ function shell-pack-deps-install-fzf
 	end
 	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv6.tar.gz"
 	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv7.tar.gz"
+	set tpl_arm_aarch64 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_arm64.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-darwin_amd64.tar.gz"
 	set tpl_x86_64_linux "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_amd64.tar.gz"
 	
@@ -42,6 +43,8 @@ function shell-pack-deps-install-fzf
 		set url "$tpl_arm_v7"
 	else if test (uname -m) = "armv6l"
 		set url "$tpl_arm_v6"
+	else if test (uname -m) = "aarch64"
+		set url "$tpl_arm_aarch64"
 	else
 		echo "No matching architecture found, please try downloading yourself"
 		return 1
@@ -92,6 +95,7 @@ function shell-pack-deps-install-ripgrep
 		set pversion "15.1.0"
 	end
 	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-armv7-unknown-linux-gnueabihf.tar.gz"
+	set tpl_arm_aarch64 "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-aarch64-unknown-linux-gnu.tar.gz"
 	set tpl_x86_64_apple_darwin "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-apple-darwin.tar.gz"
 	set tpl_x86_64_linux "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-x86_64-unknown-linux-musl.tar.gz"
 	
@@ -107,6 +111,8 @@ function shell-pack-deps-install-ripgrep
 		set url "$tpl_arm_other"
 	else if test (uname -m) = "armv7l"
 		set url "$tpl_arm_other"
+	else if test (uname -m) = "aarch64"
+		set url "$tpl_arm_aarch64"
 	else
 		echo "No matching architecture found, please try downloading yourself"
 		return 1
