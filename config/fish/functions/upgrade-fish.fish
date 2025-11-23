@@ -45,7 +45,7 @@ function upgrade-fish
 				return 1
 			end
 			
-			set -l dl_dir "$HOME/.cache/shell-pack/upgrade-fish-tmp"
+			set -l dl_dir "$HOME/.cache/shell-pack-downloads/upgrade-fish-tmp"
 			rm -rf "$dl_dir"
 			mkdir -p "$dl_dir"
 			set -l dl_path "$dl_dir/fish-$repo_version-linux-$install_arch.tar.xz"
@@ -57,10 +57,12 @@ function upgrade-fish
 			# a fish was summoned
 			$sudo cp "$dl_dir/fish" "$install_dir/fish.new"
 			or begin echo "Error: copy failed"; return 4; end
+			$sudo chmod +x "$install_dir/fish.new"
+			or begin echo "Error: chmod failed"; return 9; end
 			$sudo mv -f "$install_dir/fish.new" "$install_dir/fish"
-			or begin echo "Error: move failed"; return 5; end
-			$sudo chmod +x "$install_dir/fish"
-			or begin echo "Error: chmod failed"; return 6; end
+			or begin echo "Error: move failed"; return 10; end
+			
+			rm -rf "$dl_dir"
 			
 			if test (command -v fish) != "$install_dir/fish"
 				echo "Error: installed FISH to $install_dir/fish, but "(command -v fish)" has precedence in PATH."
