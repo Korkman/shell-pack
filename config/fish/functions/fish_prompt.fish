@@ -651,9 +651,10 @@ end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
 	"Reset exit status variables on enter"
-	if test (__sp_vercmp "$FISH_VERSION" '3.7.1') -ge 0 && ! commandline --is-valid
-		return
-	end
+	# needs comment: why abort when commandline is invalid? this breaks resetting the status on enter with empty commandline
+	#if test (__sp_vercmp "$FISH_VERSION" '3.7.1') -ge 0 && ! commandline --is-valid
+	#	return
+	#end
 	__sp_reset_exit_status
 end
 
