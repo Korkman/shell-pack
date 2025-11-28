@@ -32,8 +32,7 @@ then
 fi
 
 sha256Hashes=$(echo "$scanResult" | ssh-keygen -E sha256 -lf - | sort -k4)
-md5Hashes=$(echo "$scanResult" | ssh-keygen -E md5 -lf - | sort -k4)
-allHashes=$(echo "$sha256Hashes"; echo "$md5Hashes")
+allHashes=$(echo "$sha256Hashes")
 
 if command -v column > /dev/null
 then
