@@ -1,9 +1,15 @@
 set __sp_fish_repo "https://github.com/fish-shell/fish-shell"
 
 function upgrade-fish
+	argparse s/subtle -- $argv
+	or return
 	set -l repo_version (__sp_get_newer_fish_version)
 	switch $status
 		case 0
+			if set -q _flag_subtle
+				echo "Update: run 'upgrade-fish' to upgrade from "$FISH_VERSION" to "$repo_version"!"
+				return
+			end
 			echo "A new version of FISH is available: $repo_version"
 			set -l install_arch
 			if ! string match -qr '^Linux (?<install_arch>x86_64|aarch64)$' -- (uname -sm)
@@ -78,29 +84,25 @@ function upgrade-fish
 			reload
 			or begin echo "Error: reload failed"; return 7; end
 		case 1
-			echo "You are already using the latest fish version: $repo_version"
+			set -q _flag_subtle || echo "You are already using the latest fish version: $repo_version"
 			return 0
 		case 2
-			echo "Error"
+			set -q _flag_subtle || echo "Error"
 			return 1
 	end
 end
 
 function __sp_get_newer_fish_version
 	set -l repo_version
-	if command -vq curl
-		curl -s -I "$__sp_fish_repo/releases/latest" | string match -gq --regex '^location: .*/releases/tag/(?<repo_version>[0-9]+\.[0-9]+\.[0-9]+).*'
-		or return 2
-		# compare versions and upgrade if needed
-		if test (__sp_vercmp "$FISH_VERSION" "$repo_version") -ge 0
-			echo "$repo_version"
-			return 1
-		end
-	else
-		# TODO: implement wget branch
-		echo "$FISH_VERSION"
-		return 2
+	
+	__sp_http_head --timeout=1 "$__sp_fish_repo/releases/latest" | string match -gq --regex '^location: .*/releases/tag/(?<repo_version>[0-9]+\.[0-9]+\.[0-9]+).*'
+	or return 2
+	# compare versions and upgrade if needed
+	if test (__sp_vercmp "$FISH_VERSION" "$repo_version") -ge 0
+		echo "$repo_version"
+		return 1
 	end
+
 	echo "$repo_version"
 	return 0
 end

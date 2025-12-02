@@ -8,7 +8,7 @@ function upgrade-shell-pack -d \
 	end
 	
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
-		curl -s -L "https://raw.githubusercontent.com/Korkman/shell-pack/$tag/get.sh" | sh -s "$tag" || return 1
+		__sp_http "https://raw.githubusercontent.com/Korkman/shell-pack/$tag/get.sh" | sh -s "$tag" || return 1
 		shell-pack-deps check
 		reinstall-shell-pack-prefs
 		reload
