@@ -29,7 +29,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
 	command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
-	-o -type d -print 2> /dev/null | sed 's@^\./@@'"
+	-o -xtype d -print 2> /dev/null | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
 	set -l symlinks '-P'

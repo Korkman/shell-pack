@@ -35,8 +35,8 @@ function skim-file-widget -d "List files and folders"
 	# $dir itself, even if hidden.
 	set -q SKIM_CTRL_T_COMMAND; or set -l SKIM_CTRL_T_COMMAND "
 		command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
-		-o -type f -print \
-		-o -type d -print \
+		-o -xtype f -print \
+		-o -xtype d -print \
 		-o -type l -print 2> /dev/null | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%

@@ -32,8 +32,8 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	set -l skim_help "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
 	
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
-	command find -L \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
-	-o -type d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
+	command find \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
+	-o -xtype d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
 	#set SKIM_ALT_C_COMMAND "LC_ALL=C.UTF-8 ls -A -1 --color=always"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
