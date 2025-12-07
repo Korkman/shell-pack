@@ -290,24 +290,29 @@ ctrl-a, lift keys, then
   r: reload config
   |: split window into left and right
   -: split window into top and bottom
-  alias: shift-s
+    alias: shift-s
   c: create new window
-  esc: enter copy mode to scroll up to 10000 lines back
-  	alias: pgup
-	in copy mode, select text with space and enter
-  v: paste
+  esc: enter copy-mode to scroll up to 10000 lines back
+    alias: pgup, mouse-wheel-up
+    alias: up, will also scroll to previous prompt
+    alias: down, will also scroll to next prompt
+    in copy-mode:
+      space / enter: modify and copy selection
+      ctrl-up / ctrl-down: scroll to previous / next prompt
+        alias: alt-up / alt-down
+  v: paste previoulsy copied text
   arrow-left, arrow-right: move window left / right on task bar, renumber
-  shift-b: enter broadcast mode, sending keystrokes to all panes
+  shift-b: toggle broadcast mode, sending keystrokes to all panes
   backspace, space: jump to previous, next window
   ctrl-a: jump to most recent window
   shift-Q: break out a pane into a dedicated window
-  		alias: !
+    alias: !
   k: kill pane (if confirmed)
   m: mark pane
   s: swap pane with marked
   tab: jump to next pane
   shift-k: kill all windows and exit (if confirmed)
-  		alias: \
+    alias: \
   shift-n: show window number and name
   shift-a: rename window
 ctrl-a, keep ctrl pressed, then

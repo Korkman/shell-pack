@@ -295,7 +295,8 @@ function fish_prompt_print_segments --no-scope-shadowing
 	
 	echo -n (__spt $prev_bgcolor)(__spt right_black_arrow)
 	set_color normal
-	echo -n "$space"
+	# using non-breaking space as a marker for poor man's prompt jumps in tmux < 3.5
+	echo -n " "
 end
 
 function __shellpack_get_string_term_lines -d "Return count of terminal lines a string approx. uses to display with current prompt"
