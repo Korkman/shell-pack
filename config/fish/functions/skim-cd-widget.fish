@@ -18,19 +18,21 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	set -l skim_binds (printf %s \
 	"ctrl-v:become(echo //paste:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
+	"alt-s:become(echo //symlinks:{q})+accept,"\
 	"shift-up:become(echo //up)+accept,alt-up:become(echo //up)+accept,"\
 	"shift-down:become(echo //down:{})+accept,alt-down:become(echo //down:{})+accept,"\
 	"shift-left:become(echo //prev)+accept,alt-left:become(echo //prev)+accept,"\
 	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list'
+	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
 
 	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
-	command find -L \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
+	command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
 	-o -type d -print 2> /dev/null | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
+	set -l symlinks '-P'
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
@@ -45,6 +47,12 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				# navigate one up
 				cd ..
 				set paste_absolute_path 'yes'
+			else if string match -q --regex "^//symlinks:(?<skim_query>.*)" -- "$result"
+				if [ "$symlinks" = '-P' ]
+					set symlinks '-L'
+				else
+					set symlinks '-P'
+				end
 			else if string match -q --regex '^//down:' -- "$result"
 				# navigate one down
 				set result (string replace --regex '^//down:' '' -- "$result")
