@@ -759,6 +759,14 @@ if test -z "$EDITOR"
 	set EDITOR "mcedit"
 end
 
+# LESS options: case-insensitive search by default
+if ! set -x -q LESS
+	set -x -g LESS "-ix4"
+	if less --help | grep -q "\--mouse"
+		set -x -g LESS "$LESS --mouse"
+	end
+end
+
 #if test "$__sp_silent_update" = "" -o "$__sp_silent_update" -lt 2
 	#policeline "shell-pack silent update 1 applied"
 	#set -g __sp_silent_update 2
