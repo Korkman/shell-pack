@@ -292,7 +292,7 @@ ctrl-a, lift keys, then
   -: split window into top and bottom
     alias: shift-s
   c: create new window
-  esc: enter copy-mode to scroll up to 10000 lines back
+  esc: enter copy-mode to scroll up to 50000 lines back
     alias: pgup, mouse-wheel-up
     alias: up, will also scroll to previous prompt
     alias: down, will also scroll to next prompt
