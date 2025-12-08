@@ -58,6 +58,10 @@ function cfd -d \
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
 		bzip2 --stdout -d "$filename" > "$dst"
+	else if string match -qir '\.lz4$' -- "$filename"
+		__sp_require_cmd lz4 || return 1
+		__sp_cfd_make_dst_file || return 2
+		lz4 --stdout -d "$filename" > "$dst"
 	else if string match -qir '\.lz$' -- "$filename"
 		__sp_require_cmd lzip || return 1
 		__sp_cfd_make_dst_file || return 2
