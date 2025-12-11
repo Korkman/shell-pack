@@ -12,6 +12,10 @@ function skim-cd-widget-one -d "Change directory without changing command"
 		set dotfiles_arg ""
 		skim-dotfiles no
 	end
+	__sp_caps_find
+	$__cap_find_xtype
+	and set arg_xtype '-xtype'
+	or set -l arg_xtype '-type'
 	
 	set -l dir '.'
 	set -l skim_query ''
@@ -31,16 +35,15 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	)
 	set -l skim_help "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
 	
-	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
+	set -l cmd_find "
 	command find \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
-	-o -xtype d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
-	#set SKIM_ALT_C_COMMAND "LC_ALL=C.UTF-8 ls -A -1 --color=always"
+	-o $arg_xtype d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
-		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --ansi --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
+		eval "$cmd_find | "(__skimcmd)' --ansi --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]

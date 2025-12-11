@@ -5,6 +5,11 @@ function skim-file-widget -d "List files and folders"
 	else
 		skim-dotfiles no
 	end
+	__sp_caps_find
+	$__cap_find_xtype
+	and set arg_xtype '-xtype'
+	or set -l arg_xtype '-type'
+	
 	set -l commandline (__skim_parse_commandline)
 	set -l dir $commandline[1]
 	set -l skim_query $commandline[2]
@@ -33,10 +38,10 @@ function skim-file-widget -d "List files and folders"
 
 	# "-path \$dir'*/\\.*'" matches hidden files/folders inside $dir but not
 	# $dir itself, even if hidden.
-	set -q SKIM_CTRL_T_COMMAND; or set -l SKIM_CTRL_T_COMMAND "
+	set -l cmd_find "
 		command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
-		-o -xtype f -print \
-		-o -xtype d -print \
+		-o $arg_xtype f -print \
+		-o $arg_xtype d -print \
 		-o -type l -print 2> /dev/null | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
@@ -45,7 +50,7 @@ function skim-file-widget -d "List files and folders"
 		set -e result
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_CTRL_T_OPTS"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
-		eval "$SKIM_CTRL_T_COMMAND | "(__skimcmd)' -m --query "'$skim_query'"' \
+		eval "$cmd_find | "(__skimcmd)' -m --query "'$skim_query'"' \
 		--header "'$skim_help'" \
 		--bind "'$skim_binds'" \
 		--preview "'[ -d {} ] && ls -al {} || grep \"\" -I {} | head -n4000'" \

@@ -9,6 +9,10 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	else
 		skim-dotfiles no
 	end
+	__sp_caps_find
+	$__cap_find_xtype
+	and set arg_xtype '-xtype'
+	or set -l arg_xtype '-type'
 
 	set -l dir '.'
 	set -l skim_query ''
@@ -27,16 +31,16 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	)
 	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
 
-	set -q SKIM_ALT_C_COMMAND; or set -l SKIM_ALT_C_COMMAND "
+	set -l cmd_find "
 	command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
-	-o -xtype d -print 2> /dev/null | sed 's@^\./@@'"
+	-o $arg_xtype d -print 2> /dev/null | sed 's@^\./@@'"
 
 	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
 	set -l symlinks '-P'
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
-		eval "$SKIM_ALT_C_COMMAND | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
+		eval "$cmd_find | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 		
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]
