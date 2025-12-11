@@ -1,7 +1,6 @@
-set __sp_shell_pack_repo "https://raw.githubusercontent.com/Korkman/shell-pack"
-
 function shell-pack-check-upgrade -d \
 	"Check for an upgrade to shell-pack"
+	set -l __sp_shell_pack_repo "https://raw.githubusercontent.com/Korkman/shell-pack"
 	# download latest shell-pack-version.fish and grep the version from there
 	set result (__sp_http --timeout=1 "$__sp_shell_pack_repo/latest/config/fish/functions/shell-pack-version.fish" | string match --regex 'echo.*([0-9]+(\.[0-9]+)+)')
 	if test $status -eq 0
