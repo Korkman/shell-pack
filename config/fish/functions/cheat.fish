@@ -298,8 +298,7 @@ ctrl-a, lift keys, then
     alias: down, will also scroll to next prompt
     in copy-mode:
       space / enter: modify and copy selection
-      ctrl-up / ctrl-down: scroll to previous / next prompt
-        alias: alt-up / alt-down
+      alt-up / alt-down: scroll to previous / next prompt
   v: paste previoulsy copied text
   arrow-left, arrow-right: move window left / right on task bar, renumber
   shift-b: toggle broadcast mode, sending keystrokes to all panes
@@ -315,6 +314,8 @@ ctrl-a, lift keys, then
     alias: \
   shift-n: show window number and name
   shift-a: rename window
+  M: monitor window for activity (once)
+	_: monitor window for silence (once)
 ctrl-a, keep ctrl pressed, then
   arrows: resize current pane
 
