@@ -143,7 +143,7 @@ SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit
 create and edit a template         create [ bash | fish | service | ... ] FILE
 
-	" | less -P "cheat --shell-pack | less - q to quit, h for help"
+	" | less -P "cheat --shell-pack | less - q to quit, h for help" '+G' '+g'
 end
 
 function __cheat_glyphs
@@ -275,7 +275,7 @@ file manager:
   Alt-Enter: inserts selected filename into subshell
   Alt-S: prefix search in file listing, syntax highlighting in mcedit
   Alt-D: show bookmarks list (including shell-pack tagged dirs)
-" | less -P "cheat --mc | less - q to quit, h for help"
+" | less -P "cheat --mc | less - q to quit, h for help" '+G' '+g'
 end
 
 function __cheat_tmux
@@ -327,5 +327,5 @@ notes:
 * environment variables are being taken care of, most notably enabling 
   ssh agent forwarding
 * a new window will inherit the working directory of the current window
-" | less -P "cheat --tmux | less - q to quit, h for help"
+" | less -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
 end
