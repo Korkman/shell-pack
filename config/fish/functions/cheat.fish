@@ -315,7 +315,8 @@ ctrl-a, lift keys, then
   shift-n: show window number and name
   shift-a: rename window
   M: monitor window for activity (once)
-	_: monitor window for silence (once)
+  _: monitor window for silence (once)
+  _: monitor window for silence (once)
 ctrl-a, keep ctrl pressed, then
   arrows: resize current pane
 
