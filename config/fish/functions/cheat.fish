@@ -280,54 +280,57 @@ end
 
 function __cheat_tmux
 	echo "
-tmux
-(as configured by shell-pack)
-
-keys:
+tmux keys - as configured by shell-pack
 
 ctrl-a: is synonym for ctrl-b, because it is more accessible (and tradition)
 ctrl-a, lift keys, then
+  f1: show this help
+      alias: h
+  d: detach session, leaving it running in background
   r: reload config
-  |: split window into left and right
-  -: split window into top and bottom
-    alias: shift-s
   c: create new window
+  1-9,0: jump to window number 1-10
+  backspace, space: jump to previous, next window
+  ctrl-a: jump to most recent window
+  arrow-left, arrow-right: move window left / right on status bar (may renumber)
+  shift-a: rename window
+  shift-n: show window number and name
+  shift-M: monitor window for activity (once)
+  _: monitor window for silence (once)
   esc: enter copy-mode (scroll up to 50000 lines in history)
     alias: pgup, mouse-wheel-up
     alias: up, will also scroll to previous prompt
     alias: down, will also scroll to next prompt
-	 alias: alt-pgup, scroll to start of history
+    alias: alt-pgup, scroll to start of history
     in copy-mode:
       space / enter: modify and copy selection
       alt-up / alt-down: scroll to previous / next prompt
-		alt-pgup / alt-pgdn: scroll to start / end of history
-  v: paste previoulsy copied text
-  arrow-left, arrow-right: move window left / right on task bar, renumber
-  shift-b: toggle broadcast mode, sending keystrokes to all panes
-  backspace, space: jump to previous, next window
-  ctrl-a: jump to most recent window
-  shift-Q: break out a pane into a dedicated window
-    alias: !
+      alt-pgup / alt-pgdn: scroll to start / end of history
+  v: paste previously copied text
+  |: split window into panes left and right
+  -: split window into panes top and bottom
+     alias: shift-s
+  tab: jump to next pane
+  ctrl-arrows: resize current pane
   k: kill pane (if confirmed)
   m: mark pane
   s: swap pane with marked
-  tab: jump to next pane
+  shift-b: toggle broadcast mode, sending keystrokes to all panes
+  shift-Q: break out a pane into a dedicated window
+    alias: !
   shift-k: kill all windows and exit (if confirmed)
     alias: \
-  shift-n: show window number and name
-  shift-a: rename window
-  M: monitor window for activity (once)
-  _: monitor window for silence (once)
-ctrl-a, keep ctrl pressed, then
-  arrows: resize current pane
 
 notes:
+- mouse works, can scroll in history when in copy mode and resize panes
+- alt-right-click opens a context menu in recent tmux versions
+- window numbering starts at 1, ends on 0 to be more natural on keyboard
+- environment variables are being taken care of
+  - most notably enabling ssh agent forwarding
+- a new window will inherit the working directory of the foreground process
+- 'ctrl-a, :' enters command mode
+  - run 'list-keys' to see all built-in and configured keybindings
+  - run 'list-commands' for all available commands
 
-* mouse works, can scroll in history when in copy mode and resize panes
-* alt-right-click opens a context menu in recent tmux versions
-* window numbering starts at 1, ends on 0 to be more natural on keyboard
-* environment variables are being taken care of, most notably enabling 
-  ssh agent forwarding
-* a new window will inherit the working directory of the current window
 " | less -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
 end
