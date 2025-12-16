@@ -292,13 +292,15 @@ ctrl-a, lift keys, then
   -: split window into top and bottom
     alias: shift-s
   c: create new window
-  esc: enter copy-mode to scroll up to 50000 lines back
+  esc: enter copy-mode (scroll up to 50000 lines in history)
     alias: pgup, mouse-wheel-up
     alias: up, will also scroll to previous prompt
     alias: down, will also scroll to next prompt
+	 alias: alt-pgup, scroll to start of history
     in copy-mode:
       space / enter: modify and copy selection
       alt-up / alt-down: scroll to previous / next prompt
+		alt-pgup / alt-pgdn: scroll to start / end of history
   v: paste previoulsy copied text
   arrow-left, arrow-right: move window left / right on task bar, renumber
   shift-b: toggle broadcast mode, sending keystrokes to all panes
@@ -315,7 +317,6 @@ ctrl-a, lift keys, then
   shift-n: show window number and name
   shift-a: rename window
   M: monitor window for activity (once)
-  _: monitor window for silence (once)
   _: monitor window for silence (once)
 ctrl-a, keep ctrl pressed, then
   arrows: resize current pane
