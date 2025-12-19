@@ -92,7 +92,7 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 			return
 		case bookmark_bg
 			if test $__cap_colors -ge 256
-				$scolor "0080a7"
+				$scolor "007292"
 			else
 				$scolor "cyan"
 			end
