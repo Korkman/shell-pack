@@ -238,12 +238,18 @@ function load_shell_pack -d "Load shell-pack"
 
 	mmux --grab-hooks
 
-	# detect and coordinate iTerm2 integration loading (if not in mc subshell)
-	if [ "$MC_SID" = "" -a "$LC_TERMINAL" = "iTerm2" ]
+	# detect and coordinate advanced shell integration loading (if not in mc subshell, not a dumb terminal, etc.)
+	if test "$MC_SID" = ""; and test "$TERM" != "dumb"; and test "$TERM" != "linux"; and status --is-interactive
 		# load fish_prompt
 		fish_prompt > /dev/null
-		# load iterm2 integration
-		source $__sp_config_fish_dir/iterm2_shell_integration.fish
+		
+		if string match -q "$TERM_PROGRAM" "vscode"
+			# load vscode shell integration for VS Code's integrated terminal
+			source $__sp_config_fish_dir/vscode_shell_integration.fish
+		else
+			# load iterm2 integration for everyone else
+			source $__sp_config_fish_dir/iterm2_shell_integration.fish
+		end
 	end
 
 	# bright yellow background in less highlights (improving manpage readability)

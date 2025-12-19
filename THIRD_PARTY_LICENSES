@@ -1,0 +1,8 @@
+This distribution includes the VS Code Shell Integration script, which is:
+  Copyright (c) Microsoft Corporation
+  Licensed under the MIT License
+  (https://github.com/microsoft/vscode/blob/main/LICENSE.txt)
+
+This distribution also includes the iTerm2 Shell Integration script, which is:
+  Licensed under the GNU General Public License v2
+  (https://github.com/gnachman/iTerm2/blob/master/LICENSE)

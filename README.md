@@ -47,3 +47,12 @@ for download will be asked for:
  * [rg](https://github.com/BurntSushi/ripgrep) (ripgrep)
  * [fzf](https://github.com/junegunn/fzf) (fuzzy finder)
  * [dool](https://github.com/scottchiefbaker/dool) (dstat replacement)
+
+## Bundled shell integrations
+Some terminals propagate custom shell integration scripts to enable advanced
+features like gathering what output belongs to which submitted command or
+marking prompts in their scroll history.
+
+Included are:
+ * [iterm2](https://github.com/gnachman/iTerm2/blob/master/Resources/shell_integration/iterm2_shell_integration.fish) (enabled by default, provides OSC 133 and OSC 1337 sequences)
+ * [vscode](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish) (enabled when `vscode` is `$TERM_PROGRAM`, provides OSC 633 sequences)
