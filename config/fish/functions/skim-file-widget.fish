@@ -19,16 +19,16 @@ function skim-file-widget -d "List files and folders"
 	set -l skim_binds (printf %s \
 	"alt-p:toggle-preview,ctrl-p:toggle-preview,"\
 	"alt-c:print(//chdir)+accept,"\
-	"alt-s:become(echo //symlinks:{q})+accept,"\
+	"alt-s:become(echo //symlinks:{q}),"\
 	"f4:execute(mcedit {}),"\
 	"f3:execute(mcview {}),"\
 	"ctrl-l:execute(less {}),"\
 	"ctrl-v:accept,"\
 	"alt-v:execute(vi {}),"\
-	"shift-up:print(//up)+accept,alt-up:print(//up)+accept,"\
-	"shift-down:print(//down)+accept,alt-down:print(//down)+accept,"\
-	"shift-left:print(//prev)+accept,alt-left:print(//prev)+accept,"\
-	"shift-right:print(//next)+accept,alt-right:print(//next)+accept,"\
+	"shift-up:become(echo //up:{q}),alt-up:become(echo //up:{q}),"\
+	"shift-down:become(echo //down:{q}\\n{}),alt-down:become(echo //down:{q}\\n{}),"\
+	"shift-left:become(echo //prev:{q}),alt-left:become(echo //prev:{q}),"\
+	"shift-right:become(echo //next:{q}),alt-right:become(echo //next:{q}),"\
 	"ctrl-q:abort"
 	)
 	begin
@@ -58,13 +58,13 @@ function skim-file-widget -d "List files and folders"
 		--prompt "'Filter paths: '" \
 		| while read -l r; set result $result $r; end
 		
-		if [ "$result[1]" = "//up" ]
+		if string match -q --regex "^//up:(?<skim_query>.*)" -- "$result[1]"
 			cd ..
 			set paste_absolute_path 'yes'
 			echo
 			__force_redraw_prompt
 			continue
-		else if [ "$result[1]" = "//down" ]
+		else if string match -q --regex "^//down:(?<skim_query>.*)" -- "$result[1]"
 			if test -d "$result[2]"
 				cd "$result[2]"
 			end
@@ -72,12 +72,12 @@ function skim-file-widget -d "List files and folders"
 			echo
 			__force_redraw_prompt
 			continue
-		else if [ "$result[1]" = "//prev" ]
+		else if string match -q --regex "^//prev:(?<skim_query>.*)" -- "$result[1]"
 			quick_dir_prev
 			echo
 			__force_redraw_prompt
 			continue
-		else if [ "$result[1]" = "//next" ]
+		else if string match -q --regex "^//next:(?<skim_query>.*)" -- "$result[1]"
 			quick_dir_next
 			echo
 			__force_redraw_prompt
