@@ -1,0 +1,189 @@
+#!/bin/sh
+{
+	# a simple wrapper for adhoc symmetric OpenSSL and GPG file encryption
+	# written in POSIX sh for maximum portability
+	# accepts files and streams as inputs and outputs
+	# uses best practices for invocation and parameters as of 2025
+	# defaults to OpenSSL because GPG is noisy (creates config files, etc.) and slow
+	
+	set -eu
+	_flat_terminal="no"
+	_flag_help="no"
+	_flag_openssl="no"
+	_flag_gpg="no"
+	_flag_decrypt=""
+	infile=""
+	outfile=""
+	invalid_args="no"
+	
+	# parse arguments: --terminal / -t, --help / -h, --openssl, --gpg, --decrypt, infile, outfile
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--terminal|-t)
+				_flag_terminal="yes"
+				shift
+				;;
+			--help|-h)
+				_flag_help="yes"
+				shift
+				;;
+			--openssl)
+				_flag_openssl="yes"
+				shift
+				;;
+			--gpg)
+				_flag_gpg="yes"
+				shift
+				;;
+			--decrypt|-d)
+				if [ "$_flag_decrypt" != "" ]; then
+					echo "Error: Cannot specify both --decrypt and --encrypt." >&2
+					invalid_args="yes"
+				fi
+				_flag_decrypt="yes"
+				shift
+				;;
+			--encrypt|-e)
+				if [ "$_flag_decrypt" != "" ]; then
+					echo "Error: Cannot specify both --decrypt and --encrypt." >&2
+					invalid_args="yes"
+				fi
+				_flag_decrypt="no"
+				shift
+				;;
+			*)
+				if [ -z "$infile" ]; then
+					infile="$1"
+				elif [ -z "$outfile" ]; then
+					outfile="$1"
+				else
+					echo "Unexpected argument: $1" >&2
+					invalid_args="yes"
+				fi
+				shift
+				;;
+		esac
+	done
+	
+	infile="${infile:-"-"}"
+	outfile="${outfile:-"-"}"
+	
+	if ! [ "$_flag_help" = "yes" ]; then
+		if [ "$_flag_decrypt" = "" ]; then
+			echo "Error: Must specify either --decrypt or --encrypt." >&2
+			invalid_args="yes"
+		fi
+		
+		if [ "$infile" != "-" ] && [ "$infile" = "$outfile" ]; then
+			echo "Error: INFILE and OUTFILE cannot be the same." >&2
+			invalid_args="yes"
+		fi
+		
+		if [ "$infile" = "-" ] && [ "${_flag_terminal:-}" != "yes" ] && [ -t 0 ]; then
+			# Abort if stdin is a terminal and --terminal is not specified
+			echo "Error: STDIN is a terminal. Override with -t or pass argument INFILE." >&2
+			invalid_args="yes"
+		fi
+		
+	fi
+	
+	if [ "$invalid_args" = "yes" ] || [ "${_flag_help:-}" = "yes" ]; then
+		{
+			echo "Usage: qcrypt [--encrypt|-e|--decrypt|-d] [--gpg|--openssl] [--terminal|-t] [INFILE [OUTFILE]]"
+			echo
+			echo "Password protect files or streams with GPG or OpenSSL."
+			echo
+			echo "If INFILE or OUTFILE are not specified, stdin and stdout are used respectively."
+			echo "Unless --terminal is specified, the program will abort if stdin or stdout are terminals."
+			echo
+			echo "If neither --gpg nor --openssl is specified, OpenSSL is used by default."
+			echo
+			echo "Examples:"
+			echo "  qcrypt for a file:"
+			echo "    qcrypt -e myfile.txt myfile.txt.enc"
+			echo "  qcrypt for a pipe:"
+			echo "    cat myfile.txt | qcrypt -e > myfile.txt.enc"
+			echo 
+		} >&2
+		if [ "$invalid_args" = "yes" ]; then exit 1; fi
+		exit 0
+	fi
+	
+	if [ "$outfile" = "-" ] && [ "${_flag_terminal:-}" != "yes" ] && [ -t 1 ]; then
+		# Abort if stdout is a terminal and --terminal is not specified
+		echo "Error: STDOUT is a terminal. Override with -t or pass argument OUTFILE." >&2
+		exit 1
+	fi
+	
+	if [ "$infile" = "-" ]; then
+		infile="/dev/stdin"
+	fi
+	if [ "$outfile" = "-" ]; then
+		outfile="/dev/stdout"
+	fi
+	
+	if [ "${_flag_gpg:-}" = "yes" ]; then
+		mode="gpg"
+	else
+		mode="openssl"
+	fi
+	
+	# read password from terminal into ENCPASS
+	if [ -z "${ENCPASS:-}" ]; then
+		printf "%s" "Password: " >&2
+		stty -F /dev/tty -echo
+		read -r ENCPASS < /dev/tty
+		stty -F /dev/tty echo
+		echo >&2
+	fi
+	
+	if [ "$mode" = "gpg" ]; then
+		# Abort if gpg is not available
+		if ! command -v gpg >/dev/null 2>&1; then
+			echo "Error: gpg command not found." >&2
+			exit 2
+		fi
+		
+		if [ "${_flag_decrypt:-}" = "no" ]; then
+			arg_decrypt="--symmetric"
+		else
+			arg_decrypt="-d"
+		fi
+		
+		
+		GNUPGHOME=$(mktemp --tmpdir -d .qcrypt-gnupghome-XXXXXX)
+		export GNUPGHOME
+		
+		# juggle with file descriptors so gpg receives fd 0 (stdin) and fd 3 (passphrase) correctly
+		cat "$infile" | {
+			printf "%s" "$ENCPASS" | {
+				gpg $arg_decrypt --cipher-algo AES256 --no-options --quiet --batch --no-symkey-cache --pinentry-mode loopback --passphrase-fd 3
+			} 3<&0 0<&4
+		} 4<&0 > "$outfile"
+		
+		rm -rf "$GNUPGHOME"
+	else
+		# Abort if openssl is not available
+		if ! command -v openssl >/dev/null 2>&1; then
+			echo "Error: openssl command not found." >&2
+			exit 2
+		fi
+		
+		if [ "${_flag_decrypt:-}" = "no" ]; then
+			arg_decrypt=""
+		else
+			arg_decrypt="-d"
+		fi
+		
+		# using a high iteration count a notch higher than recommended by OWASP in 2025
+		iteration_count=800000
+		
+		# juggle with file descriptors so openssl receives fd 0 (stdin) and fd 3 (passphrase) correctly
+		cat "$infile" | {
+			printf "%s" "$ENCPASS" | {
+				openssl enc $arg_decrypt -pbkdf2 -iter $iteration_count -aes-256-cbc -pass "fd:3"
+			} 3<&0 0<&4
+		} 4<&0 > "$outfile"
+	fi
+	exit
+}
