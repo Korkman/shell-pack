@@ -1,9 +1,6 @@
 function cfd -d \
 	'Compressed file decompression'
 	
-	# stdin? really a moot point as the user can easily use the compressor directly
-	# also, no easy way to detect the decompressor
-	
 	set filename (realpath "$argv[1]")
 	set dst "$argv[2]"
 	
@@ -13,9 +10,9 @@ function cfd -d \
 	end
 	set filename (__sp_suggest_rename_file "$filename")
 	
-	if isatty 1 || ! test -z "$dst"
-	else
-		set dst "/dev/stdout"
+	# when no dst given and stdout is not a terminal, decompress to stdout
+	if test -z "$dst" && not isatty 1
+		set dst "-"
 	end
 	
 	# select best 7z binary available
@@ -49,39 +46,39 @@ function cfd -d \
 	else if string match -qir '\.gz$' -- "$filename"
 		__sp_require_cmd gunzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		gunzip -c "$filename" > "$dst"
+		gunzip -c "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.zst$' -- "$filename"
 		__sp_require_cmd zstd || return 1
 		__sp_cfd_make_dst_file || return 2
-		zstd --stdout -d "$filename" > "$dst"
+		zstd --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.bz2$' -- "$filename"
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
-		bzip2 --stdout -d "$filename" > "$dst"
+		bzip2 --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.lz4$' -- "$filename"
 		__sp_require_cmd lz4 || return 1
 		__sp_cfd_make_dst_file || return 2
-		lz4 --stdout -d "$filename" > "$dst"
+		lz4 --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.lz$' -- "$filename"
 		__sp_require_cmd lzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzip --stdout -d "$filename" > "$dst"
+		lzip --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.lzma$' -- "$filename"
 		__sp_require_cmd lzma || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzma --stdout -d "$filename" > "$dst"
+		lzma --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.lzo$' -- "$filename"
 		__sp_require_cmd lzop || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzop --stdout -d "$filename" > "$dst"
+		lzop --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.xz$' -- "$filename"
 		__sp_require_cmd xz || return 1
 		__sp_cfd_make_dst_file || return 2
-		xz --stdout -d "$filename" > "$dst"
+		xz --stdout -d "$filename" | __sp_redirect_out "$dst"
 	else if string match -qir '\.Z$' -- "$filename"
 		__sp_require_cmd gzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		gunzip -c "$filename" > "$dst"
+		gunzip -c "$filename" | __sp_redirect_out "$dst"
 	else
 		echo "Unsupported file type" >&2
 		return 1
@@ -89,7 +86,7 @@ function cfd -d \
 end
 
 function __sp_cfd_make_dst_dir --no-scope-shadowing
-	if test "$dst" = "/dev/stdout"
+	if test "$dst" = "-"
 		echo "Cannot decompress directory structure to stdout" >&2
 		return 1
 	end
@@ -103,6 +100,10 @@ function __sp_cfd_make_dst_dir --no-scope-shadowing
 end
 
 function __sp_cfd_make_dst_file --no-scope-shadowing
+	if test "$dst" = "-"
+		# piping to stdout
+		return
+	end
 	set -l filename_minus_ext (string replace -r '\.[^\.]+$' '' -- "$filename")
 	if test -z "$dst"
 		set dst "$filename_minus_ext"
