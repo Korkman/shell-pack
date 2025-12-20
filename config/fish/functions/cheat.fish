@@ -118,7 +118,7 @@ Toggle full private mode      private
 - no history read / written
 - toggle again to exit shell
 
-========== for admins ==========
+========== utilities ==========
 
 List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports
@@ -141,7 +141,9 @@ Compressed file creation           cfc FILE|DIR [ FILE|ALGO ]
 Compressed file decompression      cfd FILE [ DESTINATION ]
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit
-create and edit a template         create [ bash | fish | service | ... ] FILE
+Create and edit a template         create [ bash | fish | service | ... ] FILE
+Encrypt a file                     qcrypt -e [--gpg] FILE OUTFILE
+Decrypt a stream                   cat data | qcrypt -d [--gpg] | cat
 
 	" | less -P "cheat --shell-pack | less - q to quit, h for help" '+G' '+g'
 end

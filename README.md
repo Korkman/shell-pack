@@ -30,6 +30,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `venv`: activate / deactivate Python virtual env corresponding to current directory
  * `zero-unused-space`: fill 90% of free space with null-bytes
  * `create`, create and edit boilerplate files of various types
+ * `qcrypt`, encrypt file or stream with password utilizing `openssl` or `gpg`
  * Linux only
    * `lsports`: list open ports in compact manner
    * `lsnet`: list active network connections in compact manner
