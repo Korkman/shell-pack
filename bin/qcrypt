@@ -154,14 +154,20 @@
 		GNUPGHOME=$(mktemp --tmpdir -d .qcrypt-gnupghome-XXXXXX)
 		export GNUPGHOME
 		
+		set +e
 		# juggle with file descriptors so gpg receives fd 0 (stdin) and fd 3 (passphrase) correctly
 		cat "$infile" | {
 			printf "%s" "$ENCPASS" | {
 				gpg $arg_decrypt --cipher-algo AES256 --no-options --quiet --batch --no-symkey-cache --pinentry-mode loopback --passphrase-fd 3
 			} 3<&0 0<&4
 		} 4<&0 > "$outfile"
+		gpg_status=$?
+		set -e
 		
 		rm -rf "$GNUPGHOME"
+		if [ $gpg_status -ne 0 ]; then
+			exit $gpg_status
+		fi
 	else
 		# Abort if openssl is not available
 		if ! command -v openssl >/dev/null 2>&1; then
