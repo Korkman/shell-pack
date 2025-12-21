@@ -757,7 +757,7 @@ end
 # reload with a policeline
 
 if test -z "$EDITOR"
-	set EDITOR "mcedit"
+	set -x -g EDITOR "mcedit"
 end
 
 # LESS options: case-insensitive search by default
