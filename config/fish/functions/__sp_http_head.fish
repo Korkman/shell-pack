@@ -1,6 +1,10 @@
 function __sp_http_head
 	argparse 't/timeout=?' -- $argv
-	test "$timeout" != "" || set timeout 10
+	if test -z "$_flag_t"
+		set timeout 10
+	else
+		set timeout $_flag_t
+	end
 	
 	if command -q curl
 		curl -o /dev/null -D - --max-time $timeout --location --max-redirs 10 --retry 0 --fail --silent "$argv[1]"
