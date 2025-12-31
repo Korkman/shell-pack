@@ -92,3 +92,8 @@ SearchForwardContinue = n
 SearchBackwardContinue = N
 
 [diffviewer]
+# added alt-* keys for more intuitive merging
+Merge = f5; alt-left
+MergeOther = f15; alt-right
+HunkNext = n; enter; space; alt-down
+HunkPrev = p; backspace; alt-up
