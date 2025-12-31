@@ -131,9 +131,9 @@
 	# read password from terminal into ENCPASS
 	if [ -z "${ENCPASS:-}" ]; then
 		printf "%s" "Password: " >&2
-		stty -F /dev/tty -echo
+		stty -echo < /dev/tty
 		read -r ENCPASS < /dev/tty
-		stty -F /dev/tty echo
+		stty echo < /dev/tty
 		echo >&2
 	fi
 	
