@@ -13,6 +13,25 @@ if ! set -q __sp_load_keybinds
 end
 
 function load_shell_pack -d "Load shell-pack"
+	# determine important paths early
+	set -g __sp_config_fish_file (status --current-filename)
+	set -g __sp_config_fish_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_file)
+	set -g __sp_config_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_dir)
+	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
+
+	# NOTE: as many distros come with pre-existing fish prompts, we override by *prepending*
+	if ! contains -- "$__sp_config_fish_dir/functions" $fish_function_path
+		set -g --prepend fish_function_path "$__sp_config_fish_dir/functions"
+	end
+	if ! contains -- "$__sp_config_fish_dir/completions" $fish_complete_path
+		set -g --prepend fish_complete_path "$__sp_config_fish_dir/completions"
+	end
+	# unqoted path is converted to space separated list, compatible to contains
+	if ! contains -- "$__sp_dir/bin" $PATH
+		set -g --prepend PATH "$__sp_dir/bin"
+	end
+	# this is only available as of fish 3.2
+	#fish_add_path --path --global --prepend -- "$__sp_dir/bin"
 
 	# unexport variables meant only for reload
 	if set -q disable_autoupdate
@@ -30,16 +49,12 @@ function load_shell_pack -d "Load shell-pack"
 
 	# detect OS capabilities (very rough)
 	if [ (uname) = "Linux" ]
-		set -g __cap_env_has_null true
-		set -g __cap_stat_has_printf true
 		set -g __cap_getent true
 
 		set -g __cap_dscacheutil false
 		set -g __cap_finger false
 		set -g __cap_ss true
 	else
-		set -g __cap_env_has_null false
-		set -g __cap_stat_has_printf false
 		set -g __cap_getent false
 
 		set -g __cap_dscacheutil true
@@ -47,6 +62,13 @@ function load_shell_pack -d "Load shell-pack"
 		set -g __cap_ss false
 	end
 
+	# lazyloading capability variables
+	set -g __cap_ls_has_time_style "__sp_cap_ls_has_time_style"
+	set -g __cap_env_has_null "__sp_cap_env_has_null"
+	set -g __cap_stat_has_printf "__sp_cap_stat_has_printf"
+	set -g __cap_less_has_mouse "__sp_cap_less_has_mouse"
+	set -g __cap_find_has_xtype "__sp_cap_find_has_xtype"
+	
 	# reload function
 	# - backups up initial environment
 	# - resets environment to backup
@@ -135,7 +157,10 @@ function load_shell_pack -d "Load shell-pack"
 	# these functions are possibly called many times a second, so they are not put in dedicated function files
 	function __sp_getmtime -a file -d \
 		'Get modification time of a file'
-		if $__cap_stat_has_printf
+		if $__cap_ls_has_time_style
+			set -l output (command ls -nl --time-style=+%s "$file" | string split ' ')
+			and echo "$output[6]"
+		else if $__cap_stat_has_printf
 			stat --printf '%Y' "$file"
 		else
 			stat -f %m "$file"
@@ -146,26 +171,8 @@ function load_shell_pack -d "Load shell-pack"
 		# only a placeholder to guarantee the signal is handled,
 		# not killing us when no handler is present (reload & timer pulse race precaution)
 	end
- 
-	set -g __sp_config_fish_file (status --current-filename)
-	set -g __sp_config_fish_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_file)
-	set -g __sp_config_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_fish_dir)
-	set -g __sp_dir (string replace --regex -- '/[^/]*$' '' $__sp_config_dir)
-
-	# NOTE: as many distros come with pre-existing fish prompts, we override by *prepending*
-	if ! contains -- "$__sp_config_fish_dir/functions" $fish_function_path
-		set -g --prepend fish_function_path "$__sp_config_fish_dir/functions"
-	end
-	if ! contains -- "$__sp_config_fish_dir/completions" $fish_complete_path
-		set -g --prepend fish_complete_path "$__sp_config_fish_dir/completions"
-	end
-	# unqoted path is converted to space separated list, compatible to contains
-	if ! contains -- "$__sp_dir/bin" $PATH
-		set -g --prepend PATH "$__sp_dir/bin"
-	end
-	# this is only available as of fish 3.2
-	#fish_add_path --path --global --prepend -- "$__sp_dir/bin"
-
+	
+	# hash and mtime of config.fish for auto reload
 	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
 	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
 
@@ -200,7 +207,20 @@ function load_shell_pack -d "Load shell-pack"
 			set -g OLDSHELL (command -s tcsh)
 		end
 	end
-
+	
+	# LESS options: case-insensitive search by default
+	if ! set -x -q LESS
+		set -x -g LESS "-ix4"
+		if $__cap_less_has_mouse
+			set -x -g LESS "$LESS --mouse"
+		end
+	end
+	
+	# default to mcedit for EDITOR if not set
+	if test -z "$EDITOR"
+		set -x -g EDITOR "mcedit"
+	end
+	
 	# POWERLINE / NERD FONTS
 
 	# check LC_NERDLEVEL (custom variable passing through default sshd_config)
@@ -240,16 +260,7 @@ function load_shell_pack -d "Load shell-pack"
 
 	# detect and coordinate advanced shell integration loading (if not in mc subshell, not a dumb terminal, etc.)
 	if test "$MC_SID" = ""; and test "$TERM" != "dumb"; and test "$TERM" != "linux"; and status --is-interactive
-		# load fish_prompt
-		fish_prompt > /dev/null
-		
-		if string match -q "$TERM_PROGRAM" "vscode"
-			# load vscode shell integration for VS Code's integrated terminal
-			source $__sp_config_fish_dir/vscode_shell_integration.fish
-		else
-			# load iterm2 integration for everyone else
-			source $__sp_config_fish_dir/iterm2_shell_integration.fish
-		end
+		__sp_load_shell_integrations
 	end
 
 	# bright yellow background in less highlights (improving manpage readability)

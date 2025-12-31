@@ -12,10 +12,11 @@ function skim-cd-widget-one -d "Change directory without changing command"
 		set dotfiles_arg ""
 		skim-dotfiles no
 	end
-	__sp_caps_find
-	$__cap_find_xtype
-	and set arg_xtype '-xtype'
-	or set -l arg_xtype '-type'
+	if $__cap_find_has_xtype
+		set arg_xtype '-xtype'
+	else
+		set arg_xtype '-type'
+	end
 	
 	set -l dir '.'
 	set -l skim_query ''

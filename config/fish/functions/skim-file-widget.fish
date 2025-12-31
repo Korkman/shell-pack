@@ -5,10 +5,11 @@ function skim-file-widget -d "List files and folders"
 	else
 		skim-dotfiles no
 	end
-	__sp_caps_find
-	$__cap_find_xtype
-	and set arg_xtype '-xtype'
-	or set -l arg_xtype '-type'
+	if $__cap_find_has_xtype
+		set arg_xtype '-xtype'
+	else
+		set arg_xtype '-type'
+	end
 	
 	set -l commandline (__skim_parse_commandline)
 	set -l dir $commandline[1]
