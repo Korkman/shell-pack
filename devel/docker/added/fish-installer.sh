@@ -13,9 +13,10 @@ main() {
 	echo "fish installer started, logging to '$installer_log'"
 	touch "$installer_log"
 	echo "args: $0" >> "$installer_log"
-	# TODO: find latest release versions on github https://github.com/fish-shell/fish-shell/releases/
-	fish_latest="4.1.2"
-	fish_static_latest="4.1.2"
+	# finds latest release versions on github via api.github.com
+	FISH_VERSION=$(get_latest_fish_version) || FISH_VERSION="4.1.2"
+	fish_latest="$FISH_VERSION"
+	fish_static_latest="$FISH_VERSION"
 	cmake_version="3.27.0"
 	deploy_channel="release"
 	deploy_branch="4"
@@ -38,13 +39,13 @@ main() {
 if command -v sudo > /dev/null
 then
 	sudo() {
-		command sudo $@
+		command sudo "$@"
 	}
 else
 	echo "No sudo available - attempting to run package manager without"
 	echo "(this usually works if you are root or have similar superpowers)"
 	sudo() {
-		eval $@
+		"$@"
 	}
 fi
 
@@ -62,6 +63,16 @@ install_cmake() {
 	curl -fsSL "https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-linux-x86_64.sh" > cmake.sh
 	chmod +x cmake.sh
 	./cmake.sh --prefix=/usr/local --exclude-subdir --skip-license
+}
+
+get_latest_fish_version() {
+	# get latest release version from github api
+	if command -v curl > /dev/null
+	then
+		curl -fsSL "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
+	else
+		wget -q -O- "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
+	fi
 }
 
 get_installer_for_distro() {

@@ -1,4 +1,3 @@
-set -g __sp_fish_repo "https://github.com/fish-shell/fish-shell"
 function upgrade-fish
 	argparse s/subtle -- $argv
 	or return
@@ -55,7 +54,7 @@ function upgrade-fish
 			mkdir -p "$dl_dir"
 			set -l dl_path "$dl_dir/fish-$repo_version-linux-$install_arch.tar.xz"
 			echo "Downloading fish $repo_version for $install_arch ..."
-			dl "$__sp_fish_repo/releases/download/$repo_version/fish-$repo_version-linux-$install_arch.tar.xz" "$dl_path" 2> /dev/null
+			dl "https://github.com/fish-shell/fish-shell/releases/download/$repo_version/fish-$repo_version-linux-$install_arch.tar.xz" "$dl_path" 2> /dev/null
 			or begin echo "Error: download failed"; return 2; end
 			cfd "$dl_path" "$dl_dir"
 			or begin echo "Error: decompression with cfd failed"; return 3; end
@@ -92,8 +91,7 @@ function upgrade-fish
 end
 
 function __sp_get_newer_fish_version
-	set -l repo_version
-	__sp_http_head --timeout=1 "$__sp_fish_repo/releases/latest" | string match -gq --regex '^location: .*/releases/tag/(?<repo_version>[0-9]+\.[0-9]+\.[0-9]+).*'
+	set -l repo_version (__sp_get_latest_fish_version)
 	or return 2
 	# compare versions and upgrade if needed
 	if test (__sp_vercmp "$FISH_VERSION" "$repo_version") -ge 0
