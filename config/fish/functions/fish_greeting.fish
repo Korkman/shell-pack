@@ -1,6 +1,5 @@
 function fish_greeting -d "shell-pack says hello"
-	# infinite loop protection: a 'read' issued within fish_greeting triggers fish_greeting in 3.6.0
-	# see https://github.com/fish-shell/fish-shell/issues/9564
+	# workaround for fish 3.6.0 bug https://github.com/fish-shell/fish-shell/issues/9564
 	if set -q __sp_greeting_infinite_loop
 		return
 	end
