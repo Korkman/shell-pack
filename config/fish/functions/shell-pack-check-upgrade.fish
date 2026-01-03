@@ -1,16 +1,16 @@
 function shell-pack-check-upgrade -d \
 	"Check for an upgrade to shell-pack"
-	set -l __sp_shell_pack_repo "https://raw.githubusercontent.com/Korkman/shell-pack"
-	# download latest shell-pack-version.fish and grep the version from there
-	set result (__sp_http --timeout=1 "$__sp_shell_pack_repo/latest/config/fish/functions/shell-pack-version.fish" | string match --regex 'echo.*([0-9]+(\.[0-9]+)+)')
-	if test $status -eq 0
-		set installed_version (shell-pack-version)
-		set latest_version "$result[2]"
-		if test "$installed_version" != "$latest_version"
-			echo "Update: run 'upgrade-shell-pack' to upgrade from "$installed_version" to "$latest_version"!"
-		end
-		upgrade-fish --subtle
-	else
+	# call github API to get latest release tag
+	__sp_http --timeout=2 "https://api.github.com/repos/Korkman/shell-pack/releases/latest" | string match -gq --regex '"tag_name": "v(?<latest_version>[^"]+)"'
+	or begin
 		echo "NOTE: Unable to check for latest shell-pack version (offline?)"
+		return
 	end
+	set installed_version (shell-pack-version)
+	if test "$installed_version" != "$latest_version"
+		echo "Update: run 'upgrade-shell-pack' to upgrade from "$installed_version" to "$latest_version"!"
+	end
+	
+	# also check for FISH upgrade
+	upgrade-fish --subtle
 end
