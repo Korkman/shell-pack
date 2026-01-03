@@ -46,7 +46,16 @@ function load_shell_pack -d "Load shell-pack"
 	if set -q MC_SID
 		set -g disable_autoupdate yes
 	end
-
+	
+	# treat TERM unknown to infocmp as xterm-256color, a compromise
+	# for new terminal emulators which typically supercede xterm-256color
+	# in relevant capabilities (xterm-kitty, foot, etc.)
+	# note that installing respective terminfo packages is the better solution
+	if command -q infocmp && ! infocmp &> /dev/null
+		set -g __sp_trueterm "$TERM"
+		set -gx TERM "xterm-256color"
+	end
+	
 	# detect OS capabilities (very rough)
 	if [ (uname) = "Linux" ]
 		set -g __cap_getent true
