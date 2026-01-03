@@ -5,5 +5,5 @@ function shell-pack-version \
 	# won't cause reloads anymore!
 	
 	# NOTE: the following line is parsed by legacy versions (<= 3.31) of shell-pack-check-upgrade!
-	echo '3.31'
+	echo '3.32'
 end
