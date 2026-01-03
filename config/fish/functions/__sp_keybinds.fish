@@ -45,9 +45,6 @@ function __sp_keybinds \
 	bind \ex "skim-cd-widget-one --dotfiles"
 	bind \eX "skim-cd-widget-one"
 
-	# re-assigning alt-left and alt-right to ignore commandline status (use ctrl-left and ctrl-right for word-wise cursor positioning!)
-	bind \e\[1\;3D "quick_dir_prev"
-	bind \e\[1\;3C "quick_dir_next"
 	# shift-left and -right in tmux
 	bind \e\[1\;2D "quick_dir_prev"
 	bind \e\[1\;2C "quick_dir_next"
@@ -85,9 +82,10 @@ function __sp_keybinds \
 	# bind Alt-Home to cd ~ | cd /
 	bind \e\[1\;3H 'if test "$PWD" = "$HOME"; cd /; else; cd "$HOME"; end; commandline -f repaint'
 	
-	# alt-left and -right in linux console (kmscon)
-	bind \e\e\[D "quick_dir_prev"
-	bind \e\e\[C "quick_dir_next"
+	# keymap for kmscon
+	# alt-left and -right in linux console
+	bind \e\e\[D "prevd-or-backward-word"
+	bind \e\e\[C "nextd-or-forward-word"
 	# alt-down in linux console
 	bind \e\e\[B "skim-cd-widget-one"
 	# alt-up in linux console
