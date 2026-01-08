@@ -1,10 +1,6 @@
 function fish_prompt -d \
 	"shell-pack prompt"
 	
-	if set -q __sp_postexec_prompt_output
-		# output captured from postexec, keep for redraws
-		__sp_echo_postexec_prompt_output
-	end
 	if set -q __sp_postexec_bell
 		# bell captured from postexec, output only once
 		echo -n \a
@@ -374,109 +370,109 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 end
 
 function enhanced_prompt -e fish_postexec -d "Foreground and background job execution tracking and status code clearance"
-	# to be included in the OSC133 prompt markers, we need to capture the postexec prompt output here
-	set -g __sp_postexec_prompt_output (begin
-		set -g __saved_pipestatus (string split ' ' -- "$pipestatus")
-		# NOTE: $status is gone at this point
-		set -g __saved_status $__saved_pipestatus[(count $__saved_pipestatus)]
-		set -g __saved_duration "$CMD_DURATION"
-		set -x __job_start_time (__sp_getnanoseconds)
-		set -g __saved_cmdline (echo "$argv[1]" | begin set -l d ''; while read line; echo -n "$d""$line"; set d '; '; end; end)
-		
-		# detect tracked, but lost jobs (e.g. by kill)
-		if [ "$__watched_job_pids" != "" ]
-			for job_pid in $__watched_job_pids
-				if ! ps -p $job_pid &> /dev/null
-					job_watcher$job_pid "KILLED?" 0 -2
-				end
+	set -g __saved_pipestatus (string split ' ' -- "$pipestatus")
+	# NOTE: $status is gone at this point
+	set -g __saved_status $__saved_pipestatus[(count $__saved_pipestatus)]
+	set -g __saved_duration "$CMD_DURATION"
+	set -x __job_start_time (__sp_getnanoseconds)
+	set -g __saved_cmdline (echo "$argv[1]" | begin set -l d ''; while read line; echo -n "$d""$line"; set d '; '; end; end)
+	
+	# detect tracked, but lost jobs (e.g. by kill)
+	if [ "$__watched_job_pids" != "" ]
+		for job_pid in $__watched_job_pids
+			if ! ps -p $job_pid &> /dev/null
+				job_watcher$job_pid "KILLED?" 0 -2
 			end
 		end
-		
-		# detect new untracked jobs
-		if jobs -q
-			#set new_bg_tasks ""
-			for job_pid in (__sp_get_pending_job_pids)
-				# NOTE: multiple pids may be spawned within one job
-				# we take the naive approach to watch the last pid returned by jobs -p %x
-				# , hoping it will be the last command in pipe.
-				if ! functions -q job_watcher$job_pid
-					# untracked backgrounded task detected
-					set -g __watched_job_pids $__watched_job_pids $job_pid
-					set new_bg_tasks $job_pid $new_bg_tasks
-					function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit "$job_pid"
-						# remove my pid from list
-						set -ge __watched_job_pids[(contains -i $job_pid $__watched_job_pids)]
+	end
+	
+	# detect new untracked jobs
+	if jobs -q
+		#set new_bg_tasks ""
+		for job_pid in (__sp_get_pending_job_pids)
+			# NOTE: multiple pids may be spawned within one job
+			# we take the naive approach to watch the last pid returned by jobs -p %x
+			# , hoping it will be the last command in pipe.
+			if ! functions -q job_watcher$job_pid
+				# untracked backgrounded task detected
+				set -g __watched_job_pids $__watched_job_pids $job_pid
+				set new_bg_tasks $job_pid $new_bg_tasks
+				function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit "$job_pid"
+					# remove my pid from list
+					set -ge __watched_job_pids[(contains -i $job_pid $__watched_job_pids)]
 
-						set job_status $argv[3]
-						set duration (math "round(("(__sp_getnanoseconds)" - $__job_start_time ) / 1000 / 1000)")
+					set job_status $argv[3]
+					set duration (math "round(("(__sp_getnanoseconds)" - $__job_start_time ) / 1000 / 1000)")
 
-						echo
-						__spt jobs_bg bg
-						__spt jobs_fg
-						if [ (string length -- "$__saved_cmdline") -gt 20 ]
-							echo -n ' '(string sub -l 9 -- "$__saved_cmdline")'…'(string sub -s -9 -- "$__saved_cmdline")' '
-						else
-							echo -n " "$__saved_cmdline" "
-						end
-						set_color normal
-						__spt jobs_bg
-						echo -n (__spt right_black_arrow)" "
-						if [ $job_status -eq 0 ]
-							__spt status_ok
-							echo -n (__spt happy)" "
-						else
-							__spt status_fail
-							echo -n (__spt unhappy)" $job_status "
-						end
-						set_color $fish_color_autosuggestion
-						echo -n "$argv[1] "
-						echo -n "$job_pid "
-						__shellpack_cmd_duration $duration
-						__shellpack_timestamp
-						set_color normal
-						commandline -f repaint
-						functions --erase job_watcher$job_pid
+					echo
+					__spt jobs_bg bg
+					__spt jobs_fg
+					if [ (string length -- "$__saved_cmdline") -gt 20 ]
+						echo -n ' '(string sub -l 9 -- "$__saved_cmdline")'…'(string sub -s -9 -- "$__saved_cmdline")' '
+					else
+						echo -n " "$__saved_cmdline" "
 					end
+					set_color normal
+					__spt jobs_bg
+					echo -n (__spt right_black_arrow)" "
+					if [ $job_status -eq 0 ]
+						__spt status_ok
+						echo -n (__spt happy)" "
+					else
+						__spt status_fail
+						echo -n (__spt unhappy)" $job_status "
+					end
+					set_color $fish_color_autosuggestion
+					echo -n "$argv[1] "
+					echo -n "$job_pid "
+					__shellpack_cmd_duration $duration
+					__shellpack_timestamp
+					set_color normal
+					echo
+					commandline -f repaint
+					functions --erase job_watcher$job_pid
 				end
-			end
-			
-			if [ (count $new_bg_tasks) -gt 0 ]
-				# tracking new background tasks
-				if [ (count $new_bg_tasks) -gt 1 ]
-					set plural PIDs
-				else
-					set plural PID
-				end
-				__spt jobs_bg bg
-				__spt jobs_fg
-				echo -n " "(__spt running)" "
-				set_color normal
-				__spt jobs_bg
-				echo -n (__spt right_black_arrow)
-				set_color normal
-				echo " New job $plural $new_bg_tasks"
 			end
 		end
-
-		set -l do_show_exit_status "yes"
-		if set -q status_generation
-			# status_generation exists since fish 3.2, use it
-			if test "$status_generation" = "$__sp_last_status_generation"
-				set do_show_exit_status "no"
+		
+		if [ (count $new_bg_tasks) -gt 0 ]
+			# tracking new background tasks
+			if [ (count $new_bg_tasks) -gt 1 ]
+				set plural PIDs
 			else
-				set -g __sp_last_status_generation $status_generation
+				set plural PID
 			end
-		else if [ "$__saved_cmdline" = "" ] || [ (string trim -- (string sub -s -1 -l 1 -- "$__saved_cmdline")) = "&" ]
-			# empty line submitted or ends in "&"
-			set do_show_exit_status "no"
+			__spt jobs_bg bg
+			__spt jobs_fg
+			echo -n " "(__spt running)" "
+			set_color normal
+			__spt jobs_bg
+			echo -n (__spt right_black_arrow)
+			set_color normal
+			echo " New job $plural $new_bg_tasks"
 		end
+	end
 
-		if [ "$__shellpack_current_cmd_user_hidden" = "yes" ]
-			# user hidden, no status line
+	set -l do_show_exit_status "yes"
+	if set -q status_generation
+		# status_generation exists since fish 3.2, use it
+		if test "$status_generation" = "$__sp_last_status_generation"
 			set do_show_exit_status "no"
+		else
+			set -g __sp_last_status_generation $status_generation
 		end
+	else if [ "$__saved_cmdline" = "" ] || [ (string trim -- (string sub -s -1 -l 1 -- "$__saved_cmdline")) = "&" ]
+		# empty line submitted or ends in "&"
+		set do_show_exit_status "no"
+	end
 
-		# ignore empty lines and backgrounding tasks
+	if [ "$__shellpack_current_cmd_user_hidden" = "yes" ]
+		# user hidden, no status line
+		set do_show_exit_status "no"
+	end
+
+	# ignore empty lines and backgrounding tasks
+	set -g __sp_enhanced_prompt_exit_status (begin
 		if [ "$do_show_exit_status" = "yes" ]
 			set -g __display_cmd_stats yes
 
@@ -513,8 +509,9 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			end
 			set_color $fish_color_autosuggestion
 			__shellpack_cmd_duration
-			echo -n (__shellpack_timestamp)
+			__shellpack_timestamp
 			set_color normal
+			echo
 			# hot new info: $pipestatus if any -ne 0
 			if [ (count $__saved_pipestatus) -gt 1 ]
 				set total_pipestatus 0
@@ -524,7 +521,6 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 					end
 				end
 				if [ $total_pipestatus -gt 0 ]
-					echo
 					echo -n (__spt cmd_fail_bg bg)(__spt cmd_fail_fg)" Non-zero exit status in pipe "
 					set_color -b normal
 					echo -n (__spt cmd_fail_bg)(__spt right_black_arrow)" "
@@ -544,6 +540,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 						end
 					end
 					set_color normal
+					echo
 				end
 			end
 			
@@ -552,18 +549,17 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			# NOTE: empty echo disturbs tmux, therefore a space
 			echo " "
 		end
-		
-		# NOTE: detecting nerdlevel downgrade to zero is possible here
-		#       but potentially unwanted.
-		#if [ "$LC_NERDLEVEL" = "0" ]
-		#	nerdlevel 0
-		#end
 	end)
-	# special care taken for fiddle mode
-	if set -q __sp_fiddle_mode
-		__sp_echo_postexec_prompt_output clear
-	end
 	
+	# NOTE: detecting nerdlevel downgrade to zero is possible here
+	#       but potentially unwanted.
+	#if [ "$LC_NERDLEVEL" = "0" ]
+	#	nerdlevel 0
+	#end
+end
+
+function __sp_autoupdate -e fish_postexec -d \
+	"Trigger autoupdate check after command execution"
 	# if not already pending, detect if config.fish has to be reloaded
 	if [ "$__reload_pending" != "yes" ]
 		if [ "$__sp_config_fish_file" = "" ] \
@@ -590,10 +586,12 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	if [ "$__reload_pending" = "yes" ] \
 		&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
 		
+		# force a newline in case command output did not end with one
+		echo
+		# and output pending exit status line
+		__sp_print_enhanced_prompt_exit_status
+		
 		# auto-update
-		__sp_echo_postexec_prompt_output clear
-		echo "Autoupdate triggered! History may be merged, your most recent cmd was:"
-		echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
 		policeline "Reload: FISH config modified, environment reset"
 		reload
 	end
@@ -603,6 +601,16 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		if [ (__sp_getmtime $__sp_keybinds_file) -ne $__sp_keybinds_mtime ]
 			__sp_keybinds
 		end
+	end
+end	
+
+function __sp_print_enhanced_prompt_exit_status --on-event fish_prompt --on-event fish_exit --on-event sp_pre_reload -d \
+	"Print saved exit status line once, outside of OSC 133 markers for command output and prompt"
+	if [ "$__display_cmd_stats" = "yes" ]
+		for line in $__sp_enhanced_prompt_exit_status
+			echo "$line"
+		end
+		set -e -g __display_cmd_stats
 	end
 end
 
@@ -672,22 +680,13 @@ function __shellpack_timestamp -S -d 'Show the current timestamp'
 
 	# UTF8 clock icon here
 	echo -n " "(__spt clock)
-	date $theme_time_format
+	echo -n (date $theme_time_format)
 end
 
 function __sp_reset_exit_status -e fish_preexec -d \
 	"Reset exit status variables"
 	set -e -g __saved_pipestatus
 	set -e -g __saved_status
-	# clear previous prompt statuscode output, but also print it so it persists in history
-	if set -q __sp_postexec_prompt_output
-		# do not print if commandline is empty (just enter pressed)
-		# as this would cause a duplicate
-		if test (commandline --current-buffer | string collect) != ""
-			__sp_echo_postexec_prompt_output
-		end
-		set -e -g __sp_postexec_prompt_output
-	end
 end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
@@ -790,22 +789,6 @@ function __sp_delay_exec
 	end
 end
 
-function __sp_echo_postexec_prompt_output -e fish_exit -a clear -d \
-	"Output saved postexec status prompt output"
-	
-	set -q __sp_postexec_prompt_output
-	or return 0
-	
-	for line in $__sp_postexec_prompt_output
-		echo "$line"
-	end
-	
-	test "$clear" = "clear"
-	and set -e -g __sp_postexec_prompt_output
-	
-	return 0
-end
-
 # begin silent updates (avoid reload)
 
 # from time to time, upgraded shells can be live patched here until a config.fish
@@ -813,5 +796,7 @@ end
 # reload with a policeline
 
 # (insert silent updates here)
+# remove deprecated variable
+set -e -g __sp_postexec_prompt_output
 
 # end silent updates

@@ -139,6 +139,9 @@ function load_shell_pack -d "Load shell-pack"
 				# good luck (fish path changed, let env find it)
 				set fish_binary "fish"
 			end
+			# emit pre-reload event
+			
+			emit "sp_pre_reload"
 			# create a function using eval to execute the pre-escaped string as-is
 			eval function the_end \n exec env --ignore-environment $initial_env $fish_binary -l \n end
 			# emit fish_exit event and give time to reap exit status of children to prevent zombies

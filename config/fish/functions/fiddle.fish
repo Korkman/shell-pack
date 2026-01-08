@@ -61,6 +61,8 @@ end
 
 function __sp_fiddle_postexec -e fish_postexec
 	if set -q __sp_fiddle_mode
+		# force print of enhanced prompt exit status line
+		__sp_print_enhanced_prompt_exit_status
 		# move prompt to the top
 		echo -en "\r\033[H"
 		commandline -- "$__sp_fiddle_cmd"
