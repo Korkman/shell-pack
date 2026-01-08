@@ -39,6 +39,7 @@ Attach to or create a screen / tmux session SESSION.
 			function __mmux_tmux_update_shell_env --on-event fish_preexec
 				if set -q TMUX
 					# inside TMUX, grab environment update
+					set -l accept_env $__mmux_imported_environment __sp_tmux_ver
 					set -l tmux_env (tmux show-environment 2> /dev/null)
 					if test $status -eq 0
 						# tmux commands fail when env variable is set but not writable (su)
@@ -48,7 +49,7 @@ Attach to or create a screen / tmux session SESSION.
 							if [ (string sub --start 1 --length 1 -- $v) = "-" ]
 								# erase variables prefixed with minus which are currently set
 								set -l vminus (string sub --start 2 -- $v)
-								if contains -- $vminus $__mmux_imported_environment && set -q $vminus
+								if contains -- $vminus $accept_env && set -q $vminus
 									#echo "tmux: unset $vminus"
 									set -ge $vminus
 								end
@@ -57,7 +58,7 @@ Attach to or create a screen / tmux session SESSION.
 								set -l vsplit (string split --max 1 "=" -- $v)
 								set -l vname "$vsplit[1]"
 								set -l vval "$vsplit[2]"
-								if contains -- $vname $__mmux_imported_environment
+								if contains -- $vname $accept_env
 									# variable is on whitelist
 									if ! set -q $vname
 										# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
