@@ -186,16 +186,16 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 				echo '#'
 				return
 			case white_black_forward_block
-				echo '██'
+				echo '█'
 				return
 			case black_white_forward_block
-				echo '  '
+				echo ' '
 				return
 			case white_black_backward_block
-				echo '██'
+				echo '█'
 				return
 			case black_white_backward_block
-				echo '  '
+				echo ' '
 				return
 			case bookmark
 				echo ''

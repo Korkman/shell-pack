@@ -1,5 +1,5 @@
 function policeline -d "Output a warning, clear and loud" -a text
-	set -l text_budget (math (string length -- $text) + 6 )
+	set -l text_budget (math (string length -- $text) + 4 )
 	set -l left_budget (math -s0 \($COLUMNS - $text_budget\) / 2 - 2)
 	set -l right_budget (math $COLUMNS - $left_budget - $text_budget - 2)
 	set -l text (string upper -- $text)
@@ -7,7 +7,7 @@ function policeline -d "Output a warning, clear and loud" -a text
 	__spt policeline_fg
 	set -l alternator 0
 	while [ $left_budget -gt 0 ]
-		set left_budget (math $left_budget - 2)
+		set left_budget (math $left_budget - 1)
 		if [ $alternator -eq 0 ]
 			echo -n (__spt white_black_forward_block)
 			set alternator 1
@@ -18,7 +18,7 @@ function policeline -d "Output a warning, clear and loud" -a text
 	end
 	
 	if [ $alternator -eq 1 ]
-		set right_budget (math $right_budget - 2)
+		set right_budget (math $right_budget - 1)
 		echo -n (__spt black_white_forward_block)
 	end
 	
@@ -28,7 +28,7 @@ function policeline -d "Output a warning, clear and loud" -a text
 	__spt policeline_fg
 	set -l alternator 0
 	while [ $right_budget -gt 0 ]
-		set right_budget (math $right_budget - 2)
+		set right_budget (math $right_budget - 1)
 		if [ $alternator -eq 0 ]
 			echo -n (__spt white_black_forward_block)
 			set alternator 1
