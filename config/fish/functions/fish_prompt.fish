@@ -308,9 +308,21 @@ function fish_prompt_print_segments --no-scope-shadowing
 	
 	echo -n (__spt $prev_bgcolor)(__spt right_black_arrow)
 	set_color normal
-	# TODO: restrict to lower tmux versions
+	
 	# using non-breaking space as a marker for poor man's prompt jumps in tmux < 3.5
-	echo -n " "
+	# unfortunately this counts as a word char when selecting whole words, hence a version check
+	if ! set -q __sp_poor_prompt_jumps
+		set -g __sp_poor_prompt_jumps no
+		if set -q TMUX && set -q __sp_tmux_ver && test $__sp_tmux_ver -lt 305
+			set -g __sp_poor_prompt_jumps yes
+		end
+	end
+	
+	if test "$__sp_poor_prompt_jumps" = "yes"
+		echo -n " "
+	else
+		echo -n " "
+	end
 end
 
 function __shellpack_get_string_term_lines -d "Return count of terminal lines a string approx. uses to display with current prompt"
