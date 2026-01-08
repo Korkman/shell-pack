@@ -96,6 +96,13 @@ function load_shell_pack -d "Load shell-pack"
 		# decrease SHLVL to offset the increment which already happened
 		set -g initial_env $initial_env SHLVL=(math $SHLVL - 1)
 		function reload -d "Reset environment (mostly)"
+			if ! isatty 1
+				if test -w /dev/tty
+					policeline "Reload: STDOUT is not a terminal, failing" > /dev/tty
+				end
+				return 2
+			end
+			
 			if set -q MC_SID
 				# TODO: new instance needs to:
 				# - copy over fish_prompt and fish_prompt_mc

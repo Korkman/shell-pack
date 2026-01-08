@@ -101,7 +101,7 @@ function __sp_keybinds \
 		# bind f4 to history edit
 		bind f4 '__sp_history_delete_and_edit_prev'
 		bind f11 'fiddle --instant'
-		bind f5 'echo; policeline Reload; reload'
+		bind f5 'echo; policeline "Reload: F5 key, environment reset"; reload'
 	else
 		# did something stupid? arrow-up to the command, hit f8 to delete
 		bind -k f8 "__history_delete_commandline"
@@ -111,6 +111,6 @@ function __sp_keybinds \
 		bind -k f4 '__sp_history_delete_and_edit_prev'
 		bind \e4 '__sp_history_delete_and_edit_prev'
 		bind -k f11 'fiddle --instant'
-		bind -k f5 'echo; policeline Reload; reload'
+		bind -k f5 'echo; policeline "Reload: F5 key, environment reset"; reload'
 	end
 end

@@ -3,9 +3,7 @@ function fish_prompt -d \
 	
 	if set -q __sp_postexec_prompt_output
 		# output captured from postexec, keep for redraws
-		for line in $__sp_postexec_prompt_output
-			echo "$line"
-		end
+		__sp_echo_postexec_prompt_output
 	end
 	if set -q __sp_postexec_bell
 		# bell captured from postexec, output only once
@@ -560,53 +558,51 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 		#if [ "$LC_NERDLEVEL" = "0" ]
 		#	nerdlevel 0
 		#end
-		
-		# if not already pending, detect if config.fish has to be reloaded
-		if [ "$__reload_pending" != "yes" ]
-			if [ "$__sp_config_fish_file" = "" ] \
-				|| [ "$__sp_config_fish_md5" = "" ] \
-				|| [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
-
-				set -l new_md5 "invalid"
-				if functions -q __sp_getmd5
-					set new_md5 (__sp_getmd5 $__sp_config_fish_file)
-				end
-
-				if [ "$new_md5" = "$__sp_config_fish_md5" ]
-					# unchanged md5 - update timestamp, no reload necessary
-					#echo "config.fish changed mtime, but md5 is equal, no action required"
-					set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
-				else
-					# hint update
-					set -g __reload_pending yes
-				end
-			end
-		end
-		
-		# when no jobs are running, consider autoupdate
-		if [ "$__reload_pending" = "yes" ] \
-			&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
-			
-			# auto-update
-			echo "Autoupdate triggered! History may be merged, your most recent cmd was:"
-			echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
-			policeline "new fish config loaded - env reset"
-			reload
-		end
-		
-		# monitor keybinds file mtime, reload if changed
-		if [ "$__sp_keybinds_mtime" != "" ]
-			if [ (__sp_getmtime $__sp_keybinds_file) -ne $__sp_keybinds_mtime ]
-				__sp_keybinds
-			end
-		end
 	end)
 	# special care taken for fiddle mode
 	if set -q __sp_fiddle_mode
-		for line in $__sp_postexec_prompt_output
-			echo "$line"
+		__sp_echo_postexec_prompt_output clear
+	end
+	
+	# if not already pending, detect if config.fish has to be reloaded
+	if [ "$__reload_pending" != "yes" ]
+		if [ "$__sp_config_fish_file" = "" ] \
+			|| [ "$__sp_config_fish_md5" = "" ] \
+			|| [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
+			
+			set -l new_md5 "invalid"
+			if functions -q __sp_getmd5
+				set new_md5 (__sp_getmd5 $__sp_config_fish_file)
+			end
+
+			if [ "$new_md5" = "$__sp_config_fish_md5" ]
+				# unchanged md5 - update timestamp, no reload necessary
+				#echo "config.fish changed mtime, but md5 is equal, no action required"
+				set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
+			else
+				# hint update
+				set -g __reload_pending yes
+			end
 		end
-		set -e -g __sp_postexec_prompt_output
+	end
+	
+	# when no jobs are running, consider autoupdate
+	if [ "$__reload_pending" = "yes" ] \
+		&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
+		
+		# auto-update
+		__sp_echo_postexec_prompt_output clear
+		echo "Autoupdate triggered! History may be merged, your most recent cmd was:"
+		echo (set_color $fish_color_command)"$__saved_cmdline"(set_color $fish_color_normal)
+		policeline "Reload: FISH config modified, environment reset"
+		reload
+	end
+	
+	# monitor keybinds file mtime, reload if changed
+	if [ "$__sp_keybinds_mtime" != "" ]
+		if [ (__sp_getmtime $__sp_keybinds_file) -ne $__sp_keybinds_mtime ]
+			__sp_keybinds
+		end
 	end
 end
 
@@ -688,9 +684,7 @@ function __sp_reset_exit_status -e fish_preexec -d \
 		# do not print if commandline is empty (just enter pressed)
 		# as this would cause a duplicate
 		if test (commandline --current-buffer | string collect) != ""
-			for line in $__sp_postexec_prompt_output
-				echo "$line"
-			end
+			__sp_echo_postexec_prompt_output
 		end
 		set -e -g __sp_postexec_prompt_output
 	end
@@ -794,6 +788,22 @@ function __sp_delay_exec
 	while test (date +%s) -lt $timestamp_target
 		set idle (math $idle + 1)
 	end
+end
+
+function __sp_echo_postexec_prompt_output -e fish_exit -a clear -d \
+	"Output saved postexec status prompt output"
+	
+	set -q __sp_postexec_prompt_output
+	or return 0
+	
+	for line in $__sp_postexec_prompt_output
+		echo "$line"
+	end
+	
+	test "$clear" = "clear"
+	and set -e -g __sp_postexec_prompt_output
+	
+	return 0
 end
 
 # begin silent updates (avoid reload)
