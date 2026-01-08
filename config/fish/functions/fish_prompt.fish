@@ -601,6 +601,13 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 			end
 		end
 	end)
+	# special care taken for fiddle mode
+	if set -q __sp_fiddle_mode
+		for line in $__sp_postexec_prompt_output
+			echo "$line"
+		end
+		set -e -g __sp_postexec_prompt_output
+	end
 end
 
 function __shellpack_cmd_duration -S -d 'Show command duration'
@@ -676,8 +683,17 @@ function __sp_reset_exit_status -e fish_preexec -d \
 	"Reset exit status variables"
 	set -e -g __saved_pipestatus
 	set -e -g __saved_status
-	set -e -g __sp_postexec_prompt_output
-	set -e -g __sp_postexec_bell
+	# clear previous prompt statuscode output, but also print it so it persists in history
+	if set -q __sp_postexec_prompt_output
+		# do not print if commandline is empty (just enter pressed)
+		# as this would cause a duplicate
+		if test (commandline --current-buffer | string collect) != ""
+			for line in $__sp_postexec_prompt_output
+				echo "$line"
+			end
+		end
+		set -e -g __sp_postexec_prompt_output
+	end
 end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \
