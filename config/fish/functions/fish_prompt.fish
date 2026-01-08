@@ -313,7 +313,7 @@ function fish_prompt_print_segments --no-scope-shadowing
 	# unfortunately this counts as a word char when selecting whole words, hence a version check
 	if ! set -q __sp_poor_prompt_jumps
 		set -g __sp_poor_prompt_jumps no
-		if set -q TMUX && set -q __sp_tmux_ver && test $__sp_tmux_ver -lt 305
+		if set -q TMUX && set -q __sp_tmux_ver && set -q $__sp_tmux_ver && test $__sp_tmux_ver -lt 305
 			set -g __sp_poor_prompt_jumps yes
 		end
 	end
