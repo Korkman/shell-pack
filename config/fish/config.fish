@@ -116,10 +116,24 @@ function load_shell_pack -d "Load shell-pack"
 			if set -q fish_history
 				set -g initial_env $initial_env fish_history=$fish_history
 			end
+			# merge and pass fish_features flags
+			set -l pass_fish_features (string split ',' -- $fish_features)
+			if set -q __sp_reload_fish_features
+				set -a pass_fish_features $__sp_reload_fish_features
+			end
+			if set -q pass_fish_features
+				set pass_fish_features (string join ',' -- $pass_fish_features)
+				set -g initial_env $initial_env fish_features=$pass_fish_features
+			end
 			# escape all list entries for use in eval, replace custom escape sequence with newline escape sequence
 			set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
+			set fish_binary (status fish-path)
+			if ! test -e "$fish_binary"
+				# good luck (fish path changed, let env find it)
+				set fish_binary "fish"
+			end
 			# create a function using eval to execute the pre-escaped string as-is
-			eval function the_end \n exec env --ignore-environment $initial_env fish -l \n end
+			eval function the_end \n exec env --ignore-environment $initial_env $fish_binary -l \n end
 			# emit fish_exit event and give time to reap exit status of children to prevent zombies
 			emit "fish_exit"
 			sleep 1
