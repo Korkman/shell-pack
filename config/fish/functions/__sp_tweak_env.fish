@@ -63,6 +63,9 @@ function __sp_tweak_env -d \
 	# misc tweaks
 	__sp_tweak_user_defaults
 	
+	# init enhanced prompt status
+	__sp_print_enhanced_prompt_exit_status init
+	
 	# list of environment variables to be kept in-sync within tmux sessions
 	# these variables will be imported into the shell when attaching
 	set -g __mmux_imported_environment \
