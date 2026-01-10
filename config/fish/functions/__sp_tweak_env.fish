@@ -118,13 +118,9 @@ function __sp_tweak_user_defaults -d \
 				set -x -g VISUAL "mcedit"
 			case PAGER
 				# default pager setup
-				set -x -g PAGER "less" "-FSXRix4"
+				set -x -g PAGER "less" "-FXRix4"
 				if $__cap_less_has_mouse
 					set -x -g PAGER "$PAGER --mouse"
-				end
-				if command -q batcat
-					set -x -g BAT_PAGER $PAGER -R
-					set -x -g PAGER "batcat"
 				end
 			case LESS_TERMCAP_so
 				# bright yellow background in less highlights (improving manpage readability)
