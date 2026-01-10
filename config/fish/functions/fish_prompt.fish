@@ -732,3 +732,6 @@ function __sp_delay_exec
 		set idle (math $idle + 1)
 	end
 end
+
+# one last live patch in fish_prompt: hand over autoupdates to __sp_autoupdate
+functions -q __sp_autoupdate
