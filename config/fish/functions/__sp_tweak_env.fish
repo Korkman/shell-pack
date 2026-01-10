@@ -339,4 +339,7 @@ function __sp_tweak_live_patches -d \
 	
 	# remove deprecated variables
 	set -e -g __sp_postexec_prompt_output
+	if test "$LESS" = "-ix4" || test "$LESS" = "-ix4 --mouse"
+		set -e -g LESS
+	end
 end
