@@ -155,6 +155,9 @@ function fish_prompt -d \
 	end
 	
 	fish_prompt_print_segments
+	
+	# one last live patch in fish_prompt: hand over autoupdates to __sp_autoupdate
+	functions -q __sp_autoupdate
 end
 
 function __sp_prompt_add_path_segments --no-scope-shadowing
@@ -732,6 +735,3 @@ function __sp_delay_exec
 		set idle (math $idle + 1)
 	end
 end
-
-# one last live patch in fish_prompt: hand over autoupdates to __sp_autoupdate
-functions -q __sp_autoupdate
