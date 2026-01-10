@@ -92,6 +92,7 @@ function __sp_tweak_user_defaults -d \
 		EDITOR \
 		VISUAL \
 		PAGER \
+		LESS \
 		LESS_TERMCAP_so \
 		LESS_TERMCAP_se \
 		VIRTUAL_ENV_DISABLE_PROMPT \
@@ -118,9 +119,16 @@ function __sp_tweak_user_defaults -d \
 				set -x -g VISUAL "mcedit"
 			case PAGER
 				# default pager setup
-				set -x -g PAGER "less" "-FXRix4"
+				# do not add arguments here. it usually points to a binary
+				# and nothing else, people may rely on that.
+				set -x -g PAGER "less"
+			case LESS
+				# less configured in a "git log" compatible way
+				# (it uses $LESS internally, but uses our $LESS if defined)
+				# (-R for all paging is questionable, but this is the cleanest way yet)
+				set -x -g LESS "-Rix4"
 				if $__cap_less_has_mouse
-					set -x -g PAGER "$PAGER --mouse"
+					set -x -g LESS "$LESS --mouse"
 				end
 			case LESS_TERMCAP_so
 				# bright yellow background in less highlights (improving manpage readability)
@@ -331,7 +339,4 @@ function __sp_tweak_live_patches -d \
 	
 	# remove deprecated variables
 	set -e -g __sp_postexec_prompt_output
-	if test "$LESS" = "-ix4" || test "$LESS" = "-ix4 --mouse"
-		set -e -g LESS
-	end
 end
