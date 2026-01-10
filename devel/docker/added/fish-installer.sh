@@ -93,14 +93,12 @@ get_installer_for_distro() {
 	case "$distro" in
 		'debian')
 			# only the two most recent releases have repos. for anything older, use static binary
-			if [ "$distro_version" = "" ] || [ "$distro_version" -ge 13 ]
+			if [ "$distro_version" -ge 12 ]
 			then
-				installer_case="Debian-13"
-			elif [ "$distro_version" -lt 12 ]
-			then
-				installer_case="Static"
-			else
 				installer_case="Debian-$distro_version"
+			else
+				installer_case="Static"
+				
 			fi
 		;;
 		'ubuntu')
@@ -160,20 +158,6 @@ run_installer() {
 			# paste here
 			echo "deb http://download.opensuse.org/repositories/shells:/fish:/$suse_build_path1/Debian_12/ /" | sudo tee "/etc/apt/sources.list.d/shells:fish:$suse_build_path2.list"
 			curl -fsSL "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_12/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
-			sudo apt-get update
-			sudo apt-get -y install fish
-		;;
-		'Debian-11') # bullseye
-			# paste here
-			echo "deb http://download.opensuse.org/repositories/shells:/fish:/$suse_build_path1/Debian_11/ /" | sudo tee "/etc/apt/sources.list.d/shells:fish:$suse_build_path2.list"
-			curl -fsSL "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_11/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
-			sudo apt-get update
-			sudo apt-get -y install fish
-		;;
-		'Debian-10') # buster
-			# paste here
-			echo "deb http://download.opensuse.org/repositories/shells:/fish:/$suse_build_path1/Debian_10/ /" | sudo tee "/etc/apt/sources.list.d/shells:fish:$suse_build_path2.list"
-			curl -fsSL "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_10/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
 			sudo apt-get update
 			sudo apt-get -y install fish
 		;;
