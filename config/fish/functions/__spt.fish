@@ -1,4 +1,11 @@
-function __spt -d "shell-pack theme - returns theme components like colors or glyphs" -a component -a variant
+function __spt -d \
+	"shell-pack theme - returns theme components like colors or glyphs" -a component -a variant
+	# __spt init
+	if test "$component" = "init"
+		__spt_init
+		return
+	end
+	
 	set -l scolor "set_color"
 	if test "$variant" = "bg"
 		set scolor "set_color" "-b"
@@ -294,18 +301,44 @@ function __spt -d "shell-pack theme - returns theme components like colors or gl
 	end
 end
 
+function __spt_init -d \
+	'Initialize shell-pack theme variables'
+	# POWERLINE / NERD FONTS
 
-set -g __cap_colors (tput colors) || begin
-	# if tput fails, fix $TERM and retry
-	if test "$TERM" = "tmux-256color"
-		set -g TERM "screen-256color"
-	else if test "$TERM" = "tmux"
-		set -g TERM "screen"
-	else
-		set -g TERM "linux"
+	# check LC_NERDLEVEL (custom variable passing through default sshd_config)
+	# activate powerline fonts only if set to 1 or higher
+
+	set -q LC_NERDLEVEL
+	or set -gx LC_NERDLEVEL 1
+
+	function __update_nerdlevel --on-variable LC_NERDLEVEL
+		# nerdlevel 1: bashrc launches fish
+		
+		set -g theme_greeting_add ""
+		
+		# nerdlevel 2: powerline font installed
+		if test $LC_NERDLEVEL -gt 1
+			set -g theme_powerline_fonts yes
+		else
+			set -g theme_powerline_fonts no
+		end
+
+		# nerdlevel 3: nerdfont installed
+		if test $LC_NERDLEVEL -gt 2
+			set -g theme_nerd_fonts yes
+		else
+			set -g theme_nerd_fonts no
+		end
 	end
-	set -g __cap_colors (TERM=$TERM tput colors)
-end
-set -g fish_color_command (__spt fish_command)
-set -g fish_color_autosuggestion (__spt fish_autosuggestion)
 
+	__update_nerdlevel
+
+	
+	set -g __cap_colors (tput colors) || set -g __cap_colors 8
+
+	set -g fish_prompt_pwd_dir_length 0
+	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
+	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
+	set -g fish_color_command (__spt fish_command)
+	set -g fish_color_autosuggestion (__spt fish_autosuggestion)
+end

@@ -6,11 +6,6 @@ if ! set -q __sp_load
 		set __sp_load "yes"
 	end
 end
-if ! set -q __sp_load_keybinds
-	if status --is-interactive
-		set __sp_load_keybinds "yes"
-	end
-end
 
 function load_shell_pack -d "Load shell-pack"
 	# determine important paths early
@@ -47,168 +42,20 @@ function load_shell_pack -d "Load shell-pack"
 		set -g disable_autoupdate yes
 	end
 	
-	# treat TERM unknown to infocmp as xterm-256color, a compromise
-	# for new terminal emulators which typically supercede xterm-256color
-	# in relevant capabilities (xterm-kitty, foot, etc.)
-	# note that installing respective terminfo packages is the better solution
-	if command -q infocmp && ! infocmp &> /dev/null
-		set -g __sp_trueterm "$TERM"
-		set -gx TERM "xterm-256color"
-	end
-	
-	# detect OS capabilities (very rough)
-	if [ (uname) = "Linux" ]
-		set -g __cap_getent true
-
-		set -g __cap_dscacheutil false
-		set -g __cap_finger false
-		set -g __cap_ss true
-	else
-		set -g __cap_getent false
-
-		set -g __cap_dscacheutil true
-		set -g __cap_finger true
-		set -g __cap_ss false
-	end
-
-	# lazyloading capability variables
-	set -g __cap_ls_has_time_style "__sp_cap_ls_has_time_style"
-	set -g __cap_env_has_null "__sp_cap_env_has_null"
-	set -g __cap_stat_has_printf "__sp_cap_stat_has_printf"
-	set -g __cap_less_has_mouse "__sp_cap_less_has_mouse"
-	set -g __cap_find_has_xtype "__sp_cap_find_has_xtype"
-	
-	# reload function
-	# - backups up initial environment
-	# - resets environment to backup
-	# - replaces running process with new fish instance
-	if $__cap_env_has_null
-		# only Linux versions of "env" have --null
-		# backup initial environment
-		set -g initial_env (\
-			# env: switch to NUL delimited output so we can work with newline values
-			env --null | \
-			# sed: replace newlines with custom escape sequence
-			sed ':a;N;$!ba;s/\n/putAfreakinNewlineHere342273/g' | \
-			# sed: replace NUL bytes with newlines, making initial_env a list
-			sed 's/\\o0/\n/g' \
-		)
-		# decrease SHLVL to offset the increment which already happened
-		set -g initial_env $initial_env SHLVL=(math $SHLVL - 1)
-		function reload -d "Reset environment (mostly)"
-			if ! isatty 1
-				if test -w /dev/tty
-					policeline "Reload: STDOUT is not a terminal, failing" > /dev/tty
-				end
-				return 2
-			end
-			
-			if set -q MC_SID
-				# TODO: new instance needs to:
-				# - copy over fish_prompt and fish_prompt_mc
-				# - erase fish_right_prompt
-				echo "Cannot reload within midnight commander"
-				return 1
-			end
-			# pass thru these specific variables
-			if [ "disable_autoupdate" = "yes" ]
-				set -g initial_env $initial_env disable_autoupdate=$disable_autoupdate
-			end
-			if set -q __session_tag
-				set -g initial_env $initial_env __session_tag=$__session_tag
-			end
-			if set -q fish_private_mode
-				set -g initial_env $initial_env fish_private_mode=$fish_private_mode
-			end
-			if set -q fish_history
-				set -g initial_env $initial_env fish_history=$fish_history
-			end
-			# merge and pass fish_features flags
-			set -l pass_fish_features (string split ',' -- $fish_features)
-			if set -q __sp_reload_fish_features
-				set -a pass_fish_features $__sp_reload_fish_features
-			end
-			if set -q pass_fish_features
-				set pass_fish_features (string join ',' -- $pass_fish_features)
-				set -g initial_env $initial_env fish_features=$pass_fish_features
-			end
-			# escape all list entries for use in eval, replace custom escape sequence with newline escape sequence
-			set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
-			set fish_binary (status fish-path)
-			if ! test -e "$fish_binary"
-				# good luck (fish path changed, let env find it)
-				set fish_binary "fish"
-			end
-			# emit pre-reload event
-			
-			emit "sp_pre_reload"
-			# create a function using eval to execute the pre-escaped string as-is
-			eval function the_end \n exec env --ignore-environment $initial_env $fish_binary -l \n end
-			# emit fish_exit event and give time to reap exit status of children to prevent zombies
-			emit "fish_exit"
-			sleep 1
-			# run the function
-			the_end
-			#exec env fish -l # NOTE: this locks up midnight commander!
-		end
-	else
-		# cheap reload function for other OS
-		function reload -d "Reset environment (mostly)"
-			if set -q MC_SID
-				# TODO: new instance needs to:
-				# - copy over fish_prompt and fish_prompt_mc
-				# - erase fish_right_prompt
-				echo "Cannot reload within midnight commander"
-				return 1
-			end
-			# emit fish_exit event and give time to reap exit status of children to prevent zombies
-			emit "fish_exit"
-			sleep 1
-			exec env fish -l
-		end
-	end
-
-	# polyfills
-	if ! command -sq tac
-		function tac
-			tail -r -- $argv
-		end
-	end
-	
-	# test if the command 'kill' is available. if not, improvise!
-	# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
-	# since kill is not a builtin (yet), we depend on it here to be a command
-	# this can happen in docker images or similar minimalistic containers.
-	# mc will hang whatever we do, so this polyfill will kill using the hopefully
-	# built-in of another installed shell ...
-	if ! command -q kill and ! builtin -q kill
-		function kill -d "Kill polyfill for mc subshell - see fish_prompt.fish"
-			/usr/bin/env sh -c "kill $argv"
-		end
-	end
-
-	# these functions are possibly called many times a second, so they are not put in dedicated function files
-	function __sp_getmtime -a file -d \
-		'Get modification time of a file'
-		if $__cap_ls_has_time_style
-			set -l output (command ls -nl --time-style=+%s "$file" | string split --no-empty ' ')
-			and echo "$output[6]"
-		else if $__cap_stat_has_printf
-			stat --printf '%Y' "$file"
-		else
-			stat -f %m "$file"
-		end
-	end
-
-	function __sp_sigusr1 -s SIGUSR1
-		# only a placeholder to guarantee the signal is handled,
-		# not killing us when no handler is present (reload & timer pulse race precaution)
-	end
+	# tweak environment
+	# - polyfills
+	# - $__cap_* capabilities
+	# - default EDITOR, PAGER, TERM, etc.
+	# - keybinds
+	__sp_tweak_env
 	
 	# hash and mtime of config.fish for auto reload
 	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
 	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
-
+	
+	# initialize __sp_autoupdate
+	__sp_autoupdate init
+	
 	# provide $short_hostname globally
 	set -g short_hostname (echo "$hostname" | string replace --regex '\..*' '')
 
@@ -241,100 +88,13 @@ function load_shell_pack -d "Load shell-pack"
 		end
 	end
 	
-	# LESS options: case-insensitive search by default
-	if ! set -x -q LESS
-		set -x -g LESS "-ix4"
-		if $__cap_less_has_mouse
-			set -x -g LESS "$LESS --mouse"
-		end
-	end
-	
-	# default to mcedit for EDITOR if not set
-	if test -z "$EDITOR"
-		set -x -g EDITOR "mcedit"
-	end
-	
-	# POWERLINE / NERD FONTS
-
-	# check LC_NERDLEVEL (custom variable passing through default sshd_config)
-	# activate powerline fonts only if set to 1 or higher
-
-	set -q LC_NERDLEVEL
-	or set -gx LC_NERDLEVEL 1
-
-	function __update_nerdlevel --on-variable LC_NERDLEVEL
-		# nerdlevel 1: bashrc launches fish
-		
-		set -g theme_greeting_add ""
-		
-		# nerdlevel 2: powerline font installed
-		if test $LC_NERDLEVEL -gt 1
-			set -g theme_powerline_fonts yes
-		else
-			set -g theme_powerline_fonts no
-		end
-
-		# nerdlevel 3: nerdfont installed
-		if test $LC_NERDLEVEL -gt 2
-			set -g theme_nerd_fonts yes
-		else
-			set -g theme_nerd_fonts no
-		end
-	end
-
-	__update_nerdlevel
-	
-	# list of environment variables to be kept in-sync within tmux sessions
-	set -g __mmux_imported_environment \
-	LC_NERDLEVEL SHELL DISPLAY XAUTHORITY LANG SSH_AUTH_SOCK SSH_CLIENT \
-	SSH_CONNECTION SSH_TTY SSH_AGENT_PID SSH_ASKPASS DBUS_SESSION_BUS_ADDRESS
-
-	mmux --grab-hooks
-
 	# detect and coordinate advanced shell integration loading (if not in mc subshell, not a dumb terminal, etc.)
 	if test "$MC_SID" = ""; and test "$TERM" != "dumb"; and test "$TERM" != "linux"; and status --is-interactive
 		__sp_load_shell_integrations
 	end
 
-	# bright yellow background in less highlights (improving manpage readability)
-	if ! set -x -q LESS_TERMCAP_so
-		set -x -g LESS_TERMCAP_so (set_color -b "ff0" && set_color "black")
-	end
-	if ! set -x -q LESS_TERMCAP_se
-		set -x -g LESS_TERMCAP_se (set_color normal)
-	end
-
-	# prompt already sports VIRTUAL_ENV support, disable activate.fish version
-	if ! set -q VIRTUAL_ENV_DISABLE_PROMPT
-		set -g VIRTUAL_ENV_DISABLE_PROMPT yes
-	end
-	
-	if [ "$__sp_load_keybinds" = "yes" ]
-		__sp_keybinds
-	end
-	
-	# use d-tab to quickly navigate in tagged dirs
-	alias d cdtagdir
-
-	# actual preferences
-
-	set -g fish_prompt_pwd_dir_length 0
-	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
-	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
-
-	set -g fish_color_command '00ff87'
-	set -g fish_color_autosuggestion '9e9e9e'
-	
-	# this will be unset on pre-exec
+	# have the right prompt show pid and shlvl once
 	set -g __right_prompt_pid_once ""
-
-	# screen / tmux shortcuts
-	alias one "mmux one --exclusive \$argv"
-	alias shareone "mmux one --exclusive --share \$argv"
-	alias forceone "mmux one --exclusive --force \$argv"
-
-	# set --universal __multiplexer_names to a list of tmux / screen session names
-	set -q __multiplexer_names || set --universal __multiplexer_names pb rbeck
 end
 
 if [ "$__sp_load" = "yes" ]

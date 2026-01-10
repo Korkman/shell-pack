@@ -43,7 +43,7 @@ fzf fuzzy search in RESULTS LIST:
    | combines search strings with boolean OR
    ctrl-r toggles regular expression search indicated by "/RE"
 
-rrg keybindings:
+rrg keybinds:
    exit                             alt-q        esc
    toggle pane                      alt-p
    show content in pane (default)   alt-o

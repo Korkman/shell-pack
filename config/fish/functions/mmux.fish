@@ -36,7 +36,7 @@ Attach to or create a screen / tmux session SESSION.
 		
 		if ! set -q MC_SID
 			# do not update environment inside mc
-			function __mmux_tmux_update_shell_env --on-event fish_preexec
+			function __mmux_tmux_update_shell_env --on-event fish_preexec --on-event fish_focus_in
 				if set -q TMUX
 					# inside TMUX, grab environment update with extra variables not imported
 					set -l accept_env $__mmux_imported_environment __sp_tmux_ver

@@ -558,62 +558,6 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 	#end
 end
 
-function __sp_autoupdate -e fish_postexec -d \
-	"Trigger autoupdate check after command execution"
-	# if not already pending, detect if config.fish has to be reloaded
-	if [ "$__reload_pending" != "yes" ]
-		if [ "$__sp_config_fish_file" = "" ] \
-			|| [ "$__sp_config_fish_md5" = "" ] \
-			|| [ (__sp_getmtime $__sp_config_fish_file) -ne $__sp_config_fish_mtime ]
-			
-			set -l new_md5 "invalid"
-			if functions -q __sp_getmd5
-				set new_md5 (__sp_getmd5 $__sp_config_fish_file)
-			end
-
-			if [ "$new_md5" = "$__sp_config_fish_md5" ]
-				# unchanged md5 - update timestamp, no reload necessary
-				#echo "config.fish changed mtime, but md5 is equal, no action required"
-				set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
-			else
-				# hint update
-				set -g __reload_pending yes
-			end
-		end
-	end
-	
-	# when no jobs are running, consider autoupdate
-	if [ "$__reload_pending" = "yes" ] \
-		&& [ "$__watched_job_pids" = "" -a "$disable_autoupdate" != "yes" ]
-		
-		# force a newline in case command output did not end with one
-		echo
-		# and output pending exit status line
-		__sp_print_enhanced_prompt_exit_status
-		
-		# auto-update
-		policeline "Reload: FISH config modified, environment reset"
-		reload
-	end
-	
-	# monitor keybinds file mtime, reload if changed
-	if [ "$__sp_keybinds_mtime" != "" ]
-		if [ (__sp_getmtime $__sp_keybinds_file) -ne $__sp_keybinds_mtime ]
-			__sp_keybinds
-		end
-	end
-end	
-
-function __sp_print_enhanced_prompt_exit_status --on-event fish_prompt --on-event fish_exit --on-event sp_pre_reload -d \
-	"Print saved exit status line once, outside of OSC 133 markers for command output and prompt"
-	if [ "$__display_cmd_stats" = "yes" ]
-		for line in $__sp_enhanced_prompt_exit_status
-			echo "$line"
-		end
-		set -e -g __display_cmd_stats
-	end
-end
-
 function __shellpack_cmd_duration -S -d 'Show command duration'
 	[ "$theme_display_cmd_duration" = "no" ]
 	and return
@@ -788,15 +732,3 @@ function __sp_delay_exec
 		set idle (math $idle + 1)
 	end
 end
-
-# begin silent updates (avoid reload)
-
-# from time to time, upgraded shells can be live patched here until a config.fish
-# upgrade becomes necessary, at which point stuff gets copied over and live shells will
-# reload with a policeline
-
-# (insert silent updates here)
-# remove deprecated variable
-set -e -g __sp_postexec_prompt_output
-
-# end silent updates
