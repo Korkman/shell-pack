@@ -14,6 +14,17 @@ function cheat
 		return
 	end
 
+	if [ "$argv[1]" = "--chtsh" ]
+		set -e argv[1]
+		if test -z "$argv[1]"
+			dl --silent https://cheat.sh | __sp_pager -R
+		else
+			dl --silent https://cheat.sh/$argv[1] | __sp_pager -R
+		end
+		return
+	end
+
+	# prefer native cheat command if installed
 	if command -v cheat > /dev/null && [ "$argv[1]" != "--shell-pack" ]
 		command cheat $argv
 		if [ "$argv[1]" = "" ]
@@ -23,12 +34,23 @@ function cheat
 			echo "    (shell-pack detected 'cheat' is installed)"
 		end
 		return
+	else if ! test -z "$argv[1]" && test "$argv[1]" != "--shell-pack" && test "$argv[1]" != "--help"
+		cheat --chtsh $argv
+		return
 	end
-	
-	
 
 	echo "
-Fish & shell-pack "(shell-pack-version)" cheatsheet
+Shell-pack "(shell-pack-version)" integrated cheat sheets and cht.sh client
+
+========= Cheat sheets =========
+
+Show this cheatsheet          cheat
+Show glyphs cheatsheet        cheat --glyphs
+Show mc cheatsheet            cheat --mc
+Show tmux cheatsheet          cheat --tmux
+Query cheat.sh for TOPIC      cheat TOPIC
+  More information            cheat --chtsh
+
 
 ========= Keymappings =========
 
@@ -76,11 +98,6 @@ Clear line, exit shell        F10
 
 
 ========= Quick commands =========
-
-Show this cheatsheet          cheat
-Show glyphs cheatsheet        cheat --glyphs
-Show mc cheatsheet            cheat --mc
-Show tmux cheatsheet          cheat --tmux
 
 Launch POSIX-compliant shell  oldshell
 
@@ -336,7 +353,7 @@ notes:
   - most notably enabling ssh agent forwarding
 - a new window will inherit the working directory of the foreground process
 - 'ctrl-a, :' enters command mode
-  - run 'list-keys' to see all built-in and configured keybindings
+  - run 'list-keys' to see all built-in and configured keybinds
   - run 'list-commands' for all available commands
 
 " | less -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
