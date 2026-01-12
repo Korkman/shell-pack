@@ -306,10 +306,10 @@ function __cheat_tmux
 	echo "
 tmux keys - as configured by shell-pack
 
-ctrl-a: is synonym for ctrl-b, because it is more accessible (and tradition)
+ctrl-a: is an alias for ctrl-b because it is more accessible (and tradition)
 ctrl-a, lift keys, then
   f1: show this help
-      alias: h
+    alias: h
   d: detach session, leaving it running in background
   r: reload config
   c: create new window
@@ -322,13 +322,12 @@ ctrl-a, lift keys, then
   shift-M: monitor window for activity (once)
   _: monitor window for silence (once)
   esc: enter copy-mode (scroll up to 50000 lines in history)
-    alias: pgup, mouse-wheel-up
-    alias: up, will also scroll to previous prompt
-    alias: down, will also scroll to next prompt
+    alias: up, pgup, mouse-wheel-up, immediately scroll up
+    alias: y, alt-up, will immediately scroll to previous prompt
     alias: alt-pgup, scroll to start of history
     in copy-mode:
       space / enter: modify and copy selection
-      alt-up / alt-down: scroll to previous / next prompt
+      y / x / alt-up / alt-down: scroll to previous / next prompt
       alt-pgup / alt-pgdn: scroll to start / end of history
   v: paste previously copied text
   |: split window into panes left and right
@@ -340,6 +339,9 @@ ctrl-a, lift keys, then
   m: mark pane
   s: swap pane with marked
   shift-b: toggle broadcast mode, sending keystrokes to all panes
+  w: show sessions and their windows
+  shift-W: move window to other session with picker
+  alt-W: move window to (new) other session
   shift-Q: break out a pane into a dedicated window
     alias: !
   shift-k: kill all windows and exit (if confirmed)
