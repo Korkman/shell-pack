@@ -65,7 +65,7 @@ function shell-pack-deps-install-fzf
 	echo "Downloading $url ..."
 	dl -q "$url" > fzf.tar.gz || return 3
 	
-	cfd fzf.tar.gz || return 4
+	cfd fzf.tar.gz . || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/fzf ..."
 	rm -f "$__sp_dir/bin/fzf"
@@ -133,7 +133,7 @@ function shell-pack-deps-install-ripgrep
 	echo "Downloading $url ..."
 	dl -q "$url" > ripgrep.tar.gz || return 3
 	
-	cfd ripgrep.tar.gz || return 4
+	cfd ripgrep.tar.gz . || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/rg ..."
 	cd "ripgrep-""$pversion""-"* || return 5
@@ -182,7 +182,7 @@ function shell-pack-deps-install-dool
 	echo "Downloading $url ..."
 	dl -q "$url" > dool.tar.gz || return 3
 	
-	cfd dool.tar.gz || return 4
+	cfd dool.tar.gz . || return 4
 	
 	echo "Installing to ""$__sp_dir""/bin/dool ..."
 	cd "dool-""$pversion" || return 5
