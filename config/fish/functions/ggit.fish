@@ -106,7 +106,7 @@ function ggit -d \
 			case "diff"
 				__ggit_msg_hold
 				__ggit_set_filename "$results[3]" || return 2 
-				git diff --color=always "$filename" | less -R
+				git diff --color=always "$filename" | __sp_pager -R
 				continue
 			case "add"
 				__ggit_msg_hold
@@ -234,7 +234,7 @@ end
 
 function __ggit_diff_full
 	__ggit_set_filename "$argv[1]" || return
-	git diff --color=always -- "$filename" | less
+	git diff --color=always -- "$filename" | __sp_pager
 end
 
 function __ggit_file_from_status -d "Strip git status from beginning of line"

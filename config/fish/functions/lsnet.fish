@@ -6,7 +6,7 @@ function lsnet
   set -l procWidth (math $COLUMNS-110)
   if $__cap_ss
     if test "$procWidth" -gt 20
-      ss -np -A inet | tail -n+2 | ss_procfilter | awk "{print \$5,\$6,substr(\$7, 0, $procWidth),\$1}" | sort -k3 | awk 'BEGIN { print "Local", "Remote", "Processes", "Type"} {print $0}' | column -t
+      ss -np -A inet | tail -n+2 | ss_procfilter | awk "{print \$5,\$6,substr(\$7, 0, $procWidth),\$1}" | sort -k3 | awk 'BEGIN { print "Local", "Remote", "Processes", "Type"} {print $0}' | __sp_column_t
     else
       # narrow display
       set procWidth (math $COLUMNS-3)
@@ -14,7 +14,7 @@ function lsnet
     end
   else
 		# netstat (macos) edition
-		__lsnet_netstat_headered | column -t
+		__lsnet_netstat_headered | __sp_column_t
   end
 end
 

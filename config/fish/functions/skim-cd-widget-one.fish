@@ -87,7 +87,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 				set result (string replace --regex '^//list:' '' -- "$result")
 				set -l listing "$PWD/$result"
 				set -al listing (ls -al --color=auto "$result")
-				for litem in $listing; echo $litem; end | less
+				for litem in $listing; echo $litem; end | __sp_pager
 				set cd_success 0
 				continue
 			else if string match -q --regex '^//preview:' -- "$result"

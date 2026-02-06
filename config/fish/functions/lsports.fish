@@ -7,7 +7,7 @@ function lsports
 	set procWidth (math $COLUMNS-58)
 	if $__cap_ss
 		if test "$procWidth" -gt 20
-			ss -nlp -A inet | tail -n+2 | ss_procfilter | awk "{ print \$5,substr(\$7, 0, $procWidth),\$1}" | sort -k2 | awk 'BEGIN { print "Listen", "Processes", "Type"} { print $0 }' | column -t | uniq
+			ss -nlp -A inet | tail -n+2 | ss_procfilter | awk "{ print \$5,substr(\$7, 0, $procWidth),\$1}" | sort -k2 | awk 'BEGIN { print "Listen", "Processes", "Type"} { print $0 }' | __sp_column_t | uniq
 		else
 			# narrow display
 			set procWidth (math $COLUMNS-3)
@@ -15,7 +15,7 @@ function lsports
 		end
 	else
 		# netstat (macos) edition
-		__lsports_netstat_headered | column -t
+		__lsports_netstat_headered | __sp_column_t
 	end
 end
 

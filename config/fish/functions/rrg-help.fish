@@ -66,5 +66,5 @@ Same search engine as rrg, but shows all matches in specified file.
 For more help, see
    rrg-in-file --help
 
-" | less --clear-screen '-Ps rrg help | less - q to quit, h for help $'
+" | __sp_pager --clear-screen '-Ps rrg help | less - q to quit, h for help $'
 end

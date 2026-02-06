@@ -41,6 +41,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	while true
 		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
 		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
+		
 		eval "$cmd_find | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
 		
 		if [ -n "$result" ]
@@ -52,7 +53,8 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				# navigate one up
 				cd ..
 				set paste_absolute_path 'yes'
-			else if string match -q --regex "^//symlinks:(?<skim_query>.*)" -- "$result"
+			else if string match -q --regex "^//symlinks:(?<new_skim_query>.*)" -- "$result"
+				set skim_query "$new_skim_query"
 				if [ "$symlinks" = '-P' ]
 					set symlinks '-L'
 				else
@@ -76,7 +78,7 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 			else if string match -q --regex '^//list:' -- "$result"
 				# list result
 				set result (string replace --regex '^//list:' '' -- "$result")
-				ll --color=auto "$result" | less
+				ll --color=auto "$result" | __sp_pager
 				continue
 			else
 				# cd to result

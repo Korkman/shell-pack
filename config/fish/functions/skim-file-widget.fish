@@ -59,13 +59,15 @@ function skim-file-widget -d "List files and folders"
 		--prompt "'Filter paths: '" \
 		| while read -l r; set result $result $r; end
 		
-		if string match -q --regex "^//up:(?<skim_query>.*)" -- "$result[1]"
+		if string match -q --regex "^//up:(?<new_skim_query>.*)" -- "$result[1]"
+			set skim_query "$new_skim_query"
 			cd ..
 			set paste_absolute_path 'yes'
 			echo
 			__force_redraw_prompt
 			continue
-		else if string match -q --regex "^//down:(?<skim_query>.*)" -- "$result[1]"
+		else if string match -q --regex "^//down:(?<new_skim_query>.*)" -- "$result[1]"
+			set skim_query "$new_skim_query"
 			if test -d "$result[2]"
 				cd "$result[2]"
 			end
@@ -73,17 +75,20 @@ function skim-file-widget -d "List files and folders"
 			echo
 			__force_redraw_prompt
 			continue
-		else if string match -q --regex "^//prev:(?<skim_query>.*)" -- "$result[1]"
+		else if string match -q --regex "^//prev:(?<new_skim_query>.*)" -- "$result[1]"
+			set skim_query "$new_skim_query"
 			quick_dir_prev
 			echo
 			__force_redraw_prompt
 			continue
-		else if string match -q --regex "^//next:(?<skim_query>.*)" -- "$result[1]"
+		else if string match -q --regex "^//next:(?<new_skim_query>.*)" -- "$result[1]"
+			set skim_query "$new_skim_query"
 			quick_dir_next
 			echo
 			__force_redraw_prompt
 			continue
-		else if string match -q --regex "^//symlinks:(?<skim_query>.*)" -- "$result[1]"
+		else if string match -q --regex "^//symlinks:(?<new_skim_query>.*)" -- "$result[1]"
+			set skim_query "$new_skim_query"
 			if [ "$symlinks" = '-P' ]
 				set symlinks '-L'
 			else

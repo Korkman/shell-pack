@@ -1374,7 +1374,7 @@ function __qssh_exec --no-scope-shadowing
 		__qssh_cache_invalidate
 		
 	else if set -q _flag_help
-		__qssh_mru_pick_help | less -R
+		__qssh_mru_pick_help | __sp_pager -R
 		
 	else if set -q _flag_exit
 		__qssh_exit $hostdef

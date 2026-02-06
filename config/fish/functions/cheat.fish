@@ -162,7 +162,7 @@ Create and edit a template         create [ bash | fish | service | ... ] FILE
 Encrypt a file                     qcrypt -e [--gpg] FILE OUTFILE
 Decrypt a stream                   cat data | qcrypt -d [--gpg] | cat
 
-	" | less -P "cheat --shell-pack | less - q to quit, h for help" '+G' '+g'
+	" | __sp_pager -P "cheat --shell-pack | less - q to quit, h for help" '+G' '+g'
 end
 
 function __cheat_glyphs
@@ -299,7 +299,7 @@ file manager:
   Alt-S: prefix search in file listing, syntax highlighting in mcedit
   Alt-D: show bookmarks list (including shell-pack tagged dirs)
   Arrows: navigate (lynx-like motion enabled)
-" | less -P "cheat --mc | less - q to quit, h for help" '+G' '+g'
+" | __sp_pager -P "cheat --mc | less - q to quit, h for help" '+G' '+g'
 end
 
 function __cheat_tmux
@@ -358,5 +358,5 @@ notes:
   - run 'list-keys' to see all built-in and configured keybinds
   - run 'list-commands' for all available commands
 
-" | less -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
+" | __sp_pager -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
 end

@@ -40,6 +40,12 @@ then
 	filter() {
 		column -t
 	}
+elif command -v fishcall > /dev/null
+then
+	# use pure-fish implementation for better cross-platform support
+	filter() {
+		fishcall __sp_column_t
+	}
 else
 	# rough formatting
 	filter() {

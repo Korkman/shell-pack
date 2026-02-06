@@ -47,7 +47,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'alt-v:execute(nullerror vi +{2} {1}),'\
 		'f3:execute(nullerror fishcall mcview {1}),'\
 		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
-		'alt-l:execute(clear; nullerror less +{2}g {1}),'\
+		'alt-l:execute(clear; cat {1} | fishcall __sp_pager +{2}g),'\
 		'alt-h:execute(fishcall rrg-help),'\
 		'alt-q:abort,'\
 		'f10:abort,'\
@@ -59,7 +59,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'home:pos(0),end:pos(-1)'\
 	)
 	
-	printf 'alt-h:help enter:results-in-file a-p:pane a-l:less\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | read -lz help_text
+	printf 'alt-h:help enter:results-in-file a-p:pane a-l:pager\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | read -lz help_text
 	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
