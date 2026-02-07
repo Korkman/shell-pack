@@ -6,3 +6,7 @@ This distribution includes the VS Code Shell Integration script, which is:
 This distribution also includes the iTerm2 Shell Integration script, which is:
   Licensed under the GNU General Public License v2
   (https://github.com/gnachman/iTerm2/blob/master/LICENSE)
+
+This distribution also includes functions inspired by or copied from the skim-rs project, which is:
+  Licensed under the MIT License
+  https://github.com/skim-rs/skim/blob/master/LICENSE

@@ -1,5 +1,5 @@
 # fast grep using ripgrep, with visual picker for editing and preview
-function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary files. Pipes unlimited, plain filenames. Displays rich skim frontend on terminal."
+function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary files. Pipes unlimited, plain filenames. Displays rich fzf frontend on terminal."
 	if [ "$SHLVL" -gt 100 ]
 		echo "Shell level too deep. Are you sleeping on the Enter key?"
 		return 1
@@ -126,15 +126,15 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 			--ansi \
 			--prompt "Fuzzy search in list: " \
 			--layout reverse
-		set skim_status $status
+		set fzf_status $status
 		echo
 		
 		# interpret status:
 		# rg exits with 0 for found, 1 for not found, 2 for error
-		# skim exits with 130 for esc pressed, 0 for selection was made
+		# fzf exits with 130 for esc pressed, 0 for selection was made
 		if [ $main_rg_status -le 1 ]
-			if [ $skim_status -ne 0 -a $skim_status -ne 130 ]
-				return $skim_status
+			if [ $fzf_status -ne 0 -a $fzf_status -ne 130 ]
+				return $fzf_status
 			else
 				clear
 				return 0

@@ -1,29 +1,8 @@
-function skim-cd-widget-one -d "Change directory without changing command"
-	# NOTE: the behavior is very different from the original skim-cd-widget-one
-	# - it does not substitute the last token of the command with the
-	#   arrival directory, nor does it search for it
-	# - it allows travelling multiple levels up and down
-	# - the commandline stays untouched, so you can chdir without ctrl-c
-
-	if [ "$argv[1]" = "--dotfiles" ]
-		set dotfiles_arg "--dotfiles"
-		skim-dotfiles yes
-	else
-		set dotfiles_arg ""
-		skim-dotfiles no
-	end
-	if $__cap_find_has_xtype
-		set arg_xtype '-xtype'
-	else
-		set arg_xtype '-type'
-	end
-	
-	set -l dir '.'
-	set -l skim_query ''
-	set -l original_dir "$PWD"
-	set -l paste_absolute_path 'no'
-
-	set -l skim_binds (printf %s \
+# inspired by skim/fzf key-bindings.fish
+function __sp_cd_dive -d \
+	"Change directory - dive one level"
+	set -l fzf_header "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
+	set -l fzf_binds (printf %s \
 	"enter:become(echo //final:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
 	"ctrl-v:become(echo //paste:{})+accept,"\
@@ -34,18 +13,35 @@ function skim-cd-widget-one -d "Change directory without changing command"
 	"ctrl-q:abort,"\
 	"esc:cancel"
 	)
-	set -l skim_help "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
 	
-	set -l cmd_find "
-	command find \$dir -mindepth 1 -maxdepth 1 \\( $SKIM_DOTFILES_FILTER \\) \
-	-o $arg_xtype d -print 2> /dev/null | skim-csort | awk 'BEGIN {print \".\"} {print \$0}' | sed 's@\./@@'"
-
-	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 80%
+	set -l dir '.'
+	set -l fzf_query ''
+	set -l original_dir "$PWD"
+	set -l paste_absolute_path 'no'
+	
 	while true
-		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
-		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
-		eval "$cmd_find | "(__skimcmd)' --ansi --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
-
+		set -l find_args find $dir -mindepth 1 -maxdepth 1
+		if [ "$argv[1]" = "--dotfiles" ]
+			set -a find_args -false
+		else
+			set -a find_args -path '.*/.*'
+		end
+		if $__cap_find_has_xtype
+			set -a find_args -o -xtype d
+		else
+			set -a find_args -o -type d
+		end
+		set -a find_args -print
+		
+		set -l fzf_args fzf --ansi --header "$fzf_header" --query "$fzf_query" --bind "$fzf_binds" --height 80% --reverse
+		
+		command $find_args 2> /dev/null \
+		| __sp_csort \
+		| awk 'BEGIN {print "."} {print $0}' \
+		| sed 's@^\./@@' \
+		| command $fzf_args \
+		| read -l result
+		
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]
 				quick_dir_prev
@@ -104,7 +100,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 				set paste_absolute_path 'yes'
 			end
 			if test $cd_success
-				set skim_query ""
+				set fzf_query ""
 				
 				echo
 				__force_redraw_prompt
@@ -122,6 +118,7 @@ function skim-cd-widget-one -d "Change directory without changing command"
 
 	commandline -f repaint
 end
-function skim-csort
+
+function __sp_csort
 	LC_ALL=C sort
 end

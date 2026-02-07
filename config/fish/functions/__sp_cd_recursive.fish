@@ -1,8 +1,7 @@
-function __sp_cd_recursive -d "Change directory (recusrive search)"
-	set -l original_dir "$PWD"
-	set -l paste_absolute_path 'no'
-	
-	set -l fzf_query ''
+# inspired by skim/fzf key-bindings.fish
+function __sp_cd_recursive -d \
+	"Change directory - recursive search"
+	set -l fzf_header 'recursive cd | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
 	set -l fzf_binds (printf %s \
 	"ctrl-v:become(echo //paste:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
@@ -13,7 +12,11 @@ function __sp_cd_recursive -d "Change directory (recusrive search)"
 	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l fzf_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
+	
+	set -l original_dir "$PWD"
+	set -l paste_absolute_path 'no'
+	
+	set -l fzf_query ''
 
 	set -l symlinks '-P'
 	while true
@@ -35,7 +38,7 @@ function __sp_cd_recursive -d "Change directory (recusrive search)"
 		set -a find_args -print
 		
 		# construct fzf arguments
-		set -l fzf_args fzf --header "$fzf_help" --query "$fzf_query" --bind "$fzf_binds" --height 40%
+		set -l fzf_args fzf --header "$fzf_header" --query "$fzf_query" --bind "$fzf_binds" --height 40%
 		
 		command $find_args 2> /dev/null | sed 's@^\./@@' | command $fzf_args | read -l result
 		
@@ -56,6 +59,7 @@ function __sp_cd_recursive -d "Change directory (recusrive search)"
 					set symlinks '-P'
 				end
 			else if string match -q --regex '^//down:' -- "$result"
+				set fzf_query ''
 				# navigate one down
 				set result (string replace --regex '^//down:' '' -- "$result")
 				if [ -n "$result" ]

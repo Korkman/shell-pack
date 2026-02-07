@@ -6,7 +6,7 @@ function qssh -d \
 	
 	# non-standard dependencies:
 	# - requires "fish" (tested with 3.1.2)
-	# - requires fuzzy ("fzf")
+	# - requires fzf
 	# standard dependencies:
 	# - requires openssh ("ssh", "ssh-keygen", "ssh-copy-id")
 	# - requires netcat ("nc")
@@ -42,7 +42,7 @@ function qssh -d \
 	set -x __qssh_tmp_host_file ~/.ssh/temporary_known_hosts
 	set -x __qssh_db_mru_file ~/.ssh/qssh_mru.list
 	set -x __qssh_db_autocomplete_cache_file ~/.ssh/qssh_autocomplete.list
-	set -x __qssh_db_skim_cache_file ~/.ssh/qssh_skim.list
+	set -x __qssh_db_fzf_cache_file ~/.ssh/qssh_skim.list
 	set -x __qssh_interval_compact_db 200
 	set -x __qssh_controlpath_prefix "~/.ssh/qssh-cp-"
 	set -x __qssh_default_user "root" # instead of $USER
@@ -91,7 +91,7 @@ function qssh -d \
 		if contains -- --qssh-update-cache $argv
 			__qssh_db_mru_table __qssh_mru_autocomplete_host_table_cb | flock "$__qssh_db_autocomplete_cache_file" sh -c "cat > '$__qssh_db_autocomplete_cache_file'"
 			set -x cnt_control_persist_checks 0
-			__qssh_db_mru_table __qssh_mru_pick_table_cb | flock "$__qssh_db_skim_cache_file" sh -c "cat > '$__qssh_db_skim_cache_file'"
+			__qssh_db_mru_table __qssh_mru_pick_table_cb | flock "$__qssh_db_fzf_cache_file" sh -c "cat > '$__qssh_db_fzf_cache_file'"
 			return
 		else if contains -- --qssh-self-launch $argv
 			# launch qssh in a way that resembles interactive use
@@ -1049,7 +1049,7 @@ function __qssh_mru_pick_tag --no-scope-shadowing
 			echo -n "."
 		end
 	end
-	# NOTE: using more simple colors, fish 3.1.0 seems to disturb skim?
+	
 	if [ "$mru_no_host_key" = "yes" ]
 		echo -en (set_color f00)"!"(set_color white)
 	else if [ "$mru_tmp_host_key" = "yes" ]
@@ -1118,8 +1118,8 @@ end
 
 function __qssh_mru_pick_data
 	set -x cnt_control_persist_checks $__qssh_mru_pick_control_persist_checks
-	if __qssh_cache_valid $__qssh_db_skim_cache_file
-		flock "$__qssh_db_skim_cache_file" cat "$__qssh_db_skim_cache_file" | __qssh_mru_pick_refresh_data
+	if __qssh_cache_valid $__qssh_db_fzf_cache_file
+		flock "$__qssh_db_fzf_cache_file" cat "$__qssh_db_fzf_cache_file" | __qssh_mru_pick_refresh_data
 	else
 		# update cache in background
 		__qssh_cache_update
@@ -1169,11 +1169,7 @@ function __qssh_mru_pick -d \
 			'f10:become(echo ""; echo --quit)+abort,'\
 			'home:pos(0),end:pos(-1)'\
 		)
-		# not fzf compatible:
-		#	'enter:if-non-matched(execute:echo {q}; echo --instant-new+abort)+execute(echo {q}; echo {1})+abort,'\
-		#	'esc:if-query-empty:become(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
-		
-		#	tee /tmp/debug_shellpack_skimlist | \
+	
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
@@ -1193,12 +1189,7 @@ function __qssh_mru_pick -d \
 				--with-nth 2,1,3 \
 				--nth 2,3 \
 		)
-		set -l sk_exit $status
-		#if [ (count $answer) -gt 2 ]
-		#	echo "skim bugged"
-		#	echo "$answer"
-		#	return 1
-		#end
+		set -l fzf_exit $status
 		
 		echo "$answer[1]" | read --export query
 		#set -x query (string unescape -- $answer[1])
@@ -1214,7 +1205,7 @@ function __qssh_mru_pick -d \
 			end
 			continue
 		end
-		#echo "X:$sk_exit"
+		#echo "X:$fzf_exit"
 		#echo "Q:$query"
 		#echo "A:"
 		#echo (string escape -- $answer)
@@ -1456,7 +1447,7 @@ function __qssh_multipick -d \
 	qssh --qssh-noop && set -l window_title (fish_title qssh)
 	# update window title
 	echo -ne "\e]0;$window_title\a"
-	set -l skim_answer
+	set -l fzf_answer
 	set -l hostlist
 	set -l _flag_one_window "no"
 	set -l _flag_mirror_keyboard "no"
@@ -1482,9 +1473,8 @@ function __qssh_multipick -d \
 				'alt-s:print(--sort)+accept,'\
 				'home:pos(0),end:pos(-1)'\
 			)
-			# not fzf compatible
-			#	'esc:if-query-empty:become(echo ""; echo --quit)+if-query-empty:abort+beginning-of-line+kill-line,'\
-			set skim_answer (\
+			
+			set fzf_answer (\
 				__qssh_mru_pick_data | \
 				$opt_sort | \
 				fzf \
@@ -1504,19 +1494,18 @@ function __qssh_multipick -d \
 					--with-nth 2,1,3 \
 					--nth 2,3 \
 			)
-			# not fzf compatible
-			# ,selected:\#ffff00
-			set sk_exit $status
-			set query $skim_answer[1]
-			set -e skim_answer[1]
 			
-			#for item in $skim_answer
+			set fzf_exit $status
+			set query $fzf_answer[1]
+			set -e fzf_answer[1]
+			
+			#for item in $fzf_answer
 			#	echo "i:"
 			#	echo $item
 			#end
 			#return
 			
-			if string match -q -- '--sort' $skim_answer[1]
+			if string match -q -- '--sort' $fzf_answer[1]
 				if [ "$_flag_sort" = "yes" ]
 					set _flag_sort "no"
 				else
@@ -1526,26 +1515,26 @@ function __qssh_multipick -d \
 			end
 			
 			set _flag_one_window "no"
-			if string match -q -- '--one-window' $skim_answer[1]
-				set -e skim_answer[1]
+			if string match -q -- '--one-window' $fzf_answer[1]
+				set -e fzf_answer[1]
 				set _flag_one_window "yes"
 			end
 			
 			set _flag_mirror_keyboard "no"
-			if string match -q -- '--mirror-keyboard' $skim_answer[1]
-				set -e skim_answer[1]
+			if string match -q -- '--mirror-keyboard' $fzf_answer[1]
+				set -e fzf_answer[1]
 				set _flag_mirror_keyboard "yes"
 				set _flag_one_window "yes"
 			end
 			
-			if string match -q -- '--quit' $skim_answer[1]
+			if string match -q -- '--quit' $fzf_answer[1]
 				return
-			else if string match -q -- '--help' $skim_answer[1]
+			else if string match -q -- '--help' $fzf_answer[1]
 				__qssh_multipick_help | less -R
 				continue
 			else
 				set -e hostlist
-				for answer in $skim_answer
+				for answer in $fzf_answer
 					set -l answer (string split -- \t $answer)
 					set -l answer[1] (string replace --regex -- '^-- ' '' $answer[1])
 					set -a hostlist "$answer[1]"
@@ -1769,7 +1758,7 @@ function __qssh_clean_env -d \
 	set -e __qssh_tmp_host_file
 	set -e __qssh_db_mru_file
 	set -e __qssh_db_autocomplete_cache_file
-	set -e __qssh_db_skim_cache_file
+	set -e __qssh_db_fzf_cache_file
 	set -e __qssh_interval_compact_db
 	set -e __qssh_countdown_compact_db
 	set -e __qssh_controlpath_prefix
@@ -1967,7 +1956,7 @@ function __qssh_cache_valid --argument filename
 end
 
 function __qssh_cache_invalidate
-	flock "$__qssh_db_skim_cache_file" rm "$__qssh_db_skim_cache_file"
+	flock "$__qssh_db_fzf_cache_file" rm "$__qssh_db_fzf_cache_file"
 	flock "$__qssh_db_autocomplete_cache_file" rm "$__qssh_db_autocomplete_cache_file"
 end
 

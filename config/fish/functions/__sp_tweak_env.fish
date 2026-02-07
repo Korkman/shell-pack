@@ -216,13 +216,13 @@ function __sp_tweak_keybinds \
 	# NOTE2: ctrl bindings may hit control characters, as observed with ctrl-j and ctrl-h
 
 	# ctrl-t to find file, alt-c to cd, ctrl-r to search history
-	bind \ct skim-file-widget
-	bind \cr skim-history-widget
+	bind \ct __sp_file_recursive
+	bind \cr __sp_history_search
 	bind \ec __sp_cd_recursive
 
 	if bind -M insert > /dev/null 2>&1
-		bind -M insert \ct skim-file-widget
-		bind -M insert \cr skim-history-widget
+		bind -M insert \ct __sp_file_recursive
+		bind -M insert \cr __sp_history_search
 		bind -M insert \ec __sp_cd_recursive
 	end
 
@@ -239,17 +239,17 @@ function __sp_tweak_keybinds \
 	bind \e\[1\;2A "quick_dir_up"
 
 	# alt-down to cd one level, shift skips dotfiles
-	bind \e\[1\;3B "skim-cd-widget-one --dotfiles"
-	bind \e\[1\;4B "skim-cd-widget-one"
+	bind \e\[1\;3B "__sp_cd_dive --dotfiles"
+	bind \e\[1\;4B "__sp_cd_dive"
 	# shift down in tmux
-	bind \e\[1\;2B "skim-cd-widget-one --dotfiles"
+	bind \e\[1\;2B "__sp_cd_dive --dotfiles"
 
-	# alt-d skim_cdtagdir
-	bind \ed 'skim-cdtagdir'
+	# alt-d cd into tagged directories
+	bind \ed '__sp_cd_tagged'
 
 	# alt-x / alt-X for virt-manager console, juicessh, ...
-	bind \ex "skim-cd-widget-one --dotfiles"
-	bind \eX "skim-cd-widget-one"
+	bind \ex "__sp_cd_dive --dotfiles"
+	bind \eX "__sp_cd_dive"
 
 	# shift-left and -right in tmux
 	bind \e\[1\;2D "quick_dir_prev"
@@ -260,8 +260,8 @@ function __sp_tweak_keybinds \
 	bind \eY "quick_dir_next"
 
 	# alt-shift skips dotfiles
-	bind \et "skim-file-widget --dotfiles"
-	bind \eT "skim-file-widget"
+	bind \et "__sp_file_recursive --dotfiles"
+	bind \eT "__sp_file_recursive"
 	bind \ec "__sp_cd_recursive --dotfiles"
 	bind \eC "__sp_cd_recursive"
 
@@ -272,7 +272,7 @@ function __sp_tweak_keybinds \
 
 	#bind \cl "commandline -f repaint"
 
-	# fast and visual grep using ripgrep and skim
+	# fast and visual grep using ripgrep and fzf
 	bind \cg "commandline --cursor 0; commandline --insert 'rrg '"
 	bind \eg "commandline --cursor 0; commandline --insert 'rrg '"
 
@@ -293,7 +293,7 @@ function __sp_tweak_keybinds \
 	bind \e\e\[D "prevd-or-backward-word"
 	bind \e\e\[C "nextd-or-forward-word"
 	# alt-down in linux console
-	bind \e\e\[B "skim-cd-widget-one"
+	bind \e\e\[B "__sp_cd_dive"
 	# alt-up in linux console
 	bind \e\e\[A "quick_dir_up"
 	

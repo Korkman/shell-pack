@@ -1,6 +1,10 @@
-function skim-cdtagdir -d \
+function __sp_cd_tagged -d \
 	"cd into tagged and history directories"
-	set -l skim_cmd (__skimcmd)
+	set -l fzf_header 'cd tagged directory | enter:cd  esc:abort'
+	set -l fzf_binds 'esc:cancel'
+	
+	set -l fzf_args fzf --ansi --no-multi --reverse --height 40% \
+	--bind "$fzf_binds" --header "$fzf_header"
 	
 	begin
 		lsdirtags | sort
@@ -16,7 +20,7 @@ function skim-cdtagdir -d \
 			echo "<:$i"
 		end
 	end \
-	| $skim_cmd --ansi --no-multi --reverse --height 40% --bind 'esc:cancel' --header 'enter:cd  esc:abort' --prompt "cd tagged / history: " \
+	| command $fzf_args \
 	| read -l result
 	if [ -n "$result" ]
 		set dest (string replace --regex '.*?:' '' -- "$result")

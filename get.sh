@@ -132,7 +132,7 @@ else
 	echo "Skipping present ${SHELL_PACK_BASEDIR}/config"
 fi
 
-# this directory will hold ripgrep, skim and maybe more in the future
+# this directory will hold ripgrep, fzf and maybe more in the future
 # it is added to the PATH in shell-pack and can also be added to PATH
 # in your POSIX shell to proxy some commands to fish (see 'fishcall')
 SHELL_PACK_BINDIR="${SHELL_PACK_BASEDIR}/bin"
