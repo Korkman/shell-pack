@@ -218,12 +218,12 @@ function __sp_tweak_keybinds \
 	# ctrl-t to find file, alt-c to cd, ctrl-r to search history
 	bind \ct skim-file-widget
 	bind \cr skim-history-widget
-	bind \ec skim-cd-widget
+	bind \ec __sp_cd_recursive
 
 	if bind -M insert > /dev/null 2>&1
 		bind -M insert \ct skim-file-widget
 		bind -M insert \cr skim-history-widget
-		bind -M insert \ec skim-cd-widget
+		bind -M insert \ec __sp_cd_recursive
 	end
 
 	# ctrl-f / alt-f to search in pager / search for files
@@ -262,8 +262,8 @@ function __sp_tweak_keybinds \
 	# alt-shift skips dotfiles
 	bind \et "skim-file-widget --dotfiles"
 	bind \eT "skim-file-widget"
-	bind \ec "skim-cd-widget --dotfiles"
-	bind \eC "skim-cd-widget"
+	bind \ec "__sp_cd_recursive --dotfiles"
+	bind \eC "__sp_cd_recursive"
 
 	# alt-space for argument history search (copy alt-.)
 	bind \e\x20 "history-token-search-backward"

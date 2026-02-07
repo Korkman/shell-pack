@@ -1,26 +1,9 @@
-function skim-cd-widget -d "Change directory (recusrive search)"
-	# NOTE: the behavior is very different from the original skim-cd-widget-one
-	# - it does not substitute the last token of the command with the
-	#   arrival directory, nor does it search for it
-	# - the commandline stays untouched, so you can chdir without ctrl-c
-
-	if [ "$argv[1]" = "--dotfiles" ]
-		skim-dotfiles yes
-	else
-		skim-dotfiles no
-	end
-	if $__cap_find_has_xtype
-		set arg_xtype '-xtype'
-	else
-		set arg_xtype '-type'
-	end
-
-	set -l dir '.'
-	set -l skim_query ''
+function __sp_cd_recursive -d "Change directory (recusrive search)"
 	set -l original_dir "$PWD"
 	set -l paste_absolute_path 'no'
 	
-	set -l skim_binds (printf %s \
+	set -l fzf_query ''
+	set -l fzf_binds (printf %s \
 	"ctrl-v:become(echo //paste:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
 	"alt-s:become(echo //symlinks:{q})+accept,"\
@@ -30,19 +13,31 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
 	"ctrl-q:abort"
 	)
-	set -l skim_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
+	set -l fzf_help 'cd recursive | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
 
-	set -l cmd_find "
-	command find \$symlinks \$dir -xdev -mindepth 1 \\( $SKIM_DOTFILES_FILTER \\) -prune \
-	-o $arg_xtype d -print 2> /dev/null | sed 's@^\./@@'"
-
-	set -q SKIM_TMUX_HEIGHT; or set SKIM_TMUX_HEIGHT 40%
 	set -l symlinks '-P'
 	while true
-		set -lx SKIM_DEFAULT_OPTIONS "--height $SKIM_TMUX_HEIGHT --reverse $SKIM_DEFAULT_OPTIONS $SKIM_ALT_C_OPTS"
-		set -lx FZF_DEFAULT_OPTS "$SKIM_DEFAULT_OPTIONS"
+		# construct find arguments
+		set -l find_args find
+		set -a find_args $symlinks
+		set -a find_args . -xdev -mindepth 1
+		if [ "$argv[1]" = "--dotfiles" ]
+			set -a find_args -false
+		else
+			set -a find_args -path '.*/.*'
+		end
+		set -a find_args -prune -o
+		if $__cap_find_has_xtype
+			set -a find_args -xtype d
+		else
+			set -a find_args -type d
+		end
+		set -a find_args -print
 		
-		eval "$cmd_find | "(__skimcmd)' --header "'$skim_help'" --query "'$skim_query'" --bind "'$skim_binds'"' | read -l result
+		# construct fzf arguments
+		set -l fzf_args fzf --header "$fzf_help" --query "$fzf_query" --bind "$fzf_binds" --height 40%
+		
+		command $find_args 2> /dev/null | sed 's@^\./@@' | command $fzf_args | read -l result
 		
 		if [ -n "$result" ]
 			if [ "$result" = "//prev" ]
@@ -53,8 +48,8 @@ function skim-cd-widget -d "Change directory (recusrive search)"
 				# navigate one up
 				cd ..
 				set paste_absolute_path 'yes'
-			else if string match -q --regex "^//symlinks:(?<new_skim_query>.*)" -- "$result"
-				set skim_query "$new_skim_query"
+			else if string match -q --regex "^//symlinks:(?<new_fzf_query>.*)" -- "$result"
+				set fzf_query "$new_fzf_query"
 				if [ "$symlinks" = '-P' ]
 					set symlinks '-L'
 				else
