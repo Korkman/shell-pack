@@ -10,6 +10,9 @@ function __spt -d \
 	if test "$variant" = "bg"
 		set scolor "set_color" "-b"
 	end
+	if test "$variant" = "bold"
+		set scolor "set_color" "--bold"
+	end
 	
 	# colors
 	switch $component
@@ -91,6 +94,9 @@ function __spt -d \
 		case pwd_fg fzf_prompt_fg
 			$scolor "fff"
 			return
+		case fzf_title
+			$scolor "fff"
+			return
 		case pwd_fg_dim
 			$scolor "bbb"
 			return
@@ -151,10 +157,13 @@ function __spt -d \
 		case prompt_fg
 			$scolor "ff0"
 			return
-		case fish_command
+		case fish_command_fg
+			$scolor "00ff87"
+			return
+		case fish_command_color
 			echo -n "00ff87"
 			return
-		case fish_autosuggestion
+		case fish_autosuggestion_color
 			if test $__cap_colors -ge 256
 				echo -n "9e9e9e"
 			else
@@ -339,6 +348,6 @@ function __spt_init -d \
 	set -g fish_prompt_pwd_dir_length 0
 	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
 	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
-	set -g fish_color_command (__spt fish_command)
-	set -g fish_color_autosuggestion (__spt fish_autosuggestion)
+	set -g fish_color_command (__spt fish_command_color)
+	set -g fish_color_autosuggestion (__spt fish_autosuggestion_color)
 end
