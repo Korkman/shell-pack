@@ -1,10 +1,11 @@
 function __sp_cd_tagged -d \
 	"cd into tagged and history directories"
-	set -l fzf_header 'cd tagged directory | enter:cd  esc:abort'
+	echo 'enter:cd esc:abort' | __sp_fzf_header
 	set -l fzf_binds 'esc:cancel'
 	
-	set -l fzf_args fzf --ansi --no-multi --reverse --height 40% \
-	--bind "$fzf_binds" --header "$fzf_header"
+	__sp_fzf_defaults 'cd tagged directory'
+	set -l fzf_args fzf $fzf_defaults --ansi --no-multi \
+	--bind "$fzf_binds"
 	
 	begin
 		lsdirtags | sort

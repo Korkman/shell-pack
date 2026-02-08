@@ -2,9 +2,10 @@
 function __sp_file_recursive -d \
 	"Pick files and folders - recursive search"
 	begin
-		echo 'recursive file picker | tab:select enter:paste c-v:paste alt-p:preview alt-s:recurse-symlinks'
-		echo 'alt-l:pager alt-v:vim f3:mcview f4:mcedit s-arrows:navigate alt-c:chdir'
-	end | read -lz fzf_header
+		echo 'tab:select enter:paste f1:query-syntax alt-p:preview'
+		echo 'alt-c:chdir alt-l:pager alt-v:vim f3:mcview f4:mcedit'
+		echo 's-arrows:navigate alt-s:recurse-symlinks'
+	end | __sp_fzf_header
 
 	set -l fzf_binds (printf %s \
 	"alt-p:toggle-preview,ctrl-p:toggle-preview,"\
@@ -15,10 +16,11 @@ function __sp_file_recursive -d \
 	"alt-l:execute(cat {} | fishcall __sp_pager),"\
 	"ctrl-v:accept,"\
 	"alt-v:execute(vi {}),"\
-	"shift-up:become(echo //up:{q}),alt-up:become(echo //up:{q}),"\
-	"shift-down:become(echo //down:{q}\\n{}),alt-down:become(echo //down:{q}\\n{}),"\
-	"shift-left:become(echo //prev:{q}),alt-left:become(echo //prev:{q}),"\
-	"shift-right:become(echo //next:{q}),alt-right:become(echo //next:{q}),"\
+	"shift-up,alt-up:become(echo //up:{q}),"\
+	"shift-down,alt-down:become(echo //down:{q}\\n{}),"\
+	"shift-left,alt-left:become(echo //prev:{q}),"\
+	"shift-right,alt-right:become(echo //next:{q}),"\
+	"f1,alt-h:execute(fishcall cheat --fzf-query),"\
 	"ctrl-q:abort"
 	)
 	
@@ -49,9 +51,10 @@ function __sp_file_recursive -d \
 		end
 
 		# run find -> fzf, capture multi-selection into $result
-		set -l fzf_args fzf -m --query "$query" --header "$fzf_header" --bind "$fzf_binds" \
+		__sp_fzf_defaults 'recursive file picker'
+		set -l fzf_args fzf $fzf_defaults -m --query "$query" --bind "$fzf_binds" \
 			--preview "[ -d {} ] && ls -al {} || grep \"\" -I {} | head -n4000" \
-			--preview-window hidden:right:80% --prompt 'Filter paths: ' --height 40%
+			--preview-window hidden:right:80%
 		
 		command $find_args 2> /dev/null \
 		| sed 's@^\./@@' \

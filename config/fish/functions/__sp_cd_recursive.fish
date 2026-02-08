@@ -1,15 +1,19 @@
 # inspired by skim/fzf key-bindings.fish
 function __sp_cd_recursive -d \
 	"Change directory - recursive search"
-	set -l fzf_header 'recursive cd | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list alt-s:recurse-symlinks'
+	begin
+		echo 'esc:cancel enter:done f1:query-syntax'
+		echo "alt-arrows:navigate alt-l:list alt-s:recurse-symlinks"
+	end | __sp_fzf_header
 	set -l fzf_binds (printf %s \
 	"ctrl-v:become(echo //paste:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
 	"alt-s:become(echo //symlinks:{q})+accept,"\
-	"shift-up:become(echo //up)+accept,alt-up:become(echo //up)+accept,"\
-	"shift-down:become(echo //down:{})+accept,alt-down:become(echo //down:{})+accept,"\
-	"shift-left:become(echo //prev)+accept,alt-left:become(echo //prev)+accept,"\
-	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
+	"shift-up,alt-up:become(echo //up)+accept,"\
+	"shift-down,alt-down:become(echo //down:{})+accept,"\
+	"shift-left,alt-left:become(echo //prev)+accept,"\
+	"shift-right,alt-right:become(echo //next)+accept,"\
+	"f1,alt-h:execute(fishcall cheat --fzf-query),"\
 	"ctrl-q:abort"
 	)
 	
@@ -38,7 +42,8 @@ function __sp_cd_recursive -d \
 		set -a find_args -print
 		
 		# construct fzf arguments
-		set -l fzf_args fzf --header "$fzf_header" --query "$fzf_query" --bind "$fzf_binds" --height 40%
+		__sp_fzf_defaults 'cd recursive'
+		set -l fzf_args fzf --query "$fzf_query" --bind "$fzf_binds" $fzf_defaults
 		
 		command $find_args 2> /dev/null | sed 's@^\./@@' | command $fzf_args | read -l result
 		

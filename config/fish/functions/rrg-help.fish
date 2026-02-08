@@ -1,20 +1,21 @@
 function rrg-help
+	PAGER="cat" cheat --fzf-query | read -zl fzf_query_help
 	echo "
 === rrg usage ===
 
 rrg PATTERN
-rrg [--option1, --option2, ...] -- PATTERN
+rrg [ OPTIONS ...  ] -- PATTERN
 
 Searches case-insensitive PATTERN in all non-binary files recursively.
 All matches are shown. Results are shown in fzf, an interactive fuzzy
 search engine. While the spinner is rotating more results may be
 retrieved.
 
-For ripgrep PATTERN syntax (mostly PCRE) and options, see
+When piped, the limit of 100000 results is lifted and results are listed
+as filenames only for further processing.
 
-   rg --help | less
-
-NOTE: Not all options are compatible with rrg usage. Some useful examples:
+OPTIONS are passed to rg, but may be incompatible with rrg's usage.
+Some useful examples:
 
   -z, --search-zip       Search compressed files (not archives!)
   -g, --glob '*.htm'     Limit file names processed
@@ -34,16 +35,13 @@ These default options are applied, some of which can be overridden:
    --auto-hybrid-regex --one-file-system
    --color always --max-columns 500 --with-filename --line-number
 
-fzf fuzzy search in RESULTS LIST:
-   characters matches all characters as solid as possible (fuzzy)
-   !negation removes all matching lines
-   'word matches only the word (non-fuzzy)
-   ^start matches start at the beginning of a line
-   $end matches at the end
-   | combines search strings with boolean OR
-   ctrl-r toggles regular expression search indicated by "/RE"
+Ripgrep PATTERN syntax is mostly PCRE compatible. For full syntax help, see
 
-rrg keybinds:
+   rg --help | less
+
+=== results filter ===
+$fzf_query_help
+=== rrg keybinds ===
    exit                             alt-q        esc
    toggle pane                      alt-p
    show content in pane (default)   alt-o
@@ -53,9 +51,6 @@ rrg keybinds:
    start mcedit on matched line     f4
    start mcview on file             f3
    read all matches in file         enter
-
-When piped, the limit of 100000 results is lifted and results are listed
-as filenames only for further processing.
 
 === rrg-in-file usage ===
 

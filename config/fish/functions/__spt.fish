@@ -39,6 +39,12 @@ function __spt -d \
 		case cmd_fail_fg
 			$scolor "fff"
 			return
+		case warning_bg
+			$scolor "711"
+			return
+		case warning_fg
+			$scolor "ff0"
+			return
 		case jobs_fg
 			$scolor black
 			return
@@ -54,12 +60,6 @@ function __spt -d \
 			return
 		case chroot_fg
 			$scolor "fff"
-			return
-		case warning_bg
-			$scolor "eee"
-			return
-		case warning_fg
-			$scolor "f00"
 			return
 		case venv_bg
 			$scolor "3a3a3a"
@@ -85,10 +85,10 @@ function __spt -d \
 		case fiddle_fg
 			$scolor "fff"
 			return
-		case pwd_bg
+		case pwd_bg fzf_prompt_bg
 			$scolor "3a3a3a"
 			return
-		case pwd_fg
+		case pwd_fg fzf_prompt_fg
 			$scolor "fff"
 			return
 		case pwd_fg_dim

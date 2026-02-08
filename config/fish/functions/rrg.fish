@@ -48,7 +48,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'f3:execute(nullerror fishcall mcview {1}),'\
 		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
 		'alt-l:execute(clear; cat {1} | fishcall __sp_pager +{2}g),'\
-		'alt-h:execute(fishcall rrg-help),'\
+		'f1,alt-h:execute(fishcall rrg-help),'\
 		'alt-q:abort,'\
 		'f10:abort,'\
 		'esc:cancel,'\
@@ -59,7 +59,9 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		'home:pos(0),end:pos(-1)'\
 	)
 	
-	printf 'alt-h:help enter:results-in-file a-p:pane a-l:pager\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | read -lz help_text
+
+	printf 'f1:help enter:results-in-file a-p:pane a-l:pager\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | __sp_fzf_header
+	__sp_fzf_defaults 'Rapid Ripgrep'
 	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
@@ -112,19 +114,15 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		# sed on macos Monterey does not support escapes in brackets
 		#| LC_ALL=C sed -e 's/[\x00-\x1A\x1C-\x1F]//g' \
 		| fzf \
+			$fzf_defaults \
 			--no-multi \
 			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
 			--preview-window 'hidden:wrap:right:80%:~1' \
 			--preview-label 'Preview pane - toggle with alt-p' \
-			--border top \
-			--border-label 'Rapid Ripgrep' \
-			--border-label-pos 3 \
 			--height (math $LINES-1) \
 			--delimiter '//' \
-			--header "$help_text" \
 			--ansi \
-			--prompt "Fuzzy search in list: " \
 			--layout reverse
 		set fzf_status $status
 		echo

@@ -1,16 +1,20 @@
 # inspired by skim/fzf key-bindings.fish
 function __sp_cd_dive -d \
 	"Change directory - dive one level"
-	set -l fzf_header "change directory | esc:cancel enter:done c-v:paste s-arrows:navigate alt-l:list"
+	begin
+		echo 'esc:cancel enter:done f1:query-syntax'
+		echo "c-v:paste s-arrows:navigate alt-l:list"
+	end | __sp_fzf_header
 	set -l fzf_binds (printf %s \
 	"enter:become(echo //final:{})+accept,"\
 	"alt-l:become(echo //list:{})+accept,"\
 	"ctrl-v:become(echo //paste:{})+accept,"\
-	"shift-left:become(echo //prev)+accept,alt-left:become(echo //prev)+accept,"\
-	"shift-right:become(echo //next)+accept,alt-right:become(echo //next)+accept,"\
-	"shift-up:become(echo //up)+accept,alt-up:become(echo //up)+accept,"\
-	"shift-down:accept,alt-down:accept,"\
+	"shift-up,alt-up:become(echo //up)+accept,"\
+	"shift-down,alt-down:accept,"\
+	"shift-left,alt-left:become(echo //prev)+accept,"\
+	"shift-right,alt-right:become(echo //next)+accept,"\
 	"ctrl-q:abort,"\
+	"f1,alt-h:execute(fishcall cheat --fzf-query),"\
 	"esc:cancel"
 	)
 	
@@ -33,7 +37,8 @@ function __sp_cd_dive -d \
 		end
 		set -a find_args -print
 		
-		set -l fzf_args fzf --ansi --header "$fzf_header" --query "$fzf_query" --bind "$fzf_binds" --height 80% --reverse
+		__sp_fzf_defaults 'change directory'
+		set -l fzf_args fzf $fzf_defaults --ansi --query "$fzf_query" --bind "$fzf_binds"
 		
 		command $find_args 2> /dev/null \
 		| __sp_csort \

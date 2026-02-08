@@ -1,12 +1,16 @@
 # inspired by skim/fzf key-bindings.fish
 function __sp_history_search -d \
 	"Access and censor command history"
-	set -l fzf_header "search history | search for and select past cmd or esc to abort. f8 to delete."
-	set -l fzf_binds 'f8:print()+print(delete)+accept'
+	echo "esc:abort enter:accept f1:query-help f8:delete tab:select" | __sp_fzf_header
+	set -l fzf_binds (printf %s \
+		'f8:print()+print(delete)+accept,' \
+		'f1,alt-h:execute(fishcall cheat --fzf-query)'
+	)
 	
-	set -l fzf_args fzf --read0 --print0 --bind "$fzf_binds" --exact --tiebreak index \
-	--header "$fzf_header" \
-	--query (commandline) --height 40% -m
+	__sp_fzf_defaults 'history' --exact
+	set -l fzf_args fzf $fzf_defaults --read0 --print0 --bind "$fzf_binds" --tiebreak index --no-sort \
+	--query (commandline) -m \
+	--height=80% # no tilde, fzf cannot handle multiline elements with it
 	
 	history -z \
 	| command $fzf_args \
@@ -36,7 +40,7 @@ function __sp_history_search -d \
 				eval "commandline --append -- $result\\;\\n"
 			end
 			commandline --cursor 9999
-		else
+		else if test "$results" != ""
 			eval "commandline -- $results[1]"
 		end
 		

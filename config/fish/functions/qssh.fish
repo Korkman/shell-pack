@@ -314,8 +314,7 @@ function qssh -d \
 end
 
 function __qssh_multipick_help
-	echo (set_color -b white)(set_color red)"Multipick Mode"
-	echo -n (set_color -b black)(set_color white)
+	echo (__spt warning_bg bg)(__spt warning_fg)"Multipick Mode"(set_color normal)
 	echo
 	#cho "Alt-T: Cycle host key modes (normal / alt / none) |"
 	echo "In Multipick Mode you can select multiple hosts"
@@ -325,50 +324,52 @@ function __qssh_multipick_help
 	echo
 	echo "tmux is used for window management."
 	echo 
-	echo "Keyboard shortcuts:"
-	echo "F1: Display this help (q to exit)"
-	echo "Alt-M: Connect to all, one window, mirror keyboard"
-	echo "Alt-O: Connect to all, one window"
-	echo "Alt-S: Sort"
-	echo "Enter: Connect to all in dedicated windows"
-	echo "Tab: Toggle selection"
+	echo "qssh multipick keybinds:"
+	echo "f1: display this help (q to exit)"
+	echo "alt-m: connect to all, one window, mirror keyboard"
+	echo "alt-o: connect to all, one window"
+	echo "alt-s: sort"
+	echo "enter: connect to all in dedicated windows"
+	echo "tab: toggle selection"
 	# TODO: echo "F8: Remove connection"
 	# TODO: echo "Alt-X: Terminate running conn"
 	# TODO: echo "Alt-K: Remove all host keys for this conn"
 	# TODO: echo "Alt-T: Cycle host key modes (normal / alt / none)"
 	# TODO: echo "Alt-P: Toggle persistent control connection"
-	echo "Esc: Clear query / Exit Multipick"
-	echo "F10: Exit Multipick"
+	echo "esc: clear query / exit multipick"
+	echo "f10: exit multipick"
 	echo
+	PAGER=cat cheat --fzf-query
 end
 
 function __qssh_mru_pick_help
 	echo
-	echo "Keyboard shortcuts:"
-	echo "F1: Display this help (q to exit)"
-	echo "Enter: Connect"
-	echo "Alt-N: New connection"
-	echo "F3: SFTP with mc"
-	echo "F4: Edit connection"
-	echo "F5: Duplicate connection"
-	echo "F6: Set nickname"
-	echo "F8: Remove connection"
-	echo "Alt-A: Connect with agent forwarding"
-	echo "Alt-X: Terminate running conn"
-	echo "Alt-K: Remove all host keys for this conn"
-	echo "Alt-T: Cycle host key modes (normal / alt / none)"
-	echo "Alt-P: Toggle persistent control connection"
-	echo "Alt-S: Sort"
-	echo "Alt-M: Multipick"
-	echo "Ctrl-R: Reload qssh"
-	echo "Ctrl-O: Open local shell"
-	echo "Esc: Clear query / Exit"
-	echo "F10: Exit"
+	echo "qssh keybinds:"
+	echo "f1: display this help (q to exit)"
+	echo "enter: connect"
+	echo "alt-n: new connection"
+	echo "f3: sftp with mc"
+	echo "f4: edit connection"
+	echo "f5: duplicate connection"
+	echo "f6: set nickname"
+	echo "f8: remove connection"
+	echo "alt-a: connect with agent forwarding"
+	echo "alt-x: terminate running conn"
+	echo "alt-k: remove all host keys for this conn"
+	echo "alt-t: cycle host key modes (normal / alt / none)"
+	echo "alt-p: toggle persistent control connection"
+	echo "alt-s: sort"
+	echo "alt-m: multipick"
+	echo "ctrl-r: reload qssh"
+	echo "ctrl-o: open local shell"
+	echo "esc: clear query / exit"
+	echo "f10: exit"
 	echo
 	#echo "Legend:"
 	#echo "[A]ctive peristent connection"
 	#echo "- Not [a]ctive"
 	#echo "- Not checked [.]"
+	PAGER=cat cheat --fzf-query
 end
 
 function __qssh_mru_update
@@ -1169,19 +1170,19 @@ function __qssh_mru_pick -d \
 			'f10:become(echo ""; echo --quit)+abort,'\
 			'home:pos(0),end:pos(-1)'\
 		)
-	
+		
+		echo 'f1:help alt-n:new f10:exit' | __sp_fzf_header
+		__sp_fzf_defaults "qssh"
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
-			fzf \
+			fzf $fzf_defaults \
 				$opt_query \
 				--no-multi \
 				--bind "$fzf_binds" \
 				--delimiter '\t' \
-				--header \
-					'F1:Help Alt-N:New F10:Quit' \
-				--prompt "Search / New SSH: " \
-				--reverse \
+				--ghost "[fzf query or new hostname]" \
+				--height 100% \
 				--ansi \
 				--print-query \
 				--preview "export __sp_load=yes; echo qssh --qssh-preview {1} | fish" \
@@ -1474,19 +1475,19 @@ function __qssh_multipick -d \
 				'home:pos(0),end:pos(-1)'\
 			)
 			
+			echo (__spt warning_bg bg)(__spt warning_fg)'Multipick Mode!'(set_color normal)' f1:help' | __sp_fzf_header
+			__sp_fzf_defaults "qssh"
 			set fzf_answer (\
 				__qssh_mru_pick_data | \
 				$opt_sort | \
 				fzf \
+					$fzf_defaults \
 					$opt_query \
 					--multi \
-					--color=header:\#ff0000 \
 					--bind "$fzf_binds" \
 					--delimiter '\t' \
-					--header \
-						'Multipick Mode! F1:Help' \
-					--prompt "Search: " \
-					--reverse \
+					--ghost "[fzf query or new hostname]" \
+					--height 100% \
 					--ansi \
 					--print-query \
 					--preview "export __sp_load=yes; echo qssh --qssh-multipick-preview {1} | fish" \

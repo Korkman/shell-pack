@@ -14,6 +14,11 @@ function cheat
 		return
 	end
 
+	if [ "$argv[1]" = "--fzf-query" ]
+		__cheat_fzf_query
+		return
+	end
+
 	if [ "$argv[1]" = "--chtsh" ]
 		set -e argv[1]
 		if test -z "$argv[1]"
@@ -48,6 +53,7 @@ Show this cheatsheet          cheat
 Show glyphs cheatsheet        cheat --glyphs
 Show mc cheatsheet            cheat --mc
 Show tmux cheatsheet          cheat --tmux
+Show fzf query syntax         cheat --fzf-query
 Query cheat.sh for TOPIC      cheat TOPIC
   More information            cheat --chtsh
 
@@ -357,6 +363,27 @@ notes:
 - 'ctrl-a, :' enters command mode
   - run 'list-keys' to see all built-in and configured keybinds
   - run 'list-commands' for all available commands
-
 " | __sp_pager -P "cheat --tmux | less - q to quit, h for help" '+G' '+g'
+end
+
+function __cheat_fzf_query
+	echo "
+fzf query syntax
+
+Token    Match type           
+─────    ──────────           
+sbtrkt   fuzzy match          
+'wild    exact match (quoted) 
+^music   prefix exact match   
+.mp3\$    suffix exact match  
+!fire    inverse exact match  
+!^music  inverse prefix match 
+!.mp3\$   inverse suffix match
+
+Combine tokens by separating with spaces (AND):
+  ^core go\$     starts with core AND ends with go
+
+Use | for OR:
+  ^core | go\$   starts with core OR ends with go
+" | __sp_pager -P "cheat --fzf-query | less - q to quit, h for help" '+G' '+g'
 end
