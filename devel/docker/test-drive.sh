@@ -17,6 +17,34 @@ USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fz
 FISH_STATIC=${FISH_STATIC:-no} # install fish static binary (4.0 beta and up)
 FISH_NIGHTLY=${FISH_NIGHTLY:-no} # install fish nightly
 PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
+
+usage() {
+	cat << EOF
+Usage: $0 <distro> [build|build-uncached|run] [persist]
+
+Options:
+  build              Build the Docker image (allow cache)
+  build-uncached     Build the Docker image (invalidate cache)
+  run                Run container, build if inexistent
+  persist            Persist container (default is ephemeral)
+
+Environment Variables:
+  AUTOSTART              Run installer on startup (default: yes)
+  FORCE_DOCKER           Force Docker instead of Podman (default: no)
+  FORCE_NO_SUDO          Skip sudo for Docker (default: no)
+  USE_CACHED_DOWNLOADS   Use cached downloads (default: yes)
+  FISH_STATIC            Force install fish static binary (default: no)
+  FISH_NIGHTLY           Force install fish nightly (default: no)
+  PLATFORM               Set platform e.g. linux/arm64 (default: auto)
+
+Examples:
+  $0 debian:latest
+  $0 alpine:latest run
+  $0 fedora:latest build
+  PLATFORM=linux/arm64 $0 debian:bookworm run
+EOF
+}
+
 PLATFORM_TAG_SUFFIX=""
 if [ "$PLATFORM" != "" ]
 then
@@ -25,6 +53,7 @@ then
 fi
 do_build="no" # perform docker build (append "build" to CLI to trigger)
 build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
+persist="no"
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
 then
 	# XDG_RUNTIME_DIR missing, try fixing
@@ -39,15 +68,33 @@ then
 fi
 echo "Using $XDG_RUNTIME_DIR for temporary files"
 
-if [ "${2:-}" = "build" ]
-then
-	do_build="yes"
-fi
-if [ "${2:-}" = "build-uncached" ]
-then
-	do_build="yes"
-	build_uncached="yes"
-fi
+case "${2:-}" in
+	"build" )
+		# trigger build, but allow cache
+		do_build="yes"
+		;;
+	"build-uncached" )
+		# trigger build, but invalidate cache
+		do_build="yes"
+		build_uncached="yes"
+		;;
+	"run" | "" )
+		;;
+	"help"| * )
+		usage
+		exit 1
+		;;
+esac
+
+case "${3:-}" in
+	"persist" )
+		persist="yes"
+		;;
+	"help"| * )
+		usage
+		exit 1
+		;;
+esac
 
 export DOCKER_BUILDKIT=1
 if command -v "podman" > /dev/null && [ "$FORCE_DOCKER" != "yes" ]
@@ -72,6 +119,10 @@ fi
 
 BUILD_FROM="${1:-help}"
 case "$BUILD_FROM" in
+	debian:jessie | debian:stretch | debian:buster | debian:bullseye )
+		echo "EOL distros need the /eol namespace, so debian:jessie becomes debian/eol:jessie, etc."
+		exit 1
+		;;
 	debian:* | debian/eol:* | ubuntu:* )
 		dockerfile="Dockerfile-Debian"
 		;;
@@ -110,6 +161,10 @@ fi
 if [ "$FISH_NIGHTLY" = "yes" ]
 then
 	tagname="${tagname}-fish-nightly"
+fi
+if [ "$persist" = "yes" ]
+then
+	tagname="${tagname}-persist"
 fi
 
 # script location
@@ -191,14 +246,32 @@ then
 fi
 
 echo "Run $docker"
-$docker run --rm \
--e AUTOSTART="$AUTOSTART" \
--e TERM="$TERM" \
---hostname "test-${tagname}" \
---volume "$tmpdir:/root/Downloads:rw" \
-$PLATFORM \
---interactive \
---tty "shell-pack:test-drive-${tagname}"
+container_id=$(
+	$docker run \
+	-e AUTOSTART="$AUTOSTART" \
+	-e TERM="$TERM" \
+	--hostname "test-${tagname}" \
+	--volume "$tmpdir:/root/Downloads:rw" \
+	$PLATFORM \
+	--interactive \
+	--tty \
+	--detach \
+	"shell-pack:test-drive-${tagname}"
+)
+echo "Attaching $container_id ..."
+rs=0
+$docker attach "$container_id" || rs=$?
+if [ "$persist" = "yes" ]
+then
+	if [ $rs -ne 0 ]
+	then
+		echo "❌ Persist: Non-zero exit, not commiting container"
+	else
+		echo "💾 Persist: Commiting container to shell-pack:test-drive-${tagname}"
+		$docker commit "$container_id" "shell-pack:test-drive-${tagname}" > /dev/null
+	fi
+fi
+$docker rm -f "$container_id" > /dev/null
 
 echo "Save downloaded rg, fzf, dool.d, … to cache"
 if [ -e "$tmpdir/rg" ] && [ ! -e "$cachedir/rg" ]
