@@ -3,6 +3,35 @@
 # show listening inet sockets
 # NOTE: tail can be replaced with ss -H when xenial and jessie faded away
 function lsports
+	# any arguments passed are treated as nmap args
+	if test "$argv" != ""
+		if contains -- "--help" $argv || contains -- "-h" $argv
+			echo "Usage: lsports"
+			echo "  Without arguments, shows listening processes on the local machine"
+			echo "  as reported by ss or netstat."
+			echo
+			echo "Usage: lsports [ nmap args ... ] HOST/NETWORK"
+			echo "  With arguments, performs an nmap scan of the specified host or network."
+			echo "  DO NOT SCAN NETWORKS OR HOSTS WITHOUT PERMISSION."
+			echo "  Arguments are passed after defaults, which are to perform a verbose,"
+			echo "  TCP-only scan of all ports with a time limit of 300s per host."
+			return
+		end
+		
+		echo "IP scan requested"
+		if command -q nmap
+			set -l -- nmap_args -p- -v -n --host-timeout 300s $argv
+			# auto-prepend -6 if last arg looks like IPv6 address and -6 is not already present
+			if string match -q -- "*:*" "$nmap_args[-1]" && not contains -- "-6" $nmap_args
+				set -p nmap_args "-6"
+			end
+			nmap $nmap_args
+		else
+			echo "nmap not found, cannot perform IP scan"
+			return 1
+		end
+		return
+	end
 	# estimated max width of IPv6 + 5 digit port + 6 chr interface + "tcp" = 57
 	set procWidth (math $COLUMNS-58)
 	if $__cap_ss
