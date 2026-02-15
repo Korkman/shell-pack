@@ -28,15 +28,16 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `rrg` (`alt-g`): an easy to use ripgrep file content search with preview
  * `ggit`: quickly review changes, add files to the commit
  * `venv`: activate / deactivate Python virtual env corresponding to current directory
+ * `eenv`: load variables from .env file with POSIX shell support
  * `zero-unused-space`: fill 90% of free space with null-bytes
  * `create`, create and edit boilerplate files of various types
  * `qcrypt`, encrypt file or stream with password utilizing `openssl` or `gpg`
  * Linux only
-   * `lsports`: list open ports in compact manner
+   * `lsports`: list open ports in compact manner or perform nmap scan (see --help)
    * `lsnet`: list active network connections in compact manner
    * `ddool`: a dool wrapper with "sticky" arguments
    * `qmount`: mount a partition to /run/q/name (blockdevice autocomplete)
-   * `ssmart`: shortcut to smartctl -x (skip /dev/)
+   * `ssmart`: shortcut to smartctl -x (skip /dev/), highlights key data
    * `qchroot`: enter a Linux chroot, mounting all the necessities of modern Linux life
    * `qqemu`: start a disk or partition in a temporary VM without modifying the disk or network connectivity
    * `@`: ad-hoc ```atd``` replacement for executing commands at a given time as if typed into the prompt
@@ -55,5 +56,5 @@ features like gathering what output belongs to which submitted command or
 marking prompts in their scroll history.
 
 Included are:
- * [iterm2](https://github.com/gnachman/iTerm2/blob/master/Resources/shell_integration/iterm2_shell_integration.fish) (enabled by default, provides OSC 133 and OSC 1337 sequences)
+ * [iterm2](https://github.com/gnachman/iTerm2/blob/master/Resources/shell_integration/iterm2_shell_integration.fish) (enabled by default, provides OSC 133/1337 sequences)
  * [vscode](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/terminal/common/scripts/shellIntegration.fish) (enabled when `vscode` is `$TERM_PROGRAM`, provides OSC 633 sequences)
