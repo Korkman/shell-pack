@@ -372,13 +372,33 @@ function __shellpack_confidential -e fish_preexec -d "Mask confidential cmd from
 	end
 end
 
+function __sp_reformat_cmdline -d \
+	"Reformat cmdline to a single line for display purposes"
+	set -l d ''
+	while read line
+		set line (string trim -- "$line")
+		if string match -q --regex '\\\\$' '' -- "$line"
+			set line (string replace --regex '\\\\$' '' -- "$line")
+			echo -n -- "$line"
+			set d ''
+		else
+			echo -n -- "$d""$line"
+			if string match -q --regex ';$' -- "$line"
+				set d ' '
+			else
+				set d '; '
+			end
+		end
+	end
+end
+
 function enhanced_prompt -e fish_postexec -d "Foreground and background job execution tracking and status code clearance"
 	set -g __saved_pipestatus (string split ' ' -- "$pipestatus")
 	# NOTE: $status is gone at this point
 	set -g __saved_status $__saved_pipestatus[(count $__saved_pipestatus)]
 	set -g __saved_duration "$CMD_DURATION"
 	set -x __job_start_time (__sp_getnanoseconds)
-	set -g __saved_cmdline (echo "$argv[1]" | begin set -l d ''; while read line; echo -n "$d""$line"; set d '; '; end; end)
+	set -g __saved_cmdline $argv[1]
 	
 	# detect tracked, but lost jobs (e.g. by kill)
 	if [ "$__watched_job_pids" != "" ]
@@ -401,6 +421,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				set -g __watched_job_pids $__watched_job_pids $job_pid
 				set new_bg_tasks $job_pid $new_bg_tasks
 				function job_watcher$job_pid -V job_pid -V __job_start_time -V __saved_cmdline --on-process-exit "$job_pid"
+					set -l __saved_cmdline (echo -- "$__saved_cmdline" | __sp_reformat_cmdline)
 					# remove my pid from list
 					set -ge __watched_job_pids[(contains -i $job_pid $__watched_job_pids)]
 
@@ -476,6 +497,7 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 
 	# ignore empty lines and backgrounding tasks
 	set -g __sp_enhanced_prompt_exit_status (begin
+		set -l __saved_cmdline (echo -- "$__saved_cmdline" | __sp_reformat_cmdline)
 		if [ "$do_show_exit_status" = "yes" ]
 			set -g __display_cmd_stats yes
 
@@ -494,9 +516,9 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				echo -n ' '(__spt confidential)' '
 			else
 				if [ (string length -- "$__saved_cmdline") -gt 40 ]
-					echo -n ' '(string sub -l 19 -- "$__saved_cmdline")'…'(string sub -s -19 -- "$__saved_cmdline")' '
+					echo -n -- ' '(string sub -l 19 -- "$__saved_cmdline")'…'(string sub -s -19 -- "$__saved_cmdline")' '
 				else
-					echo -n " "$__saved_cmdline" "
+					echo -n -- " "$__saved_cmdline" "
 				end
 			end
 			set_color -b normal
@@ -634,6 +656,8 @@ function __sp_reset_exit_status -e fish_preexec -d \
 	"Reset exit status variables"
 	set -e -g __saved_pipestatus
 	set -e -g __saved_status
+	# save the command already for nice info in `grasp`
+	set -g __saved_cmdline $argv[1]
 end
 
 function __sp_reset_exit_status_on_enter -e sp_submit_commandline -d \

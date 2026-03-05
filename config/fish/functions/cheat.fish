@@ -143,6 +143,7 @@ Toggle full private mode      private
 
 ========== utilities ==========
 
+Grasp a stream or file with fzf    cat FILE | grasp
 List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports
 List established connections       lsnet
