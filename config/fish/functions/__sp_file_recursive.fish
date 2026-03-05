@@ -13,11 +13,11 @@ function __sp_file_recursive -d \
 	"alt-s:become(echo //symlinks:{q}),"\
 	"f4:execute(fishcall mcedit {}),"\
 	"f3:execute(fishcall mcview {}),"\
-	"alt-l:execute(cat {} | fishcall __sp_pager),"\
+	"alt-l:execute(cat -- {} | fishcall __sp_pager),"\
 	"ctrl-v:accept,"\
-	"alt-v:execute(vi {}),"\
+	"alt-v:execute(vi -- {}),"\
 	"shift-up,alt-up:become(echo //up:{q}),"\
-	"shift-down,alt-down:become(echo //down:{q}\\n{}),"\
+	"shift-down,alt-down:become(echo //down:{q}; printf %s\\\\n {}),"\
 	"shift-left,alt-left:become(echo //prev:{q}),"\
 	"shift-right,alt-right:become(echo //next:{q}),"\
 	"f1,alt-h:execute(fishcall cheat --fzf-query),"\
@@ -62,7 +62,7 @@ function __sp_file_recursive -d \
 		| while read -l r
 			set result $result $r
 		end
-
+		
 		if string match -q --regex "^//up:(?<new_query>.*)" -- "$result[1]"
 			set query "$new_query"
 			cd ..
@@ -106,16 +106,16 @@ function __sp_file_recursive -d \
 			if [ ! -d "$chdir_dest" ]
 				set chdir_dest (dirname "$chdir_dest")
 			end
-			cd "$chdir_dest"
+			cd -- "$chdir_dest"
 			commandline -f repaint
 			return
 		end
 
 		break
 	end
-
+	
 	if [ -z "$result" ]
-		cd "$original_dir"
+		cd -- "$original_dir"
 		commandline -f repaint
 		return
 	else
@@ -124,12 +124,12 @@ function __sp_file_recursive -d \
 
 	for i in $result
 		if [ "$paste_absolute_path" = "yes" ]
-			commandline -it -- (string escape -- (realpath "$i"))
+			commandline -it -- (string escape -- (realpath -- "$i"))
 		else
 			commandline -it -- (string escape -- $i)
 		end
 		commandline -it -- ' '
 	end
-	cd "$original_dir"
+	cd -- "$original_dir"
 	commandline -f repaint
 end
