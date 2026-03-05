@@ -16,10 +16,6 @@ if [ -e ~/Downloads/fzf ]
 then
 	cp ~/Downloads/fzf /usr/local/bin/fzf
 fi
-if [ -e ~/Downloads/sk ]
-then
-	cp ~/Downloads/sk /usr/local/bin/sk
-fi
 
 onexit_copy_downloads() {
 	# copy back downloaded files for later use
@@ -30,10 +26,6 @@ onexit_copy_downloads() {
 	if [ -e ~/.local/share/shell-pack/bin/fzf ]
 	then
 		cp ~/.local/share/shell-pack/bin/fzf ~/Downloads/fzf
-	fi
-	if [ -e ~/.local/share/shell-pack/bin/sk ]
-	then
-		cp ~/.local/share/shell-pack/bin/sk ~/Downloads/sk
 	fi
 	if [ -e ~/.local/share/shell-pack/bin/dool.d ] && [ ! -e ~/Downloads/dool.d ]
 	then
@@ -71,7 +63,7 @@ chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable 
 
 # ggit testing grounds
 (cd ~
-mkdir ggit-test
+mkdir -p ggit-test
 cd ggit-test
 git init -q
 git config --global user.email "you@example.com"
@@ -79,11 +71,12 @@ git config --global user.name "Your Name"
 echo "New file" > newfile.txt
 )
 
-# autorun installer on first startup
-if [ "$AUTOSTART" = "yes" -a ! -e ~/.local/share/shell-pack/config ]; then
+# autorun installer
+if [ "$AUTOSTART" = "yes" ]; then
 	echo "-------------------------------------------------"
 	echo "         Installer 'get.sh'             "
 	echo "-------------------------------------------------"
+	cd ~/Downloads
 	FORCE_PRE_DOWNLOADED=y ~/Downloads/get.sh
 	cd ~shpuser/Downloads
 	FORCE_PRE_DOWNLOADED=y su shpuser -c "./get.sh" > /dev/null

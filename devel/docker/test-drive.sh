@@ -90,6 +90,7 @@ case "${3:-}" in
 	"persist" )
 		persist="yes"
 		;;
+	"" ) ;;
 	"help"| * )
 		usage
 		exit 1
@@ -252,6 +253,7 @@ container_id=$(
 	-e TERM="$TERM" \
 	--hostname "test-${tagname}" \
 	--volume "$tmpdir:/root/Downloads:rw" \
+	--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
 	$PLATFORM \
 	--interactive \
 	--tty \
