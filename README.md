@@ -32,6 +32,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `zero-unused-space`: fill 90% of free space with null-bytes
  * `create`, create and edit boilerplate files of various types
  * `qcrypt`, encrypt file or stream with password utilizing `openssl` or `gpg`
+ * `grasp`, pipe a stream through fzf for real-time filtering
  * Linux only
    * `lsports`: list open ports in compact manner or perform nmap scan (see --help)
    * `lsnet`: list active network connections in compact manner
