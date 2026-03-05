@@ -4,7 +4,8 @@ function __sp_fzf_defaults -S -d \
 	
 
 	set fzf_defaults --info inline-right --input-border=line --height=~80% --reverse \
-		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87"
+		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87" \
+		"--bind=esc:cancel"
 
 	if set -q _flag_exact
 		set -a fzf_defaults "--exact" "--ghost=[fzf query, exact match]"
