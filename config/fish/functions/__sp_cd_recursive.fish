@@ -2,7 +2,7 @@
 function __sp_cd_recursive -d \
 	"Change directory - recursive search"
 	begin
-		echo 'esc:cancel enter:done f1:query-syntax'
+		echo 'esc:cancel enter:done f1:help-syntax'
 		echo "alt-arrows:navigate alt-l:list alt-s:recurse-symlinks"
 	end | __sp_fzf_header
 	set -l fzf_binds (printf %s \

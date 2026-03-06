@@ -2,7 +2,7 @@
 function __sp_file_recursive -d \
 	"Pick files and folders - recursive search"
 	begin
-		echo 'tab:select enter:paste f1:query-syntax alt-p:preview'
+		echo 'tab:select enter:paste f1:help-syntax alt-p:preview'
 		echo 'alt-c:chdir alt-l:pager alt-v:vim f3:mcview f4:mcedit'
 		echo 's-arrows:navigate alt-s:recurse-symlinks'
 	end | __sp_fzf_header

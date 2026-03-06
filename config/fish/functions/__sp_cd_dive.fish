@@ -2,7 +2,7 @@
 function __sp_cd_dive -d \
 	"Change directory - dive one level"
 	begin
-		echo 'esc:cancel enter:done f1:query-syntax'
+		echo 'esc:cancel enter:done f1:help-syntax'
 		echo "c-v:paste s-arrows:navigate alt-l:list"
 	end | __sp_fzf_header
 	set -l fzf_binds (printf %s \
