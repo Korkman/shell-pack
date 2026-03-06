@@ -23,7 +23,7 @@ function shell-pack-deps-install-fzf
 	echo "Project website: https://github.com/junegunn/fzf"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "0.66.1"
+		set pversion "0.70.0"
 	end
 	set tpl_arm_v6 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv6.tar.gz"
 	set tpl_arm_v7 "https://github.com/junegunn/fzf/releases/download/vVERSION/fzf-VERSION-linux_armv7.tar.gz"

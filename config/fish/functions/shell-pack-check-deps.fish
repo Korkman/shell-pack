@@ -69,7 +69,7 @@ function shell-pack-check-deps -d \
 	end
 	
 	test_version_min "ripgrep" "15.1.0" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
-	test_version_min "fzf"     "0.66.1" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
+	test_version_min "fzf"     "0.70.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
 	test_version_min "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
 	test_version_min "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	
