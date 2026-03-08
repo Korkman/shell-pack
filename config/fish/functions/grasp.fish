@@ -57,7 +57,7 @@ function grasp -d \
 		'page-up:page-up+track-current,page-down:page-down+track-current,' \
 		'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
 		'left-click:track-current,right-click:select+track-current,' \
-		'tab:select+down+track-current,' \
+		'tab:toggle+down+track-current,' \
 		'alt-r:reload(cat {*f})'
 	)
 	
