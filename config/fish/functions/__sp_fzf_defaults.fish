@@ -4,7 +4,7 @@ function __sp_fzf_defaults -S -d \
 	
 
 	set fzf_defaults --info inline-right --input-border=line --height=~80% --reverse \
-		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87" \
+		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87 header-label:#ffffff:bold" \
 		"--bind=esc:cancel"
 
 	if set -q _flag_exact
@@ -19,7 +19,11 @@ function __sp_fzf_defaults -S -d \
 	end
 	
 	if set -q fzf_header
-		set -a fzf_defaults --header "$fzf_header"
+		set -a fzf_defaults --header "$fzf_header" --bind "alt-b:toggle-header"
+		# if multiple newlines are present in the header, add a border and label to hint the key to hide it
+		if string match -q --regex ".*\\n.*" -- "$fzf_header"
+			set -a fzf_defaults --header-border=line --header-label=" keybinds [alt-b] "
+		end
 	end
 	
 	# speed up fzf "execute" and "become" actions by using /bin/sh if available, instead of $SHELL
