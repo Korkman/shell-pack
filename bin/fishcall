@@ -20,7 +20,7 @@ if [ "$funcname" = "fishcall" ]
 	end
 end
 
-if functions -q $funcname
+if type -q $funcname
 	$funcname $myargs
 else
 	echo "Fish function does not exist: $funcname"
