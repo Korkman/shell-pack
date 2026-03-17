@@ -128,7 +128,7 @@ function __sp_tweak_user_defaults -d \
 				# (-R for all paging is questionable, but this is the cleanest way yet)
 				set -x -g LESS "-Rix4"
 				if $__cap_less_has_mouse
-					set -x -g LESS "$LESS --mouse"
+					set -x -g LESS "$LESS --mouse --save-marks"
 				end
 			case LESS_TERMCAP_so
 				# bright yellow background in less highlights (improving manpage readability)
