@@ -530,7 +530,12 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 				__spt status_fail
 				# ring the bell indirectly so it doesn't ring on every prompt redraw
 				set -g __sp_postexec_bell yes
-				echo -n (__spt unhappy)" ""$__saved_status "
+				set -l human_status (fish_status_to_signal $__saved_status)
+				if test "$human_status" != "$__saved_status"
+					echo -n (__spt unhappy)" ""$__saved_status ("$human_status") "
+				else
+					echo -n (__spt unhappy)" ""$__saved_status "
+				end
 			end
 			set_color $fish_color_autosuggestion
 			__shellpack_cmd_duration
