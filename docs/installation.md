@@ -2,7 +2,7 @@
 Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
- * [fish shell](https://fishshell.com/) version 3.1 or higher. Automated installer for several distros, YMMV:
+ * [fish shell](https://fishshell.com/) version 3.2 or higher. Automated installer for several distros, YMMV:
     ```bash
     curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/main/devel/docker/added/fish-installer.sh | sh
     ```
