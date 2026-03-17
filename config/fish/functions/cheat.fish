@@ -144,7 +144,7 @@ Toggle full private mode      private
 ========== utilities ==========
 
 Grasp a stream or file with fzf    grasp CMD [ ARGS ]
-Use grasp as pager                 graspp CMD [ ARGS ]
+Use fzf as pager                   ppage CMD [ ARGS ]
 List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports
 List established connections       lsnet

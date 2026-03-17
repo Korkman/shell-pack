@@ -1,4 +1,4 @@
-function graspp -d \
+function ppage -d \
 	"Invoke grasp as --pager"
 	grasp --pager $argv
 end

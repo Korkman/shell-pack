@@ -39,7 +39,7 @@ function grasp -d \
 			echo "  -nN, --tail=N   Max number of lines in memory (default: $default_lines)"
 			echo "  -p, --pager     'pager' mode: behave more like a pager with search (raises tail default to $default_pager_lines)"
 			echo
-			echo "Alias graspp invokes grasp with --pager."
+			echo "Alias ppage invokes grasp with --pager."
 		end >&2
 		return 1
 	end
@@ -52,6 +52,7 @@ function grasp -d \
 	begin
 		echo 'slash/spc:show-search esc:hide-search'
 		echo 'alt-q:exit f1:help-syntax'
+		echo 'alt-c:clear-query'
 		echo 'alt-w:word-wrap alt-t:track alt-o:sort-best'
 		echo 'alt-up/dn:jump-selected'
 		echo 'f6/f7/ctrl-p/-n:jump-match'
@@ -61,13 +62,13 @@ function grasp -d \
 		echo 'alt-s/-S:print-/save-selected'
 		echo 'alt-m/-M:print-/save-matched'
 		echo 'alt-a:select-all alt-n:deselect-all'
-		echo 'Hide search = no modifier'
+		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
 	end | __sp_fzf_header
 	
 	__sp_fzf_defaults --exact --compact
 	
 	# these keys can be used with no modifier key in pager mode (enter)
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,r,f,q,space,g,G,s,S,m,M'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,r,f,q,space,g,G,s,S,m,M,c'
 	
 	set -l fzf_binds (printf %s \
 		'f1,alt-h:execute(fishcall cheat --fzf-query),' \
@@ -93,7 +94,7 @@ function grasp -d \
 		'alt-q,q:abort,' \
 		'enter,esc:hide-input+rebind('$pager_mode_keys'),' \
 		':,/,space:show-input+unbind('$pager_mode_keys'),' \
-		'alt-c:kill-line+show-input+unbind('$pager_mode_keys')'
+		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys')'
 	)
 	
 	set -a fzf_defaults --highlight-line --wrap-word --multi --exact --ansi --no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" --height=-1
