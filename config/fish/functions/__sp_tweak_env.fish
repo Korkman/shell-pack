@@ -206,6 +206,9 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_stat_has_printf "__sp_cap_stat_has_printf"
 	set -g __cap_less_has_mouse "__sp_cap_less_has_mouse"
 	set -g __cap_find_has_xtype "__sp_cap_find_has_xtype"
+	set -g __cap_proc_pid_stat "__cap_proc_pid_stat"
+	set -g __cap_ps_has_lstart "__cap_ps_has_lstart"
+	set -g __cap_ps_has_start "__cap_ps_has_start"
 end
 
 function __sp_tweak_keybinds \
