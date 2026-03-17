@@ -5,25 +5,29 @@
 load_shell_pack
 
 # wrapper to execute a fish alias outside of fish
-set -l myargs $argv
 set -l funcname (basename (status filename))
 if [ "$funcname" = "fishcall" ]
-	if [ (count $myargs) -eq 0 ]
+	if [ (count $argv) -eq 0 ]
 		echo "Usage:"
 		echo "Either create a symlink to this file to proxy bash scripts into fish functions"
 		echo "or call with function name as first argument, followed by function arguments"
 		exit 1
 	else
-		set funcname $myargs[1]
+		set funcname $argv[1]
 		# shift
-		set -e myargs[1]
+		set -e argv[1]
 	end
 end
 
+# on passed signals, we wait for the current process (which also gets the signal)
+function int_handler --on-signal SIGINT --on-signal SIGTERM --on-signal SIGQUIT
+	wait
+	exit $status
+end
+
 if type -q $funcname
-	$funcname $myargs
+	$funcname $argv
 else
 	echo "Fish function does not exist: $funcname"
 	exit 1
 end
-
