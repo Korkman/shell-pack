@@ -6,7 +6,7 @@ function __sp_fzf_defaults -S -d \
 	set fzf_defaults --info inline-right --input-border=line --height=~80% --reverse \
 		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87 header-label:#ffffff:bold" \
 		"--color=selected-fg:#ffff00:bold selected-bg:#333300" \
-		"--bind=esc:cancel,ctrl-left:backward-word,ctrl-right:forward-word"
+		"--bind=esc:cancel,ctrl-left:backward-word,ctrl-right:forward-word,ctrl-backspace:backward-kill-word,ctrl-delete:kill-word"
 
 	set -l ghost_add
 	if set -q _flag_compact
