@@ -80,6 +80,7 @@ function grasp -d \
 		echo 'alt-s/-S:print-/save-selected'
 		echo 'alt-m/-M:print-/save-matched'
 		echo 'alt-a:select-all alt-n:deselect-all'
+		echo 'ctrl-p/-n:query-history'
 		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
 	end | __sp_fzf_header
 	
