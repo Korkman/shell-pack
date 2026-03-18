@@ -1,7 +1,25 @@
 function grasp -d \
 	"Pipe live stream or file through fzf"
 	
-	argparse --stop-nonopt p/pager n/tail=? -- $argv
+	argparse --stop-nonopt write-history whq= p/pager n/tail=? -- $argv
+	
+	set -l fzf_history_file "$HOME/.local/share/shell-pack/fzf_grasp_history"
+	
+	# internal call to write queries to history
+	if set -q _flag_write_history
+		if test "$_flag_whq" = ""
+			return 0
+		end
+		# get last line, write new line only if different
+		set -l last ""
+		if test -e "$fzf_history_file"
+			set last (tail -n1 "$fzf_history_file")
+		end
+		if test "$last" != "$_flag_whq"
+			echo "$_flag_whq" >> "$fzf_history_file"
+		end
+		return 0
+	end
 	
 	set -l default_lines 10000
 	set -l default_pager_lines 100000
@@ -55,7 +73,7 @@ function grasp -d \
 		echo 'alt-c:clear-query'
 		echo 'alt-w:word-wrap alt-t:track alt-o:sort-best'
 		echo 'alt-up/dn:jump-selected'
-		echo 'f6/f7/ctrl-p/-n:jump-match'
+		echo 'f2/f3/alt-p/-n:jump-match'
 		echo 'alt-page-up/dn:begin/end'
 		echo 'alt-r:reload-matched'
 		echo 'alt-f:(un)filter'
@@ -87,17 +105,19 @@ function grasp -d \
 		'page-up:page-up+track-current,page-down:page-down+track-current,' \
 		'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
 		'left-click:track-current,right-click:select+track-current,' \
-		'ctrl-n,f3,f7,n:down-match+track-current,ctrl-p,f6,p,N:up-match+track-current,' \
+		'f3,n:down-match+track-current,f2,p,N:up-match+track-current,' \
 		'tab:toggle+down+track-current,' \
 		'alt-r,r:select-all+reload(fishcall tac {+f}),' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q:abort,' \
-		'enter,esc:hide-input+rebind('$pager_mode_keys'),' \
+		'alt-.:prev-history,alt-,:next-history,' \
+		'enter,esc:hide-input+rebind('$pager_mode_keys')+execute-silent(fishcall grasp --write-history --whq={q}),' \
 		':,/,space:show-input+unbind('$pager_mode_keys'),' \
 		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys')'
 	)
 	
 	set -a fzf_defaults --highlight-line --wrap-word --multi --exact --ansi --no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" --height=-1
+	set -a fzf_defaults --history "$fzf_history_file"
 
 	# start in compact mode with invisible search (q exits)
 	set -a fzf_defaults --bind 'start:unbind(result)+trigger(esc)+hide-header,change:rebind(result)'
