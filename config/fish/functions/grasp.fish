@@ -3,6 +3,9 @@ function grasp -d \
 	
 	argparse --stop-nonopt write-history whq= p/pager n/tail=? -- $argv
 	
+	if ! test -e "$HOME/.local/share/shell-pack"
+		mkdir -p "$HOME/.local/share/shell-pack"
+	end
 	set -l fzf_history_file "$HOME/.local/share/shell-pack/fzf_grasp_history"
 	
 	# internal call to write queries to history
