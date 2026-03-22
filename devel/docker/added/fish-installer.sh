@@ -27,7 +27,7 @@ main() {
 	fi
 	MAKE_J=${MAKE_J:-1} # NOTE: going beyond 1 sometimes deadlocks, 2 gives OOM in default podman machines
 	
-	if [ "${FISH_STATIC:-no}" = "yes" ]
+	if [ "${FISH_STATIC:-yes}" = "yes" ]
 	then
 		installer_case="Static"
 	else
