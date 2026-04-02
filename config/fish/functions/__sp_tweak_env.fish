@@ -121,7 +121,8 @@ function __sp_tweak_user_defaults -d \
 				# default pager setup
 				# do not add arguments here. it usually points to a binary
 				# and nothing else, people may rely on that.
-				set -x -g PAGER "less"
+				#set -x -g PAGER "less"
+				set -x -g PAGER "ppage"
 			case LESS
 				# less configured in a "git log" compatible way
 				# (it uses $LESS internally, but uses our $LESS if defined)
