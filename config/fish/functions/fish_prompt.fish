@@ -134,6 +134,27 @@ function fish_prompt -d \
 		end
 	end
 	
+	if [ ! -w "$PWD" ]
+		# lock-icon for write-protected
+		fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lock)
+		# trigger warning message outside of prompt
+		set -q __sp_fs_read_only_learned
+		or set -g __sp_fs_read_only_learned yes
+	else if type -q timeout && type -q df && timeout 1s df -m . | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
+		# low space warning: less than 10GB free and more than 90% used
+		set -q __sp_fs_used_pct_threshold
+		or set __sp_fs_used_pct_threshold 90
+		set -q __sp_fs_free_threshold
+		or set __sp_fs_free_threshold 10240
+		if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
+			set fs_free_pct (math 100 - $fs_used_pct)
+			fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
+			# trigger warning message outside of prompt
+			set -q __sp_fs_low_space_learned
+			or set -g __sp_fs_low_space_learned yes
+		end
+	end
+	
 	if [ "$__session_tag" != "" ]
 		set -l visual_session_tag "$__session_tag"
 		fish_prompt_shorten_string visual_session_tag 20
@@ -158,6 +179,15 @@ function fish_prompt -d \
 	
 	# one last live patch in fish_prompt: hand over autoupdates to __sp_autoupdate
 	functions -q __sp_autoupdate
+end
+
+function __sp_on_fs_read_only --on-variable __sp_fs_read_only_learned
+	echo (__spt status_fail)" "(__spt lock)" "(__spt right_arrow)" Read-only filesystem!"
+end
+
+function __sp_on_fs_low_space --on-variable __sp_fs_low_space_learned
+	echo (__spt status_fail)" "(__spt lowspace)" "(__spt right_arrow)" Disk space running low!"(set_color normal)
+	df -h .
 end
 
 function __sp_prompt_add_path_segments --no-scope-shadowing
@@ -218,11 +248,6 @@ function __sp_prompt_add_path_segments --no-scope-shadowing
 				end
 			end
 		end
-	end
-	
-	# lock-icon for write-protected
-	if [ ! -w "$PWD" ]
-		fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lock)
 	end
 	
 end
@@ -686,81 +711,5 @@ function __sp_get_pending_job_pids -d \
 		end
 		#	NOTE: gid -2 exists,
 		#	see: https://github.com/fish-shell/fish-shell/issues/9712
-	end
-end
-
-function __sp_delay_exec_hook -e sp_submit_commandline -d \
-	"Delay execution when commandline starts with @ 'timespec'"
-	
-	if test (__sp_vercmp "$FISH_VERSION" '3.7.1') -ge 0 && ! commandline --is-valid
-		return
-	end
-	
-	set -l cmd (commandline)
-	echo "$cmd" | read -a --tokenize tokens
-	
-	if test "$tokens[1]" = '@'
-		set -l at_time_human "$tokens[2]"
-		echo ""
-		if __sp_delay_exec "$at_time_human"
-			# move cursor up
-			echo -en '\033[1A'
-			# clear line
-			echo -en '\033[2K'
-			# move cursor up
-			echo -en '\033[1A'
-			
-			#set cmd (string replace --regex "^ *@.*?: *" "" -- $cmd)
-			#commandline $cmd
-		else
-			echo ""
-			echo "Usage: @ 'TIME' COMMANDLINE" >&2
-			echo "" >&2
-			echo "Execute COMMANDLINE at given TIME" >&2
-			echo "" >&2
-			echo "Examples for TIME (GNU compatible 'date'):" >&2
-			echo "  14:00:00    -  execute at 14 'o clock this or next day" >&2
-			echo "  '1 hour'    - execute 1 hour in the future" >&2
-			echo "  'tue 01:00' -  execute Tuesday 1 o' clock" >&2
-			echo "" >&2
-			echo "Pipes are supported and will start on schedule:" >&2
-			echo "  @ '5 seconds' echo \"print my example\" | grep \"my example\"" >&2
-			commandline "  commandline "(string escape -- $cmd)
-		end
-	end
-end
-
-function __sp_delay_exec
-	set -l at_time_human $argv
-	if test "$at_time_human" = ""
-		echo "Time argument missing"
-		return 1
-	end
-	# interpret date / time
-	set timestamp_target (date -d "$at_time_human" +%s) || return 4
-	set timestamp_now (date +%s)
-	
-	# correct +1day
-	if test $timestamp_target -lt $timestamp_now
-		set timestamp_target (date -d "+1 day $at_time_human" +%s)
-		if test $timestamp_target -lt $timestamp_now
-			echo "Requested time less than now, assuming user error!"
-			return 1
-		end
-		echo "Requested time less than now, assuming +1 day"
-	end
-	
-	set delay (math "$timestamp_target - "(date +%s))
-	echo "Delay $delay seconds until "(date -d "@$timestamp_target" "+%Y-%m-%d %H:%M:%S")" …"
-	
-	if test $delay -gt 2
-		# cut sleep to increase precision at end with the loop below
-		sleep (math "$delay - 2")
-	end
-	
-	# synchronize to the second
-	set idle 0
-	while test (date +%s) -lt $timestamp_target
-		set idle (math $idle + 1)
 	end
 end

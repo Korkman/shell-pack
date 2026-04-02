@@ -198,6 +198,9 @@ function __spt -d \
 			case lock
 				echo '!ro'
 				return
+			case lowspace
+				echo '!df'
+				return
 			case tag
 				echo '#'
 				return
@@ -264,6 +267,9 @@ function __spt -d \
 			return
 		case lock
 			echo ''
+			return
+		case lowspace
+			echo '󱘺'
 			return
 		case bookmark
 			echo ' '
