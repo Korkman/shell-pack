@@ -102,10 +102,10 @@ function grasp -d \
 	set -l linenumber_cmd
 	if test "$GRASP_LN" = "1"
 		# line numbers present, must be undone by alt-l
-		set linenumber_cmd 'sed "s/^[0-9]\+://" | GRASP_LN=0 fishcall ppage'
+		set linenumber_cmd 'fishcall __sp_linenumbers --undo | GRASP_LN=0 fishcall ppage'
 	else
 		# line numbers not preset, alt-l adds them via ripgrep
-		set linenumber_cmd 'rg --color=always --pretty --line-number "" | GRASP_LN=1 fishcall ppage'
+		set linenumber_cmd 'fishcall __sp_linenumbers --width=auto | GRASP_LN=1 fishcall ppage'
 	end
 
 	

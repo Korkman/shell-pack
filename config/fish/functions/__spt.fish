@@ -160,6 +160,9 @@ function __spt -d \
 		case fish_command_fg
 			$scolor "00ff87"
 			return
+		case linenumber
+			$scolor "00ff87"
+			return
 		case fish_command_color
 			echo -n "00ff87"
 			return
