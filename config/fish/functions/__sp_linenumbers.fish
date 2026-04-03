@@ -1,18 +1,19 @@
 function __sp_linenumbers -d \
-	"Add line numbers to input, --undo to remove them, --width to set padding width (default 6, or 'auto' to determine with temp file)."
-	argparse u/undo w/width= -- $argv
+	"Add line numbers to input. Pass --total, --width and --undo to control behavior."
+	argparse u/undo w/width= t/total= -- $argv
 	
 	if ! set -q _flag_width
 		set _flag_width 6
 	end
 	
 	if test "$_flag_width" = "auto" && ! set -q _flag_undo
-		# count lines in tmp file to determine width
-		set -l tmpfile (mktemp __sp_linenumbers.XXXXXX)
-		cat > $tmpfile
-		set -l total
-		wc -l < $tmpfile | string match -q --regex "^\s*(?<total>[0-9]+)"
-		set _flag_width (string length -- $total)
+		if ! set -q _flag_total
+			# count lines in tmp file to determine width
+			set -l tmpfile (mktemp __sp_linenumbers.XXXXXX)
+			cat > $tmpfile
+			wc -l < $tmpfile | string match -q --regex "^\s*(?<_flag_total>[0-9]+)"
+		end
+		set _flag_width (string length -- $_flag_total)
 		cat $tmpfile | __sp_linenumbers --width=$_flag_width
 		rm $tmpfile
 		return

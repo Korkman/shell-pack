@@ -105,7 +105,7 @@ function grasp -d \
 		set linenumber_cmd 'fishcall __sp_linenumbers --undo | GRASP_LN=0 fishcall ppage'
 	else
 		# line numbers not preset, alt-l adds them via ripgrep
-		set linenumber_cmd 'fishcall __sp_linenumbers --width=auto | GRASP_LN=1 fishcall ppage'
+		set linenumber_cmd 'fishcall __sp_linenumbers -w auto -t $FZF_TOTAL_COUNT | GRASP_LN=1 fishcall ppage'
 	end
 
 	
