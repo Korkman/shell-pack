@@ -79,7 +79,6 @@ function grasp -d \
 		echo 'alt-up/dn:jump-selected'
 		echo 'f2/f3/alt-p/-n:jump-match'
 		echo 'alt-page-up/dn:begin/end'
-		echo 'alt-r:reload-matched'
 		echo 'alt-f:(un)filter'
 		echo 'alt-s/-S:print-/save-selected'
 		echo 'alt-m/-M:print-/save-matched'
@@ -91,13 +90,13 @@ function grasp -d \
 	__sp_fzf_defaults --exact --compact
 	
 	# these keys can be used with no modifier key in pager mode (enter)
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,r,f,q,space,g,G,s,S,m,M,c,l'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l'
 	
 	set -l recat_cmd
 	if set -q GRASP_PAGER
-		set recat_cmd "cat {+f}"
+		set recat_cmd "cat {*f}"
 	else
-		set recat_cmd "fishcall tac {+f}"
+		set recat_cmd "fishcall tac {*f}"
 	end
 
 	set -l linenumber_cmd
@@ -129,8 +128,7 @@ function grasp -d \
 		'left-click:track-current,right-click:select+track-current,' \
 		'f3,n:down-match+track-current,f2,p,N:up-match+track-current,' \
 		'tab:toggle+down+track-current,' \
-		'alt-r,r:select-all+become('$recat_cmd' | fishcall ppage),' \
-		'alt-l,l:show-input+clear-query+select-all+become('$recat_cmd' | '$linenumber_cmd'),' \
+		'alt-l,l:become('$recat_cmd' | '$linenumber_cmd'),' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q:abort,' \
 		'alt-.:prev-history,alt-,:next-history,' \
