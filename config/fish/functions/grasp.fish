@@ -74,7 +74,8 @@ function grasp -d \
 		echo 'slash/spc:show-search esc:hide-search'
 		echo 'alt-q:exit f1:help-syntax'
 		echo 'alt-c:clear-query'
-		echo 'alt-w:word-wrap alt-t:track alt-o:sort-best'
+		echo 'alt-w:word-wrap alt-o:sort-best'
+		echo 'alt-l:line-numbers'
 		echo 'alt-up/dn:jump-selected'
 		echo 'f2/f3/alt-p/-n:jump-match'
 		echo 'alt-page-up/dn:begin/end'
@@ -90,7 +91,24 @@ function grasp -d \
 	__sp_fzf_defaults --exact --compact
 	
 	# these keys can be used with no modifier key in pager mode (enter)
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,r,f,q,space,g,G,s,S,m,M,c'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,r,f,q,space,g,G,s,S,m,M,c,l'
+	
+	set -l recat_cmd
+	if set -q GRASP_PAGER
+		set recat_cmd "cat {+f}"
+	else
+		set recat_cmd "fishcall tac {+f}"
+	end
+
+	set -l linenumber_cmd
+	if test "$GRASP_LN" = "1"
+		# line numbers present, must be undone by alt-l
+		set linenumber_cmd 'sed "s/^[0-9]\+://" | GRASP_LN=0 fishcall ppage'
+	else
+		# line numbers not preset, alt-l adds them via ripgrep
+		set linenumber_cmd 'rg --color=always --pretty --line-number "" | GRASP_LN=1 fishcall ppage'
+	end
+
 	
 	set -l fzf_binds (printf %s \
 		'f1,alt-h:execute(fishcall cheat --fzf-query),' \
@@ -111,7 +129,8 @@ function grasp -d \
 		'left-click:track-current,right-click:select+track-current,' \
 		'f3,n:down-match+track-current,f2,p,N:up-match+track-current,' \
 		'tab:toggle+down+track-current,' \
-		'alt-r,r:select-all+reload(fishcall tac {+f}),' \
+		'alt-r,r:select-all+become('$recat_cmd' | fishcall ppage),' \
+		'alt-l,l:show-input+clear-query+select-all+become('$recat_cmd' | '$linenumber_cmd'),' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q:abort,' \
 		'alt-.:prev-history,alt-,:next-history,' \
@@ -121,6 +140,7 @@ function grasp -d \
 	)
 	
 	set -a fzf_defaults --highlight-line --wrap-word --multi --exact --ansi --no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" --height=-1
+
 	set -a fzf_defaults --history "$fzf_history_file"
 
 	# start in compact mode with invisible search (q exits)
@@ -141,6 +161,13 @@ function grasp -d \
 	end
 
 	set -p fzf_defaults fzf
+	
+	if test ! -t 1
+		# STDOUT is not a terminal! Someone is using us as a pipe
+		if set -q GRASP_PAGER
+			set fzf_defaults __sp_grasp_fzf_is_cat
+		end
+	end
 
 	set -l fzf_status
 	if test ! -t 0
@@ -189,4 +216,9 @@ function grasp -d \
 	end
 	
 	return 0
+end
+
+function __sp_grasp_fzf_is_cat
+	# discarding all fzf arguments, we become 'cat'
+	cat
 end
