@@ -1,7 +1,7 @@
 function grasp -d \
 	"Pipe live stream or file through fzf"
 	
-	argparse --stop-nonopt write-history whq= p/pager n/tail=? -- $argv
+	argparse --stop-nonopt write-history whq= p/pager t/tail=? n/line-number -- $argv
 	
 	if ! test -e "$HOME/.local/share/shell-pack"
 		mkdir -p "$HOME/.local/share/shell-pack"
@@ -99,6 +99,21 @@ function grasp -d \
 		set recat_cmd "fishcall tac {*f}"
 	end
 
+	set -l evalpipe
+	set -l columns_margin 2
+	if set -q _flag_line_number
+		# increase columns_margin to accommodate line numbers when enabled, so `ppage man man` doesn't wrap
+		set columns_margin 8
+		set GRASP_LN 1
+		if set -q GRASP_PAGER
+			set evalpipe '__sp_linenumbers -w auto | $fzf_defaults'
+		else
+			set evalpipe '__sp_linenumbers -w 6 | $fzf_defaults'
+		end
+	else
+		set evalpipe '$fzf_defaults'
+	end
+	
 	set -l linenumber_cmd
 	if test "$GRASP_LN" = "1"
 		# line numbers present, must be undone by alt-l
@@ -172,7 +187,7 @@ function grasp -d \
 		# read form stdin which is not a terminal
 		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"STDIN"(set_color normal)" "(set_color normal)
 		set -a fzf_defaults --input-label "$input_label"
-		$fzf_defaults
+		eval $evalpipe
 		set fzf_status $status
 	else
 		if test (count $argv) -eq 1 && test -e $argv[1]
@@ -194,7 +209,7 @@ function grasp -d \
 		set -a fzf_defaults --input-label "$input_label"
 		# `< /dev/null` - cut off /dev/tty from $cmd so it doesn't interfere with fzf's input (ssh journalctl crashes otherwise)
 		# `COLUMNS=...` - reduce terminal width for $cmd so it wraps nicely within fzf's padding
-		set -l fifo_info (COLUMNS=(math $COLUMNS-2) __sp_fifo_helper $cmd < /dev/null)
+		set -l fifo_info (COLUMNS=(math $COLUMNS-$columns_margin) __sp_fifo_helper $cmd < /dev/null)
 		or return 2
 		set -l fifo_pid $fifo_info[1]
 		set -l fifo_path $fifo_info[2]
@@ -203,7 +218,7 @@ function grasp -d \
 			return 3
 		end
 		set -l fifo_pid_fp (__sp_pid_fingerprint $fifo_pid)
-		$fzf_defaults < "$fifo_path"
+		eval $evalpipe < "$fifo_path"
 		set fzf_status $status
 		__sp_pid_fingerprint_kill $fifo_pid $fifo_pid_fp
 		rm -f "$fifo_path"
