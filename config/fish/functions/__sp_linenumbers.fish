@@ -10,7 +10,8 @@ function __sp_linenumbers -d \
 		# count lines in tmp file to determine width
 		set -l tmpfile (mktemp __sp_linenumbers.XXXXXX)
 		cat > $tmpfile
-		set -l total (wc -l < $tmpfile)
+		set -l total
+		wc -l < $tmpfile | string match -q --regex "^\s*(?<total>[0-9]+)"
 		set _flag_width (string length -- $total)
 		cat $tmpfile | __sp_linenumbers --width=$_flag_width
 		rm $tmpfile
