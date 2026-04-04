@@ -352,7 +352,9 @@ function __spt_init -d \
 	__update_nerdlevel
 
 	
-	set -g __cap_colors (tput colors) || set -g __cap_colors 8
+	if ! set -q __cap_colors
+		set -gx __cap_colors (tput colors) || set -gx __cap_colors 8
+	end
 
 	set -g fish_prompt_pwd_dir_length 0
 	set -g theme_time_format "+%H:%M:%S"           # time format for time hints

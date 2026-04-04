@@ -1,7 +1,12 @@
 function __sp_autoupdate -e fish_prompt -e fish_focus_in -d \
 	"Trigger autoupdate check after command execution"
 	if test "$argv[1]" = "init"
-		# just register as event handler
+		# (invocation registers event handler)
+
+		# hash and mtime of config.fish for auto reload
+		set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
+		set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
+	
 		return
 	end
 	

@@ -49,12 +49,10 @@ function load_shell_pack -d "Load shell-pack"
 	# - keybinds
 	__sp_tweak_env
 	
-	# hash and mtime of config.fish for auto reload
-	set -g __sp_config_fish_mtime (__sp_getmtime $__sp_config_fish_file)
-	set -g __sp_config_fish_md5 (__sp_getmd5 $__sp_config_fish_file)
-	
-	# initialize __sp_autoupdate
-	__sp_autoupdate init
+	# when interactive, initialize __sp_autoupdate
+	if status --is-interactive
+		__sp_autoupdate init
+	end
 	
 	# provide $short_hostname globally
 	set -g short_hostname (echo "$hostname" | string replace --regex '\..*' '')
@@ -66,13 +64,13 @@ function load_shell_pack -d "Load shell-pack"
 	if test "$OLDSHELL" = ""
 		if $__cap_getent
 			# for Linux
-			set -g OLDSHELL (getent passwd $USER | cut -f 7 -d ":")
+			set -gx OLDSHELL (getent passwd $USER | cut -f 7 -d ":")
 		else if $__cap_finger
 			# for macOS
-			set -g OLDSHELL (finger $USER | grep 'Shell:*' | cut -f3 -d ":" | string trim)
+			set -gx OLDSHELL (finger $USER | grep 'Shell:*' | cut -f3 -d ":" | string trim)
 		else
 			# for others
-			set -g OLDSHELL (grep -E "^$USER:" < /etc/passwd | cut -f 7 -d ":")
+			set -gx OLDSHELL (grep -E "^$USER:" < /etc/passwd | cut -f 7 -d ":")
 		end
 	end
 	if test "$OLDSHELL" = "$SHELL" || test "$OLDSHELL" = ""
@@ -80,11 +78,11 @@ function load_shell_pack -d "Load shell-pack"
 		# or the passwd shell was not found
 		# test if bash, zsh, tcsh is available, use that as "oldshell"
 		if command -q bash
-			set -g OLDSHELL (command -s bash)
+			set -gx OLDSHELL (command -s bash)
 		else if command -q zsh
-			set -g OLDSHELL (command -s zsh)
+			set -gx OLDSHELL (command -s zsh)
 		else if command -q tcsh
-			set -g OLDSHELL (command -s tcsh)
+			set -gx OLDSHELL (command -s tcsh)
 		end
 	end
 	

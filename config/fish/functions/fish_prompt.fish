@@ -134,7 +134,7 @@ function fish_prompt -d \
 		end
 	end
 	
-	if [ ! -w "$PWD" ]
+	if test ! -w "$PWD"
 		# lock-icon for write-protected
 		fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lock)
 		# trigger warning message outside of prompt

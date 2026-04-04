@@ -9,31 +9,33 @@ function __sp_tweak_env -d \
 	# add polyfills
 	__sp_tweak_polyfills
 	
-	# store modification time globally for automatic reload
-	set -g __sp_tweak_env_file (status --current-filename)
-	set -g __sp_tweak_env_mtime (__sp_getmtime "$__sp_tweak_env_file")
-	
-	if ! set -q initial_env && $__cap_env_has_null
-		# only Linux versions of "env" have --null
+	if status --is-interactive
+		# store modification time globally for automatic reload
+		set -g __sp_tweak_env_file (status --current-filename)
+		set -g __sp_tweak_env_mtime (__sp_getmtime "$__sp_tweak_env_file")
+
 		# backup initial environment for reload
-		set -g initial_env (\
-			# env: switch to NUL delimited output so we can work with newline values
-			env --null | \
-			# sed: replace newlines with custom escape sequence
-			sed ':a;N;$!ba;s/\n/putAfreakinNewlineHere342273/g' | \
-			# sed: replace NUL bytes with newlines, making initial_env a list
-			sed 's/\\o0/\n/g' \
-		)
-		# decrease SHLVL to offset the increment which already happened
-		set -g initial_env $initial_env SHLVL=(math $SHLVL - 1)
+		if ! set -q initial_env && $__cap_env_has_null
+			# only Linux versions of "env" have --null
+			set -g initial_env (\
+				# env: switch to NUL delimited output so we can work with newline values
+				env --null | \
+				# sed: replace newlines with custom escape sequence
+				sed ':a;N;$!ba;s/\n/putAfreakinNewlineHere342273/g' | \
+				# sed: replace NUL bytes with newlines, making initial_env a list
+				sed 's/\\o0/\n/g' \
+			)
+			# decrease SHLVL to offset the increment which already happened
+			set -g initial_env $initial_env SHLVL=(math $SHLVL - 1)
+		end
 	end
 	
 	# treat TERM unknown to infocmp as xterm-256color, a compromise
 	# for new terminal emulators which typically supercede xterm-256color
 	# in relevant capabilities (xterm-kitty, foot, etc.)
 	# note that installing respective terminfo packages is the better solution
-	if command -q infocmp && ! infocmp &> /dev/null
-		set -g __sp_trueterm "$TERM"
+	if test "$__sp_trueterm" = "" && command -q infocmp && ! infocmp &> /dev/null
+		set -gx __sp_trueterm "$TERM"
 		# up to debian jessie, tmux was missing from terminfo database - we help by replacing it with xterm-256color
 		if test "$TERM" = "tmux-256color" && infocmp screen-256color &> /dev/null
 			set -gx TERM "screen-256color"
@@ -63,26 +65,28 @@ function __sp_tweak_env -d \
 	# misc tweaks
 	__sp_tweak_user_defaults
 	
-	# init enhanced prompt status
-	__sp_print_enhanced_prompt_exit_status init
-	
-	# list of environment variables to be kept in-sync within tmux sessions
-	# these variables will be imported into the shell when attaching
-	set -g __mmux_imported_environment \
-		LC_NERDLEVEL \
-		SHELL DISPLAY \
-		XAUTHORITY \
-		LANG \
-		SSH_AUTH_SOCK \
-		SSH_CLIENT \
-		SSH_CONNECTION \
-		SSH_TTY \
-		SSH_AGENT_PID \
-		SSH_ASKPASS \
-		DBUS_SESSION_BUS_ADDRESS \
-	;
-	
-	mmux --grab-hooks
+	if status --is-interactive
+		# init enhanced prompt status
+		__sp_print_enhanced_prompt_exit_status init
+
+		# list of environment variables to be kept in-sync within tmux sessions
+		# these variables will be imported into the shell when attaching
+		set -g __mmux_imported_environment \
+			LC_NERDLEVEL \
+			SHELL DISPLAY \
+			XAUTHORITY \
+			LANG \
+			SSH_AUTH_SOCK \
+			SSH_CLIENT \
+			SSH_CONNECTION \
+			SSH_TTY \
+			SSH_AGENT_PID \
+			SSH_ASKPASS \
+			DBUS_SESSION_BUS_ADDRESS \
+		;
+		
+		mmux --grab-hooks
+	end
 end
 
 function __sp_tweak_user_defaults -d \
@@ -182,8 +186,12 @@ end
 function __sp_tweak_capabilities -d \
 	"Populate capability variables"
 	
+	if ! set -q __sp_uname
+		set -gx __sp_uname (uname)
+	end
+
 	# detect OS capabilities (very rough)
-	if [ (uname) = "Linux" ]
+	if test "$__sp_uname" = "Linux"
 		set -g __cap_getent true
 
 		set -g __cap_dscacheutil false
