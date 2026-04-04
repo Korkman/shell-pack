@@ -91,9 +91,8 @@ else
 fi
 
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
-	DOWNLOAD_DIR=$(mktemp --tmpdir "shell-pack-get-XXXXXX")
-	mkdir -p "${DOWNLOAD_DIR}"
-	DOWNLOAD_FILENAME="${DOWNLOAD_DIR}/${DOWNLOAD_FILENAME}"
+	DOWNLOAD_TMPDIR=$(mktemp -d --tmpdir "shell-pack-get-XXXXXX")
+	DOWNLOAD_FILENAME="${DOWNLOAD_TMPDIR}/${DOWNLOAD_FILENAME}"
 	DOWNLOAD_URL="https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz"
 	echo "Downloading ${DOWNLOAD_FILENAME} ..."
 	if command -v curl > /dev/null; then
@@ -129,6 +128,9 @@ if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
 fi
 
 rm "${DOWNLOAD_FILENAME}"
+if [ "${DOWNLOAD_TMPDIR:-}" != "" ]; then
+	rmdir "${DOWNLOAD_TMPDIR}"
+fi
 
 # ---------------------------------------------
 # Symlink stuff
