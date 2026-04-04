@@ -36,6 +36,17 @@ main() {
 	run_installer "$installer_case"
 }
 
+download() {
+	if command -v curl > /dev/null; then
+		curl -fSsL "$1"
+	elif command -v wget > /dev/null; then
+		wget -qO- "$1"
+	else
+		echo "Neither curl nor wget is available, please install one of them and re-run" >&2
+		exit 1
+	fi
+}
+
 if command -v sudo > /dev/null
 then
 	sudo() {
@@ -51,7 +62,7 @@ fi
 
 build_fish() {
 	version=$1
-	curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/$version/fish-$version.tar.xz" > fish.tar.xz
+	download "https://github.com/fish-shell/fish-shell/releases/download/$version/fish-$version.tar.xz" > fish.tar.xz
 	tar -xJf fish.tar.xz
 	cd fish-*
 	cmake .
@@ -60,19 +71,14 @@ build_fish() {
 }
 
 install_cmake() {
-	curl -fsSL "https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-linux-x86_64.sh" > cmake.sh
+	download "https://github.com/Kitware/CMake/releases/download/v$cmake_version/cmake-$cmake_version-linux-x86_64.sh" > cmake.sh
 	chmod +x cmake.sh
 	./cmake.sh --prefix=/usr/local --exclude-subdir --skip-license
 }
 
 get_latest_fish_version() {
 	# get latest release version from github api
-	if command -v curl > /dev/null
-	then
-		curl -fsSL "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
-	else
-		wget -q -O- "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
-	fi
+	download "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
 }
 
 get_installer_for_distro() {
@@ -150,14 +156,14 @@ run_installer() {
 		'Debian-13') # trixie
 			# paste here
 			echo "deb http://download.opensuse.org/repositories/shells:/fish:/$suse_build_path1/Debian_13/ /" | sudo tee "/etc/apt/sources.list.d/shells:fish:$suse_build_path2.list"
-			curl -fsSL "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_13/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
+			download "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_13/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
 			sudo apt-get update
 			sudo apt-get -y install fish
 		;;
 		'Debian-12') # bookworm
 			# paste here
 			echo "deb http://download.opensuse.org/repositories/shells:/fish:/$suse_build_path1/Debian_12/ /" | sudo tee "/etc/apt/sources.list.d/shells:fish:$suse_build_path2.list"
-			curl -fsSL "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_12/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
+			download "https://download.opensuse.org/repositories/shells:fish:$suse_build_path2/Debian_12/Release.key" | gpg --dearmor | sudo tee "/etc/apt/trusted.gpg.d/shells_fish_$suse_build_path3.gpg" > /dev/null
 			sudo apt-get update
 			sudo apt-get -y install fish
 		;;
@@ -182,6 +188,26 @@ run_installer() {
 		;;
 		'Static')
 			install_arch="$(uname -m)"
+
+			if ! command -v xz > /dev/null || ! command -v wget > /dev/null
+			then
+				if command -v apt-get > /dev/null
+				then
+					sudo apt-get update
+					sudo apt-get -y install xz-utils wget
+				elif command -v dnf > /dev/null
+				then
+					sudo dnf update
+					sudo dnf install -y xz wget
+				elif command -v pacman > /dev/null
+				then
+					sudo pacman -Sy --noconfirm xz wget
+				else
+					echo "No suitable package manager found to install xz and wget, please install them manually and re-run" >&2
+					exit 1
+				fi
+			fi
+
 			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_static_latest/fish-$fish_static_latest-linux-$install_arch.tar.xz"
 			echo "installing static release from $static_release_file" | tee -a "$installer_log"
 			# test if /usr/local/bin is writable, cd and install there
@@ -203,16 +229,7 @@ run_installer() {
 			fi
 			
 			# download static release
-			if command -v curl > /dev/null
-			then
-				curl -fsSL "$static_release_file" > fish-static.tar.xz
-			elif command -v wget > /dev/null
-			then
-				wget -O fish-static.tar.xz "$static_release_file"
-			else
-				echo "neither curl nor wget available" | tee -a "$installer_log"
-				exit 1
-			fi
+			download "$static_release_file" > fish-static.tar.xz
 
 			# extract and install
 			tar -xJf fish-static.tar.xz

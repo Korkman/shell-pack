@@ -2,10 +2,21 @@
 Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
- * [fish shell](https://fishshell.com/) version 3.2 or higher. Automated installer for several distros, YMMV:
-    ```bash
-    curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/main/devel/docker/added/fish-installer.sh | sh
-    ```
+  * [fish shell](https://fishshell.com/) version 3.2 or higher
+    * Either `apt install fish`
+    * or automated installer for several distros (installs static binary by default), YMMV:
+      ```bash
+      # if you don't want a static build
+      export FISH_STATIC=no
+      ```
+      ```bash
+      # with wget
+      wget -qO- https://raw.githubusercontent.com/Korkman/shell-pack/main/devel/docker/added/fish-installer.sh | sh
+      ```
+      ```bash
+      # with curl
+      curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/main/devel/docker/added/fish-installer.sh | sh
+      ```
 
 These optional dependencies are highly recommended
  * **do not** set fish as your default shell - a POSIX compliant shell is recommended (bash, zsh, …)
@@ -17,6 +28,11 @@ These optional dependencies are highly recommended
 
 Run
 ```bash
+# with wget
+wget -qO- https://raw.githubusercontent.com/Korkman/shell-pack/latest/get.sh | sh
+```
+```bash
+# with curl
 curl -sL https://raw.githubusercontent.com/Korkman/shell-pack/latest/get.sh | sh
 ```
 
@@ -106,7 +122,7 @@ Shell-pack will check for a new version once a day on login and suggest an upgra
 
 ### Installing a specific tag, like "v2.6"
 ```bash
-export TAG="v2.6"; curl -sL "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/get.sh" | sh -s "$TAG"
+export TAG="v2.6"; wget -qO- "https://raw.githubusercontent.com/Korkman/shell-pack/$TAG/get.sh" | sh -s "$TAG"
 ```
 
 ### Installing shell-pack manually
