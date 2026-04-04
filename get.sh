@@ -91,8 +91,19 @@ else
 fi
 
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
+	DOWNLOAD_DIR=$(mktemp --tmpdir "shell-pack-get-XXXXXX")
+	DOWNLOAD_FILENAME="${DOWNLOAD_DIR}/${DOWNLOAD_FILENAME}"
+	DOWNLOAD_URL="https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz"
 	echo "Downloading ${DOWNLOAD_FILENAME} ..."
-	curl -sL "https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz" > "${DOWNLOAD_FILENAME}"
+	if command -v curl > /dev/null; then
+		curl -sL "${DOWNLOAD_URL}" > "${DOWNLOAD_FILENAME}"
+	elif command -v wget > /dev/null; then
+		wget -qO- "${DOWNLOAD_URL}" > "${DOWNLOAD_FILENAME}"
+	else
+		echo "Neither curl nor wget is available, please download and re-run:"
+		echo "${DOWNLOAD_URL}"
+		exit 1
+	fi
 fi
 
 echo "Verifying archive ${DOWNLOAD_FILENAME} ..."
