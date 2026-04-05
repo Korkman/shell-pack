@@ -102,10 +102,10 @@ function grasp -d \
 	set -l linenumber_cmd
 	if test "$GRASP_LN" = "1"
 		# line numbers present, must be undone
-		set linenumber_cmd 'fishcall __sp_linenumbers --undo | GRASP_LN=0 fishcall ppage'
+		set linenumber_cmd 'fishcall eval "__sp_linenumbers --undo | GRASP_LN=0 ppage"'
 	else
 		# line numbers not preset, adds them via ripgrep
-		set linenumber_cmd 'fishcall __sp_linenumbers -w auto -t $FZF_TOTAL_COUNT | GRASP_LN=1 fishcall ppage'
+		set linenumber_cmd 'fishcall eval "__sp_linenumbers -w auto -t $FZF_TOTAL_COUNT | GRASP_LN=1 ppage"'
 	end
 
 	# fzf command for adding query history
