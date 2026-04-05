@@ -20,28 +20,44 @@ PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
 
 usage() {
 	cat << EOF
-Usage: $0 <distro> [build|build-uncached|run] [persist]
+Usage: $0 <distro> [build|build-uncached|run|persist|rm] [persist]
 
 Options:
-  build              Build the Docker image (allow cache)
-  build-uncached     Build the Docker image (invalidate cache)
+  build              Build the Docker image (allow cache, but pull base)
+  build-uncached     Build the Docker image (no cache)
   run                Run container, build if inexistent
   persist            Persist container (default is ephemeral)
+  rm                 Remove persisted container
 
 Environment Variables:
   AUTOSTART              Run installer on startup (default: yes)
   FORCE_DOCKER           Force Docker instead of Podman (default: no)
   FORCE_NO_SUDO          Skip sudo for Docker (default: no)
   USE_CACHED_DOWNLOADS   Use cached downloads (default: yes)
-  FISH_STATIC            Force install fish static binary (default: no)
+  FISH_STATIC            Install fish static binary (default: yes)
   FISH_NIGHTLY           Force install fish nightly (default: no)
   PLATFORM               Set platform e.g. linux/arm64 (default: auto)
+                         (add support with qemu-user-binfmt)
 
 Examples:
   $0 debian:latest
   $0 alpine:latest run
   $0 fedora:latest build
   PLATFORM=linux/arm64 $0 debian:bookworm run
+
+  Distro examples:
+    debian:latest
+    debian:unstable
+    alpine:latest
+    fedora:latest
+    archlinux:latest
+    almalinux:latest
+  Specific releases like:
+    debian:bookworm
+    debian/eol:jessie
+    ubuntu:xenial
+    redhat/ubi9:latest
+
 EOF
 }
 
@@ -53,7 +69,8 @@ then
 fi
 do_build="no" # perform docker build (append "build" to CLI to trigger)
 build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
-persist="no"
+persist="no" # whether to run a persisting container
+do_remove="no" # remove persisted container
 if [ -z "${XDG_RUNTIME_DIR+x}" ]
 then
 	# XDG_RUNTIME_DIR missing, try fixing
@@ -80,6 +97,13 @@ case "${2:-}" in
 		;;
 	"run" | "" )
 		;;
+	"rm" | "remove" | "unpersist")
+		do_remove="yes"
+		persist="yes"
+		;;
+	"persist")
+		persist="yes"
+		;;
 	"help"| * )
 		usage
 		exit 1
@@ -102,7 +126,7 @@ if command -v "podman" > /dev/null && [ "$FORCE_DOCKER" != "yes" ]
 then
 	echo "Using podman to run test-drive (if you prefer docker, run with env FORCE_DOCKER=yes)"
 	docker="podman"
-	if podman machine inspect | grep -qE "State.*stopped"
+	if podman machine inspect 2>/dev/null | grep -qE "State.*stopped"
 	then
 		echo "podman machine start"
 		podman machine start
@@ -137,18 +161,8 @@ case "$BUILD_FROM" in
 		dockerfile="Dockerfile-Alpine"
 		;;
 	*)
-		echo "Please provide a distro name, examples:"
-		echo " - debian:latest"
-		echo " - debian:unstable"
-		echo " - alpine:latest"
-		echo " - fedora:latest"
-		echo " - archlinux:latest"
-		echo " - almalinux:latest"
-		echo "Specific releases like:"
-		echo " - debian:bookworm"
-		echo " - debian/eol:jessie"
-		echo " - ubuntu:xenial"
-		echo " - redhat/ubi9:latest"
+		usage
+		
 		exit 1
 		;;
 esac
@@ -163,10 +177,6 @@ if [ "$FISH_NIGHTLY" = "yes" ]
 then
 	tagname="${tagname}-fish-nightly"
 fi
-if [ "$persist" = "yes" ]
-then
-	tagname="${tagname}-persist"
-fi
 
 # script location
 whereiam="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
@@ -178,6 +188,27 @@ srcdir="$( cd "${whereiam}/../.." >/dev/null 2>&1 && pwd )"
 tmpdir="$XDG_RUNTIME_DIR/shell-pack-test-drive-$tagname"
 mkdir -p "$tmpdir"
 download_file="korkman-shell-pack-latest.tar.gz"
+
+if [ "$persist" = "yes" ]
+then
+	persist_container_name="shell-pack-test-drive-$tagname"
+	container_id=$($docker ps -a --format '{{ .ID }}' --filter "name=$persist_container_name" 2>/dev/null) || container_id=""
+	arg_container_name="--name $persist_container_name"
+else
+	arg_container_name=""
+fi
+
+if [ "$do_remove" = "yes" ]
+then
+	if [ "${container_id:-}" = "" ]
+	then
+		echo "⚠️ No container found to remove: $persist_container_name"
+		exit 1
+	fi
+	echo "❌ Discarding $persist_container_name ..."
+	$docker rm "$container_id"
+	exit 0
+fi
 
 # test if image is present, otherwise force build
 if [ "$($docker images --quiet "shell-pack:test-drive-${tagname}")" = "" ]
@@ -194,6 +225,7 @@ then
 	[ "$build_uncached" = "yes" ] && cache_arg="--no-cache "
 	$docker build \
 		$cache_arg \
+		--pull \
 		--build-arg "FISH_STATIC=$FISH_STATIC" \
 		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
 		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
@@ -209,7 +241,6 @@ echo "Package ${srcdir}"
 	'--exclude=.git' \
 	'--exclude=rg' \
 	'--exclude=fzf' \
-	'--exclude=sk' \
 	'--exclude=dool.d' \
 	-czf "${tmpdir}/${download_file}" \
 ".")
@@ -221,83 +252,71 @@ echo "Create caching directory"
 cachedir="$HOME/.cache/shell-pack-devel/docker/$tagname"
 mkdir -p "$cachedir"
 
-echo "Copy over cached rg, fzf, dool.d … if present"
-if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
+echo "Run $docker"
+
+CACHED_FILES="rg fzf dool.d"
+
+if [ "${container_id:-}" = "" ]
 then
-	if [ -e "$cachedir/rg" ]
+	if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
 	then
-		echo "found cached rg"
-		cp "$cachedir/rg" "$tmpdir/rg"
+		echo "Copy over available cached files …"
+		for cached_file in $CACHED_FILES
+		do
+			if [ -e "$cachedir/$cached_file" ]
+			then
+				echo "$cached_file …"
+				cp -a "$cachedir/$cached_file" "$tmpdir/"
+			fi
+		done
 	fi
-	if [ -e "$cachedir/fzf" ]
-	then
-		echo "found cached fzf"
-		cp "$cachedir/fzf" "$tmpdir/fzf"
-	fi
-	if [ -e "$cachedir/sk" ]
-	then
-		echo "found cached sk"
-		cp "$cachedir/sk" "$tmpdir/sk"
-	fi
-	if [ -e "$cachedir/dool.d" ]
-	then
-		echo "found cached dool.d"
-		cp -a "$cachedir/dool.d" "$tmpdir/"
-	fi
+	
+	# a new container must be created
+	container_id=$(
+		$docker run \
+		-e AUTOSTART="$AUTOSTART" \
+		-e TERM="$TERM" \
+		--hostname "test-${tagname}" \
+		--volume "$tmpdir:/root/Downloads:rw" \
+		--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
+		$PLATFORM \
+		--interactive \
+		--tty \
+		--detach \
+		$arg_container_name \
+		"shell-pack:test-drive-${tagname}"
+	)
+else
+	echo "Starting persisted container $container_id …"
+	$docker start --interactive --attach "$container_id"
 fi
 
-echo "Run $docker"
-container_id=$(
-	$docker run \
-	-e AUTOSTART="$AUTOSTART" \
-	-e TERM="$TERM" \
-	--hostname "test-${tagname}" \
-	--volume "$tmpdir:/root/Downloads:rw" \
-	--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
-	$PLATFORM \
-	--interactive \
-	--tty \
-	--detach \
-	"shell-pack:test-drive-${tagname}"
-)
 echo "Attaching $container_id ..."
 rs=0
 $docker attach "$container_id" || rs=$?
+
+echo "Save downloads from installer / autoupdate to cache …"
+for cached_file in $CACHED_FILES
+do
+	if [ -e "$tmpdir/$cached_file" ]
+	then
+		echo "$cached_file from installer …"
+		cp -r "$tmpdir/$cached_file" "$cachedir/"
+	fi
+done
+
 if [ "$persist" = "yes" ]
 then
-	if [ $rs -ne 0 ]
-	then
-		echo "❌ Persist: Non-zero exit, not commiting container"
-	else
-		echo "💾 Persist: Commiting container to shell-pack:test-drive-${tagname}"
-		$docker commit "$container_id" "shell-pack:test-drive-${tagname}" > /dev/null
-	fi
-fi
-$docker rm -f "$container_id" > /dev/null
-
-echo "Save downloaded rg, fzf, dool.d, … to cache"
-if [ -e "$tmpdir/rg" ] && [ ! -e "$cachedir/rg" ]
-then
-	echo "Caching downloaded rg ..."
-	cp "$tmpdir/rg" "$cachedir/rg"
-fi
-if [ -e "$tmpdir/fzf" ] && [ ! -e "$cachedir/fzf" ]
-then
-	echo "Caching downloaded fzf ..."
-	cp "$tmpdir/fzf" "$cachedir/fzf"
-fi
-if [ -e "$tmpdir/sk" ] && [ ! -e "$cachedir/sk" ]
-then
-	echo "Caching downloaded sk ..."
-	cp "$tmpdir/sk" "$cachedir/sk"
-fi
-if [ -e "$tmpdir/dool.d" ] && [ ! -e "$cachedir/dool.d" ]
-then
-	echo "Caching downloaded dool.d ..."
-	cp -r "$tmpdir/dool.d" "$cachedir/"
+		echo "💾 Persisting container $container_id …"
+else
+	echo "❌ Discarding ephermal container …"
+	#$docker start --interactive "$container_id"
+	#$docker exec "$container_id" sh -c 'rm -rf /root/.local/share/shell-pack/bin/*'
+	$docker rm -f "$container_id" > /dev/null
 fi
 
 # clean-up
+echo "❌ Discarding ephermal data outside of container …"
 rm -rf "$tmpdir"
 
 exit

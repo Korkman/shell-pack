@@ -7,37 +7,44 @@ command -v fish > /dev/null || {
 	exit 1
 }
 
+if [ -e "/guest-startup-done" ]
+then
+	bash -l
+	exit
+fi
+
+touch "/guest-startup-done"
+
 # simulate pre-installed binaries
 if [ -e ~/Downloads/rg ]
 then
-	cp ~/Downloads/rg /usr/local/bin/rg
+	mv ~/Downloads/rg /usr/local/bin/rg
 fi
 if [ -e ~/Downloads/fzf ]
 then
-	cp ~/Downloads/fzf /usr/local/bin/fzf
+	mv ~/Downloads/fzf /usr/local/bin/fzf
 fi
 
 onexit_copy_downloads() {
 	# copy back downloaded files for later use
-	if [ -e ~/.local/share/shell-pack/bin/rg ]
-	then
-		cp ~/.local/share/shell-pack/bin/rg ~/Downloads/rg
-	fi
-	if [ -e ~/.local/share/shell-pack/bin/fzf ]
-	then
-		cp ~/.local/share/shell-pack/bin/fzf ~/Downloads/fzf
-	fi
-	if [ -e ~/.local/share/shell-pack/bin/dool.d ] && [ ! -e ~/Downloads/dool.d ]
-	then
-		cp -a ~/.local/share/shell-pack/bin/dool.d ~/Downloads/
-		# make world-writable so when Docker root created dool.d,
-		#  host user 1000 is able to rm -rf $XDG_RUNTIME_DIR/shell-pack-test-drive-$tagname
-		chmod ugo+rwX ~/Downloads/dool.d
-		chmod ugo+rwX ~/Downloads/dool.d/plugins
-	fi
+	CACHED_FILES="rg fzf dool.d"
+	for cached_file in $CACHED_FILES
+	do
+		if [ -e ~/.local/share/shell-pack/bin/$cached_file ]
+		then
+			if [ ! -e ~/Downloads/$cached_file ] || [ ~/.local/share/shell-pack/bin/$cached_file -nt ~/Downloads/$cached_file ]
+			then
+				cp -a ~/.local/share/shell-pack/bin/$cached_file ~/Downloads/
+				# make world-writable so when Docker root created dool.d,
+				#  host user 1000 is able to rm -rf $XDG_RUNTIME_DIR/shell-pack-test-drive-$tagname
+				chmod ugo+rwX -R ~/Downloads/$cached_file
+			fi
+		fi
+	
+	done
 }
 
-trap onexit_copy_downloads exit term
+trap onexit_copy_downloads EXIT TERM
 
 if [ -z "$LC_NERDLEVEL" ]; then
 	export LC_NERDLEVEL=3
