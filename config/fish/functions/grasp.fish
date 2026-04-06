@@ -68,6 +68,7 @@ function grasp -d \
 		echo 'alt-m/-M:print-/save-matched'
 		echo 'alt-a:select-all alt-n:deselect-all'
 		echo 'ctrl-p/-n:query-history'
+		echo 'alt-y/dbl-clk:to-clipboard'
 		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
 	end | __sp_fzf_header
 	
@@ -146,7 +147,8 @@ function grasp -d \
 		'alt-.,ctrl-r:prev-history,alt-,:next-history,' \
 		'enter,esc:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
 		':,/,space:show-input+unbind('$pager_mode_keys'),' \
-		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys')'
+		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys'),' \
+		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))'
 	)
 	# add keybinds and more to list of args
 	set -a fzf_defaults --highlight-line --wrap-word --multi --exact --ansi --no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" --height=-1 --history "$GRASP_HIST_FILE"
