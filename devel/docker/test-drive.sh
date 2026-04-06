@@ -192,7 +192,7 @@ download_file="korkman-shell-pack-latest.tar.gz"
 if [ "$persist" = "yes" ]
 then
 	persist_container_name="shell-pack-test-drive-$tagname"
-	container_id=$($docker ps -a --format '{{ .ID }}' --filter "^name=^$persist_container_name\$" 2>/dev/null) || container_id=""
+	container_id=$($docker ps -a --format '{{ .ID }}' --filter "name=^$persist_container_name\$" 2>/dev/null) || container_id=""
 	arg_container_name="--name $persist_container_name"
 else
 	arg_container_name=""
