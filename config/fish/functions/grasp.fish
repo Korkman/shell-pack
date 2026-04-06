@@ -139,14 +139,15 @@ function grasp -d \
 		'page-up:page-up+track-current,page-down:page-down+track-current,' \
 		'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
 		'left-click:track-current,right-click:select+track-current,' \
-		'f3,n:down-match+track-current,f2,p,N:up-match+track-current,' \
+		'f2,p,N:up-match+track-current,' \
+		'f3,n,ctrl-g:down-match+track-current,' \
 		'tab:toggle+down+track-current,' \
 		'alt-l,l:become('$recat_cmd' | '$linenumber_cmd'),' \
 		'alt-f,f:toggle-raw,' \
-		'alt-q,q:abort,' \
+		'alt-q,q,f10:abort,' \
 		'alt-.,ctrl-r:prev-history,alt-,:next-history,' \
 		'enter,esc:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
-		':,/,space:show-input+unbind('$pager_mode_keys'),' \
+		':,/,space,ctrl-f,f7:show-input+unbind('$pager_mode_keys'),' \
 		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys'),' \
 		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))'
 	)
