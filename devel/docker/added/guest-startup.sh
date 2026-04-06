@@ -101,8 +101,6 @@ if [ "$AUTOSTART" = "yes" ]; then
 		echo "dool.d not cached!"
 	fi
 	
-	#bash -l -c 'fishcall' 
-	
 	echo "-------------------------------------------------"
 	echo " Environment:                                    "
 	echo " - shell-pack setup is done                      "

@@ -27,8 +27,7 @@ function shell-pack-check-deps -d \
 		end
 		reinstall-shell-pack-prefs
 		set --universal __sp_first_startup_done 1
-		return
-	end	
+	end
 	
 	set __shp_outdated_deps ""
 	
