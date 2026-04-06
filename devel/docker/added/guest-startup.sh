@@ -7,14 +7,6 @@ command -v fish > /dev/null || {
 	exit 1
 }
 
-if [ -e "/guest-startup-done" ]
-then
-	bash -l
-	exit
-fi
-
-touch "/guest-startup-done"
-
 # simulate pre-installed binaries
 if [ -e ~/Downloads/rg ]
 then
@@ -44,39 +36,51 @@ onexit_copy_downloads() {
 	done
 }
 
-trap onexit_copy_downloads EXIT TERM
+first_run() {
+	trap onexit_copy_downloads EXIT TERM
 
-if [ -z "$LC_NERDLEVEL" ]; then
-	export LC_NERDLEVEL=3
+	if [ -z "$LC_NERDLEVEL" ]; then
+		export LC_NERDLEVEL=3
+	fi
+	# setup an unprivileged user
+	if command -v useradd > /dev/null; then
+		useradd shpuser
+	else
+		adduser --disabled-password --gecos "" shpuser
+	fi
+	mkdir -p /home/shpuser
+	cp -aT /etc/skel /home/shpuser
+	mkdir -p "/etc/sudoers.d"
+	echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
+	echo "$(command -v fish)" >> /etc/shells
+	chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
+
+	# ggit testing grounds
+	(cd ~
+	mkdir -p ggit-test
+	cd ggit-test
+	git init -q
+	git config --global user.email "you@example.com"
+	git config --global user.name "Your Name"
+	echo "New file" > newfile.txt
+	)
+	
+	touch "/guest-startup-done"
+}
+
+
+if [ ! -e "/guest-startup-done" ]
+then
+	first_run
 fi
-# setup an unprivileged user
-if command -v useradd > /dev/null; then
-	useradd shpuser
-else
-	adduser --disabled-password --gecos "" shpuser
-fi
-mkdir -p /home/shpuser
-cp -aT /etc/skel /home/shpuser
+
+# update shpuser
 cp -a /root/Downloads /home/shpuser/
 if [ -e /root/.local/bin ]
 then
 	cp -a /root/.local/bin /home/shpuser/.local/bin
 fi
 chown -R shpuser:shpuser /home/shpuser
-mkdir -p "/etc/sudoers.d"
-echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
-echo "$(command -v fish)" >> /etc/shells
-chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
-
-# ggit testing grounds
-(cd ~
-mkdir -p ggit-test
-cd ggit-test
-git init -q
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-echo "New file" > newfile.txt
-)
 
 # autorun installer
 if [ "$AUTOSTART" = "yes" ]; then
@@ -97,19 +101,23 @@ if [ "$AUTOSTART" = "yes" ]; then
 		echo "dool.d not cached!"
 	fi
 	
+	#bash -l -c 'fishcall' 
+	
 	echo "-------------------------------------------------"
-	echo " Startup experience:                             "
-	echo " - unprivileged user 'shpuser' created           "
+	echo " Environment:                                    "
+	echo " - shell-pack setup is done                      "
 	echo " - executing bash for 'root' with LC_NERDLEVEL=3 "
+	echo " - run 'su shpuser' for a non-root account       "
 	echo "-------------------------------------------------"
 	bash -l
 else
 	cd ~
 	echo "-------------------------------------------------"
-	echo " Autostart skipped:                     "
-	echo " - unprivileged user 'shpuser' created  "
-	echo " - get.sh is available in ~/Downloads   "
-	echo " - executing bash with LC_NERDLEVEL=3   "
+	echo " Environment:                                    "
+	echo " - shell-pack setup was skipped                  "
+	echo " - get.sh is available in ~/Downloads            "
+	echo " - executing bash for 'root' with LC_NERDLEVEL=3 "
+	echo " - run 'su shpuser' for a non-root account       "
 	echo "-------------------------------------------------"
 	bash -l
 fi

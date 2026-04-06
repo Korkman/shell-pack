@@ -154,20 +154,20 @@ SHELL_PACK_BINDIR="${SHELL_PACK_BASEDIR}/bin"
 mkdir -p "${SHELL_PACK_BINDIR}"
 
 # this merges several symlinks into SHELL_PACK_BINDIR
+echo -n "Maintaining symlinks in ${SHELL_PACK_BINDIR} "
 for item in "${SHELL_PACK_SRCDIR}/bin/"*; do
 	item=$(basename "$item")
+	echo -n "."
 	if [ ! -e "${SHELL_PACK_BINDIR}/${item}" ]; then
-		echo "Linking ${SHELL_PACK_BINDIR}/${item} → ../src/bin/${item}"
 		ln -s "../src/bin/${item}" "${SHELL_PACK_BINDIR}/${item}"
-	else
-		echo "Skipping present ${SHELL_PACK_BINDIR}/${item}"
 	fi
 done
+echo
 
-# remove deprecated symlinks from SHELL_PACK_BINDIR
+# remove obsolete symlinks from SHELL_PACK_BINDIR
 for item in 'ggrep' 'ggrep-in-file' 'ggrep-help'; do
 	if [ -e "${SHELL_PACK_BINDIR}/${item}" ]; then
-		echo "Removing ${SHELL_PACK_BINDIR}/${item}"
+		echo "Removing obsolete ${SHELL_PACK_BINDIR}/${item}"
 		rm "${SHELL_PACK_BINDIR}/${item}"
 	fi
 done

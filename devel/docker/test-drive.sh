@@ -62,10 +62,14 @@ EOF
 }
 
 PLATFORM_TAG_SUFFIX=""
+PLATFORM_NATIVE="$(uname)/$(uname --machine)"
 if [ "$PLATFORM" != "" ]
 then
 	PLATFORM_TAG_SUFFIX=$(echo "-$PLATFORM" | sed 's/[/]/-/g')
-	PLATFORM="--platform $PLATFORM"
+	PLATFORM_ARG="--platform $PLATFORM"
+else
+	PLATFORM="$PLATFORM_NATIVE"
+	PLATFORM_ARG="--platform $PLATFORM_NATIVE"
 fi
 do_build="no" # perform docker build (append "build" to CLI to trigger)
 build_uncached="no" # perform docker build and invalidate any cache (append "build-uncached")
@@ -229,7 +233,7 @@ then
 		--build-arg "FISH_STATIC=$FISH_STATIC" \
 		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
 		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
-		$PLATFORM \
+		$PLATFORM_ARG \
 		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
 fi
 
@@ -255,22 +259,22 @@ mkdir -p "$cachedir"
 echo "Run $docker"
 
 CACHED_FILES="rg fzf dool.d"
+if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
+then
+	echo "Copy over available cached files …"
+	for cached_file in $CACHED_FILES
+	do
+		if [ -e "$cachedir/$cached_file" ]
+		then
+			echo "$cached_file …"
+			cp -a "$cachedir/$cached_file" "$tmpdir/"
+		fi
+	done
+fi
+
 
 if [ "${container_id:-}" = "" ]
 then
-	if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
-	then
-		echo "Copy over available cached files …"
-		for cached_file in $CACHED_FILES
-		do
-			if [ -e "$cachedir/$cached_file" ]
-			then
-				echo "$cached_file …"
-				cp -a "$cachedir/$cached_file" "$tmpdir/"
-			fi
-		done
-	fi
-	
 	# a new container must be created
 	container_id=$(
 		$docker run \
@@ -279,21 +283,21 @@ then
 		--hostname "test-${tagname}" \
 		--volume "$tmpdir:/root/Downloads:rw" \
 		--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
-		$PLATFORM \
+		$PLATFORM_ARG \
 		--interactive \
 		--tty \
 		--detach \
 		$arg_container_name \
 		"shell-pack:test-drive-${tagname}"
 	)
+
+	echo "Attaching $container_id ..."
+	rs=0
+	$docker attach "$container_id" || rs=$?
 else
 	echo "Starting persisted container $container_id …"
 	$docker start --interactive --attach "$container_id"
 fi
-
-echo "Attaching $container_id ..."
-rs=0
-$docker attach "$container_id" || rs=$?
 
 echo "Save downloads from installer / autoupdate to cache …"
 for cached_file in $CACHED_FILES
