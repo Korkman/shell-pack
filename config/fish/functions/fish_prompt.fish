@@ -582,13 +582,18 @@ function enhanced_prompt -e fish_postexec -d "Foreground and background job exec
 					set forcount 0
 					for substatus in $__saved_pipestatus
 						set forcount (math $forcount + 1)
-
+						
 						if [ $substatus -gt 0 ]
 							__spt status_fail
 						else
 							__spt status_ok
 						end
 						echo -n "$substatus "
+						set -l human_status (fish_status_to_signal $substatus)
+						if test "$human_status" != "$substatus"
+							echo -n "("$human_status") "
+						end
+						
 						if [ $forcount -lt (count $__saved_pipestatus) ]
 							set_color $fish_color_autosuggestion
 							echo -ne (__spt right_arrow)" "
