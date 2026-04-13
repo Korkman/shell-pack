@@ -366,4 +366,23 @@ function __sp_tweak_live_patches -d \
 	if test "$LESS" = "-ix4" || test "$LESS" = "-ix4 --mouse"
 		set -e -g LESS
 	end
+	
+	# tmux lacks default mouse keybinds unbound by previous config? reset and reload.
+	if set -q TMUX && ! set -q __sp_tweak_live_patch_tmux_keys_done
+		# attempt only once
+		set -g __sp_tweak_live_patch_tmux_keys_done 1
+		if ! tmux list-keys | string match -q --regex 'bind-key.*-T root.*MouseDrag1Pane.*'
+			# load the default keybinds from a dedicated null instance
+			tmux -L shellpack_live_patch_temp -f /dev/null new-session -d -s temp
+			# dump to tmpfile
+			set -l tmux_tmpfile (mktemp --tmpdir __sp_tmux_live_patch.XXXXXX)
+			# NOTE: to avoid error messages on debian buster for now, selectively grep the removed keys and restore them
+			tmux -L shellpack_live_patch_temp list-keys | grep -E '.*-T root.*(MouseDown3Pane|MouseDrag1Pane|WheelUpPane).*' > $tmux_tmpfile
+			tmux -L shellpack_live_patch_temp kill-server
+			# reset and reload the config
+			tmux source-file $tmux_tmpfile
+			tmux source-file $HOME/.tmux.conf
+			rm $tmux_tmpfile
+		end
+	end
 end
