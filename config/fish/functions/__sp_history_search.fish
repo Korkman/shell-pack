@@ -7,10 +7,16 @@ function __sp_history_search -d \
 		'f1,alt-h:execute(fishcall cheat --fzf-query)'
 	)
 	
+	set -l fzf_defaults
 	__sp_fzf_defaults 'history' --exact
-	set -l fzf_args fzf $fzf_defaults --read0 --print0 --bind "$fzf_binds" --tiebreak index --no-sort \
-	--query (commandline) -m \
-	--height=80% # no tilde, fzf cannot handle multiline elements with it
+	set -l fzf_args fzf $fzf_defaults --read0 --print0 --bind "$fzf_binds" \
+		--tiebreak index --no-sort -m \
+		--height=80% # no tilde, fzf cannot handle multiline elements with it
+	
+	commandline | string collect | read -l -z query
+	if test "$query" != ""
+		set -a fzf_args --query $query
+	end
 	
 	history -z \
 	| command $fzf_args \
