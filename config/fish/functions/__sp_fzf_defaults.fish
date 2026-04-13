@@ -12,6 +12,8 @@ function __sp_fzf_defaults -S -d \
 	if set -q _flag_compact
 		set ghost_add "$ghost_add, alt-b for more"
 		set -a fzf_defaults --bind "start:hide-header"
+	else
+		set ghost_add ''
 	end
 	
 	if set -q _flag_exact
