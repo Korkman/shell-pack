@@ -67,8 +67,11 @@ function grasp -d \
 		echo 'alt-s/-S:print-/save-selected'
 		echo 'alt-m/-M:print-/save-matched'
 		echo 'alt-a:select-all alt-n:deselect-all'
-		echo 'ctrl-p/-n:query-history'
+		echo 'alt-up/dn:query-history'
 		echo 'alt-y/dbl-clk:to-clipboard'
+		if test (count $argv) -gt 0
+			echo 'ctrl-r,f5:reload'
+		end
 		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
 	end | __sp_fzf_header
 	
@@ -83,20 +86,11 @@ function grasp -d \
 		set recat_cmd "if [ -x tac ]; then tac {*f}; else fishcall tac {*f}; fi"
 	end
 
-	# process line numbering with an extra tool in the pipe, save as $evalpipe
-	set -l evalpipe
 	set -l columns_margin 2
 	if set -q _flag_line_number
 		# increase columns_margin to accommodate line numbers when enabled, so `ppage man man` doesn't wrap
 		set columns_margin 8
 		set GRASP_LN 1
-		if set -q GRASP_PAGER
-			set evalpipe '__sp_linenumbers -w auto | $fzf_defaults'
-		else
-			set evalpipe '__sp_linenumbers -w 6 | $fzf_defaults'
-		end
-	else
-		set evalpipe '$fzf_defaults'
 	end
 	
 	# fzf toggle command for line numbers
@@ -119,8 +113,8 @@ function grasp -d \
 		set write_history_cmd '+execute-silent([ -z {q} ] && exit; [ ! -e "$GRASP_HIST_FILE" ] && last="" || last=$(tail -n1 "$GRASP_HIST_FILE"); [ "$last" = {q} ] && exit; echo {q} >> "$GRASP_HIST_FILE")'
 	end
 
-	# these keys can be used with no modifier key in pager mode (enter)
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l'
+	# these keys are only bound while the search input is hidden
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r'
 	# main fzf keybinds
 	set -l fzf_binds (printf %s \
 		'f1,alt-h:execute(fishcall cheat --fzf-query),' \
@@ -145,14 +139,20 @@ function grasp -d \
 		'alt-l,l:become('$recat_cmd' | '$linenumber_cmd'),' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q,f10:abort,' \
-		'alt-.,ctrl-r:prev-history,alt-,:next-history,' \
+		'alt-up,alt-.:prev-history,' \
+		'alt-down,alt-,:next-history,' \
 		'enter,esc:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
 		':,/,space,ctrl-f,f7:show-input+unbind('$pager_mode_keys'),' \
 		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys'),' \
-		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))'
+		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n")),' \
+		'alt-b,b:toggle-header' \
 	)
+	
 	# add keybinds and more to list of args
-	set -a fzf_defaults --highlight-line --wrap-word --multi --exact --ansi --no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" --height=-1 --history "$GRASP_HIST_FILE"
+	set -a fzf_defaults --highlight-line \
+		--wrap-word --multi --exact --ansi \
+		--no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" \
+		--height=-1 --history "$GRASP_HIST_FILE"
 
 	# start in compact mode with invisible search (q exits)
 	set -a fzf_defaults --bind 'start:unbind(result)+trigger(esc)+hide-header,change:rebind(result)'
@@ -171,59 +171,80 @@ function grasp -d \
 		#set -a fzf_defaults --bind 'start:trigger(space)+hide-header'
 	end
 
-	set -p fzf_defaults fzf
-	
-	if test ! -t 1
-		# STDOUT is not a terminal! Someone is using us as a pipe
-		if set -q GRASP_PAGER
-			set evalpipe __sp_grasp_fzf_is_cat
-		end
-	end
-
 	set -l fzf_status
 	if test ! -t 0
+		if test ! -t 1
+			# STDOUT is not a terminal! Someone is using us as a pipe (`man sh | less` on BSD)
+			cat
+			return
+		end
+
 		# read from stdin which is not a terminal
 		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"STDIN"(set_color normal)" "(set_color normal)
 		set -a fzf_defaults --input-label "$input_label"
-		eval $evalpipe
-		set fzf_status $status
+		
+		#if set -q _flag_line_number
+		#	set -a fzf_defaults --bind "start:trigger(l)"
+		#end
 	else
 		if test (count $argv) -eq 1 && test -e $argv[1]
+			
+			if test ! -t 1
+				# STDOUT is not a terminal! Someone is using us as a pipe
+				cat $argv[1]
+				return
+			end
+			
 			# read tail from file
 			if set -q GRASP_PAGER
-				set cmd tail -n $GRASP_TAIL -- $argv[1]
+				set cmd tail -n $GRASP_TAIL $argv[1]
 			else
 				# in stream mode, follow the file
-				set cmd tail -fn $GRASP_TAIL -- $argv[1]
+				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
-			set grasptitle $argv[1]
 		else if type -q $argv[1]
 			# run passed command
 			set cmd $argv
-			set grasptitle $cmd
+			
+			if test ! -t 1
+				# STDOUT is not a terminal! Someone is using us as a pipe
+				$cmd
+				return
+			end
 		else
 			echo "Neither command nor file: '"$argv[1]"'" >&2
 			return 2
 		end
+		
+		set grasptitle $cmd
+		
 		# restrict grasptitle to 80% of terminal width
 		fish_prompt_shorten_string grasptitle 80
-		# add nice title
+		set grasptitle (__sp_quote_args $grasptitle)
+		#set grasptitle "cmd"
+		
+		# add nice title, enable reload
 		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"$grasptitle"(set_color normal)" "(set_color normal)
-		set -a fzf_defaults --input-label "$input_label"
-
+		set -a fzf_defaults \
+			--input-label "$input_label" \
+			--bind 'r,ctrl-r,f5:become(exec fzf)'
+		
 		# leave cmd execution (and killing of it) to fzf
-		set -x FZF_DEFAULT_COMMAND "$cmd"
-		eval $evalpipe
-		set fzf_status $status
+		__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
+		
+		if set -q _flag_line_number
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | fishcall __sp_linenumbers -w auto"
+		end
 	end
+	
+	# pass options as env vars so that `reload` is simple to implement
+	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
+	fzf
+	set fzf_status $status
+	
 	if status is-interactive && test $fzf_status -eq 50
 		commandline 'cat '(string escape -- $GRASP_DUMPFILE)' '
 	end
 	
 	return 0
-end
-
-function __sp_grasp_fzf_is_cat
-	# discarding all fzf arguments, we become 'cat'
-	cat
 end
