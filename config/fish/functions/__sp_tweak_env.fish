@@ -13,6 +13,16 @@ function __sp_tweak_env -d \
 		# store modification time globally for automatic reload
 		set -g __sp_tweak_env_file (status --current-filename)
 		set -g __sp_tweak_env_mtime (__sp_getmtime "$__sp_tweak_env_file")
+		
+		# read and apply __sp_initial_commandline (from reload)
+		if set -q __sp_initial_commandline
+			commandline $__sp_initial_commandline
+			if set -q __sp_initial_commandline_cursor
+				commandline --cursor $__sp_initial_commandline_cursor
+			end
+			set -ge __sp_initial_commandline
+			set -ge __sp_initial_commandline_cursor
+		end
 
 		# backup initial environment for reload
 		if ! set -q initial_env && $__cap_env_has_null

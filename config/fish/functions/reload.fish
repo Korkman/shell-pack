@@ -20,16 +20,22 @@ function reload -d "Reset environment (mostly)"
 		end
 		# pass thru these specific variables
 		if [ "disable_autoupdate" = "yes" ]
-			set -g initial_env $initial_env disable_autoupdate=$disable_autoupdate
+			set -a initial_env disable_autoupdate=$disable_autoupdate
 		end
 		if set -q __session_tag
-			set -g initial_env $initial_env __session_tag=$__session_tag
+			set -a initial_env __session_tag=$__session_tag
 		end
 		if set -q fish_private_mode
-			set -g initial_env $initial_env fish_private_mode=$fish_private_mode
+			set -a initial_env fish_private_mode=$fish_private_mode
 		end
 		if set -q fish_history
-			set -g initial_env $initial_env fish_history=$fish_history
+			set -a initial_env fish_history=$fish_history
+		end
+		commandline | read -z -l currentcmd
+		set -l currentcmd (string collect -- $currentcmd)
+		if test "$currentcmd" != "" && test "$currentcmd" != "reload"
+			set -a initial_env __sp_initial_commandline=$currentcmd
+			set -a initial_env __sp_initial_commandline_cursor=(commandline --cursor)
 		end
 		# merge and pass fish_features flags
 		set -l pass_fish_features (string split ',' -- $fish_features)
@@ -38,7 +44,7 @@ function reload -d "Reset environment (mostly)"
 		end
 		if set -q pass_fish_features
 			set pass_fish_features (string join ',' -- $pass_fish_features)
-			set -g initial_env $initial_env fish_features=$pass_fish_features
+			set -a initial_env fish_features=$pass_fish_features
 		end
 		# escape all list entries for use in eval, replace custom escape sequence with newline escape sequence
 		set -g initial_env (string escape -- $initial_env | string replace --all "putAfreakinNewlineHere342273" "\\n")
