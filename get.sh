@@ -165,7 +165,7 @@ done
 echo
 
 # remove obsolete symlinks from SHELL_PACK_BINDIR
-for item in 'ggrep' 'ggrep-in-file' 'ggrep-help'; do
+for item in 'ggrep' 'ggrep-in-file' 'ggrep-help' 'speedtest'; do
 	if [ -e "${SHELL_PACK_BINDIR}/${item}" ]; then
 		echo "Removing obsolete ${SHELL_PACK_BINDIR}/${item}"
 		rm "${SHELL_PACK_BINDIR}/${item}"
