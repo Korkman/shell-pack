@@ -110,6 +110,7 @@ function __sp_tweak_user_defaults -d \
 		LESS_TERMCAP_so \
 		LESS_TERMCAP_se \
 		VIRTUAL_ENV_DISABLE_PROMPT \
+		RIPGREP_CONFIG_PATH \
 	;
 	
 	# collect unset variables (user did not set them, we take control)
@@ -153,6 +154,8 @@ function __sp_tweak_user_defaults -d \
 			case VIRTUAL_ENV_DISABLE_PROMPT
 				# prompt already sports VIRTUAL_ENV support, disable activate.fish version
 				set -g VIRTUAL_ENV_DISABLE_PROMPT yes
+			case RIPGREP_CONFIG_PATH
+				set -x -g RIPGREP_CONFIG_PATH $__sp_config_fish_dir"/../ripgrep.conf"
 		end
 	end
 end

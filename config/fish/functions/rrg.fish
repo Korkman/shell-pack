@@ -70,13 +70,16 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 		# attached to a terminal
 		begin
 			rg \
-				--no-config \
 				--no-ignore \
 				--no-heading \
 				--auto-hybrid-regex \
 				--one-file-system \
 				--line-buffered \
 				--color always \
+				--colors match:none \
+				--colors match:style:intense \
+				--colors match:bg:255,127,0 \
+				--colors match:fg:0,0,0 \
 				--max-columns 500 \
 				--with-filename \
 				--ignore-case \
@@ -91,7 +94,7 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 				2>| begin
 					# format inline errors using awk, output line-buffered with rg (should prevent mixed lines)
 					awk '{print "\033[0;31m!\033[0m//ERROR// \033[0;31m" $0 "\033[0m"}' \
-					| rg --no-config --line-buffered --text "" 2> /dev/null
+					| rg --line-buffered --text "" 2> /dev/null
 				end
 				# read spawns fish processes, consumes PIDs = fork bomb detection kills fish
 				#while read -l line
@@ -143,7 +146,6 @@ function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary 
 	else
 		# attached to a pipe
 		rg \
-			--no-config \
 			--no-ignore \
 			--no-heading \
 			--auto-hybrid-regex \

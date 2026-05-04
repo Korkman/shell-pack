@@ -160,7 +160,6 @@ lines with context.
 	$starting \
 	# pipe to ripgrep:
 	| rg \
-	--no-config \
 	--no-ignore \
 	--no-heading \
 	--auto-hybrid-regex \
