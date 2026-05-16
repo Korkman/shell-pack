@@ -93,7 +93,7 @@ function ggit -d \
 					git commit -F "$msg_filename"
 					if test $status -eq 0
 						rm -f "$msg_filename"
-						if test "$results[1]" = "commit_and_push"
+						if test "$results[2]" = "commit_and_push"
 							echo "Commit completed. Pushing ..."
 							git push
 						else
