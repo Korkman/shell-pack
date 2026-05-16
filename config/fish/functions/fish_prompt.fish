@@ -140,12 +140,12 @@ function fish_prompt -d \
 		# trigger warning message outside of prompt
 		set -q __sp_fs_read_only_learned
 		or set -g __sp_fs_read_only_learned yes
-	else if type -q timeout && type -q df && timeout 1s df -m . | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
+	else if type -q timeout && type -q df && timeout 1s df . | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
 		# low space warning: less than 10GB free and more than 90% used
 		set -q __sp_fs_used_pct_threshold
 		or set __sp_fs_used_pct_threshold 90
 		set -q __sp_fs_free_threshold
-		or set __sp_fs_free_threshold 10240
+		or set __sp_fs_free_threshold 10240000
 		if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
 			set fs_free_pct (math 100 - $fs_used_pct)
 			fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
