@@ -39,7 +39,7 @@ Attach to or create a screen / tmux session SESSION.
 			function __mmux_tmux_update_shell_env --on-event fish_preexec --on-event fish_focus_in
 				if set -q TMUX
 					# inside TMUX, grab environment update with extra variables not imported
-					set -l accept_env $__mmux_imported_environment __sp_tmux_ver
+					set -l accept_env $__mmux_imported_environment __sp_tmux_ver 
 					set -l tmux_env (tmux show-environment 2> /dev/null)
 					if test $status -eq 0
 						# tmux commands fail when env variable is set but not writable (su)
@@ -236,7 +236,8 @@ function __mmux_tmux_attach --no-scope-shadowing -d \
 			set tmux_update_environment $tmux_update_environment setenv -r $v \;
 		end
 	end
-
+	
+	# attach, auto-reload tmux.conf, update env
 	tmux $tmuxverb \; \
 		source-file ~/.tmux.conf \; \
 		$tmux_update_environment
