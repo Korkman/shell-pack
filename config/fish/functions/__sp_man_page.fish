@@ -44,6 +44,12 @@ function __sp_man_page
 		# tools
 		fzf rg dool wezterm scrcpy kitty code mysql mariadb \
 	;
+	
+	# allow dynamic whitelist to be added
+	if set -q dash_dash_help_for_man
+		set -a wl_dash_dash_help $dash_dash_help_for_man
+	end
+	
 	if contains -- $search_cmd $wl_dash_dash_help
 		begin
 			$search_cmd --help
@@ -52,6 +58,13 @@ function __sp_man_page
 		end &| $pager
 		return
 	end
+	
+	begin
+		echo "No man page and not whitelisted to support --help: $search_cmd"
+		echo 
+		echo "If desired, add with:"
+		echo "  set -U -a dash_dash_help_for_man $search_cmd"
+	end >&2
 	
 	# no whitelist matched, return original man status
 	printf \a
