@@ -26,7 +26,7 @@ function ddool -w dool
 		echo ""
 		echo "--clear clears all saved arguments"
 		echo ""
-		echo "Just passing an interval will not save it"
+		echo "Just passing an interval (and count) will not save it"
 		echo ""
 		echo "Default arguments added are $ddool_base_args, which can be overridden:"
 		echo "set -U ddool_base_args $ddool_base_args"
@@ -73,10 +73,10 @@ function ddool -w dool
 		set -e argv
 	end
 	
-	# if only an interval is passed, do not persist it
+	# if only an interval (and optional count) is passed, do not persist it
 	set -l ddool_temp_args
-	if string match -q --regex -- '^([0-9]+)$' "$argv"
-		set -a ddool_temp_args "$argv"
+	if string match -q --regex -- '^[0-9]+(\s+[0-9]+){0,1}$' "$argv"
+		set -a ddool_temp_args $argv
 		set -e argv
 	end
 	
@@ -86,10 +86,24 @@ function ddool -w dool
 	end
 	
 	# print arguments as passed to dool
+	echo -n (set_color grey)
 	echo -n "dool"
-	for arg in $ddool_base_args $ddool_addon_args $ddool_temp_args
+	for arg in $ddool_base_args
 		echo -n " "(string escape --style script -- "$arg")
 	end
-	echo ""
-	dool $ddool_base_args $ddool_addon_args $ddool_temp_args
+	echo -n (set_color brgreen)
+	for arg in $ddool_addon_args
+		echo -n " "(string escape --style script -- "$arg")
+	end
+	echo -n (set_color bryellow)
+	for arg in $ddool_temp_args
+		echo -n " "(string escape --style script -- "$arg")
+	end
+	echo (set_color normal)""
+	
+	set -l doolcmd "dool"
+	set -a doolcmd $ddool_base_args
+	set -a doolcmd $ddool_addon_args
+	set -a doolcmd $ddool_temp_args
+	$doolcmd
 end
