@@ -1,7 +1,17 @@
 function ggit -d \
-	"Interactive git commit"
+"Interactive git commit"
 	
 	if set -q argv[1]
+		
+		if test $argv[1] = "--help"
+			echo "Usage: ggit"
+			echo
+			echo -e (functions -vD (status current-function))[5]
+			echo
+			echo "Run minimal TUI to add, comment, commit and push to git."
+			return 1
+		end >&2
+		
 		set -l subcommand "$argv[1]"
 		set -e argv[1]
 		__ggit_$subcommand $argv
