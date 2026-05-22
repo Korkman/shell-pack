@@ -28,5 +28,5 @@ function fish_greeting -d "shell-pack says hello"
 		end
 	end
 	
-	set -e __sp_greeting_infinite_loop "yes"
+	set -e __sp_greeting_infinite_loop
 end
