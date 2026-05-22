@@ -1,39 +1,33 @@
 # fast grep using ripgrep, with visual picker for editing and preview
-function rrg -d "Search recursively for a pattern (ripgrep regex) in non-binary files. Pipes unlimited, plain filenames. Displays rich fzf frontend on terminal."
+function rrg -d \
+"Search a regex pattern recursively in non-binary files with ripgrep."
+	
 	if [ "$SHLVL" -gt 100 ]
 		echo "Shell level too deep. Are you sleeping on the Enter key?"
 		return 1
 	end
 	
+	if test "$argv[1]" = "" || test "$argv[1]" = "--help"
+		rrg-help
+		return 1
+	end >&2
+	
 	set -l extra_opts
-	if [ "$argv" != "" ]
-		set query "$argv"
-		# detect query separator '--' and, if present, load extra arguments passed to rg and split query off
-		if contains \-- -- $argv
-			set -l pos (contains -i \-- -- $argv)
-			if test $pos -gt 1
-				set -a extra_opts $argv[1..(math $pos - 1)]
-			end
-			set query (string join ' ' -- $argv[(math $pos + 1)..])
-		else if [ (string sub --start 1 --end 1 -- "$argv") = '-' -a (count $argv) -gt 1 ]
-			# no -- present, but it looks like user wanted to add options
-			echo 'It looks like you tried to pass options to rg.' >&2
-			echo 'rrg requires -- separating query from options in this case.' >&2
-			return 5
+	set query "$argv"
+	# detect query separator '--' and, if present, load extra arguments passed to rg and split query off
+	if contains \-- -- $argv
+		set -l pos (contains -i \-- -- $argv)
+		if test $pos -gt 1
+			set -a extra_opts $argv[1..(math $pos - 1)]
 		end
-	else
-		echo 'rrg'
-		echo
-		echo 'Uses ripgrep to search for content. Shows interactive results list.'
-		echo 'Will switch to pcre2 when necessary (auto-hybrid-regex).'
-		echo
-		echo 'Search example with escaped character: \$varname'
-		echo 'Example with word boundary match: (\W|^)\$varname(\W|$)'
-		echo
-		echo 'Short term history works. Try arrow keys.'
-		echo 
-		read -p '__spt prompt_fg; echo -n "Search for (ctrl-c to abort): "; set_color normal' query || return 1
+		set query (string join ' ' -- $argv[(math $pos + 1)..])
+	else if [ (string sub --start 1 --end 1 -- "$argv") = '-' -a (count $argv) -gt 1 ]
+		# no -- present, but it looks like user wanted to add options
+		echo 'It looks like you tried to pass options to rg.' >&2
+		echo 'rrg requires -- separating query from options in this case.' >&2
+		return 5
 	end
+	
 	if test "$extra_opts" != ""
 		# pass extra_opts down to rrg-in-file
 		set -x RG_EXTRA $extra_opts
