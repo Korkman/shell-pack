@@ -1,10 +1,14 @@
 function cfc -d \
 	'Compressed file creation'
 	
-	if test (count $argv) -eq 0
-		echo "Usage: cfc FILE|DIR [ DEST ] [-- (compressor arguments like -9) ]"
-		echo "  DEST can be a format like tar.gz or a complete filename including extension"
-		echo "  Output redirection is detected and supported"
+	if ! set -q argv[1] || test $argv[1] = "--help"
+		echo "Usage: cfc FILE|DIR [ DEST ] [-- COMPRESSOR_ARGS ]"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo
+		echo "DEST can be a format like tar.gz or a complete filename including extension."
+		echo "Output redirection is detected and supported."
+		echo "Pass compressor specific arguments COMPRESSOR_ARGS like -9."
 		return 1
 	end >&2
 	

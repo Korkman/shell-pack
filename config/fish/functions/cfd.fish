@@ -1,5 +1,16 @@
 function cfd -d \
-	'Compressed file decompression'
+'Compressed file decompression'
+	
+	if set -q argv[1] && test $argv[1] = "--help"
+		echo "Usage: cfd FILE [ DESTINATION ]"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo
+		echo "Decompress FILE in the current directory or at DESTINATION."
+		echo "If the archive supports directories, DESTINATION is a directory."
+		echo "If not, DESTINATION is the uncompressed filename."
+		return 1
+	end >&2
 	
 	set filename (realpath "$argv[1]")
 	set dst "$argv[2]"
@@ -93,10 +104,22 @@ function __sp_cfd_make_dst_dir --no-scope-shadowing
 	if test -z "$dst"
 		set dst (dirname -- "$filename")
 	end
-	if ! test -d "$dst"
-		echo "Destination directory does not exist: $dst" >&2
+	if test -f "$dst"
+		echo "Destination is a file but the archive format supports directories." >&2
 		return 1
 	end
+	if ! test -d "$dst"
+		echo "Destination directory does not exist: $dst"
+		echo -n "Create (Y/n)?"
+		read -P "" -l answer || set -l answer n
+		if ! test "$answer" = "y" && ! test "$answer" = "Y" && ! test "$answer" = ""
+			return 1
+		end
+		if ! mkdir -p "$dst"
+			echo "Failed to create directory"
+			return 1
+		end
+	end >&2
 end
 
 function __sp_cfd_make_dst_file --no-scope-shadowing
