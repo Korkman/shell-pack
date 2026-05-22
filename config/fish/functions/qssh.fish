@@ -1,7 +1,7 @@
 __polyfill_flock
 
 function qssh -d \
-	'Powerful SSH connection and history manager'
+'Powerful SSH connection and history manager.'
 	# ~Pierre Beck 2020
 	
 	# non-standard dependencies:
@@ -53,7 +53,22 @@ function qssh -d \
 	set -x __qssh_disable_history no
 	
 	if [ "$argv" != "" ]
-	
+		
+		if test $argv[1] = "--help"
+			echo "Usage: qssh [ HOST [ SSH_OPTIONS ] [ CMD ...]]"
+			echo
+			echo -e (functions -vD (status current-function))[5]
+			echo
+			echo "If HOST is supplied, connect immediately."
+			echo "Omit HOST to open TUI. SSH_OPTIONS and CMD are passed to 'ssh'."
+			echo
+			echo "All connections, including options, are recorded and managed in:"
+			echo "$__qssh_db_mru_file"
+			echo
+			echo "Tab completion feeds from there as well."
+			return 1
+		end >&2
+		
 		if contains -- --qssh-no-history $argv
 			set -x __qssh_disable_history yes
 			set -e argv[(contains --index -- --qssh-no-history $argv)]
