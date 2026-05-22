@@ -1,7 +1,7 @@
 function cfc -d \
 	'Compressed file creation'
 	
-	if ! set -q argv[1] || test $argv[1] = "--help"
+	if ! set -q argv[1] || test "$argv[1]" = "--help"
 		echo "Usage: cfc FILE|DIR [ DEST ] [-- COMPRESSOR_ARGS ]"
 		echo
 		echo -e (functions -vD (status current-function))[5]

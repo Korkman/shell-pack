@@ -2,7 +2,7 @@
 
 function lsnet -d \
 "List network connections, program names and process IDs"
-  if test $argv[1] = "--help"
+  if test "$argv[1]" = "--help"
     echo "Usage: lsnet"
     echo
     echo -e (functions -vD (status current-function))[5]

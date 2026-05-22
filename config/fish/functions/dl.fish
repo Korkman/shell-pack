@@ -9,7 +9,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	set -l to_stdout no
 	set -l resume_dl ask
 	
-	if test (count $argv) = 0 || test $argv[1] = '--help'
+	if test (count $argv) = 0 || test "$argv[1]" = '--help'
 		echo "Usage: dl [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] <url> [output_file]"
 		echo
 		echo -e (functions -vD (status current-function))[5]

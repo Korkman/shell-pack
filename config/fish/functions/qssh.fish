@@ -54,7 +54,7 @@ function qssh -d \
 	
 	if [ "$argv" != "" ]
 		
-		if test $argv[1] = "--help"
+		if test "$argv[1]" = "--help"
 			echo "Usage: qssh [ HOST [ SSH_OPTIONS ] [ CMD ...]]"
 			echo
 			echo -e (functions -vD (status current-function))[5]

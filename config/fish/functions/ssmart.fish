@@ -2,7 +2,7 @@
 
 function ssmart -d "Pages 'smartctl -x' output for a device"
 	
-	if test $argv[1] = "" || test $argv[1] = '--help'
+	if ! set -q argv[1] || test "$argv[1]" = '--help'
 		echo "Usage: ssmart [ OPTIONS ... ] DEVICE"
 		echo
 		echo -e (functions -vD (status current-function))[5]

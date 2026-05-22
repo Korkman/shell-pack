@@ -3,7 +3,7 @@ function ggit -d \
 	
 	if set -q argv[1]
 		
-		if test $argv[1] = "--help"
+		if test "$argv[1]" = "--help"
 			echo "Usage: ggit"
 			echo
 			echo -e (functions -vD (status current-function))[5]

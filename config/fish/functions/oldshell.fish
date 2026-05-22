@@ -1,6 +1,6 @@
 function oldshell -d \
 "Convenient access to the user's default shell $OLDSHELL"
-	if set -q $argv[1] && test $argv[1] == '--help'
+	if set -q argv[1] && test "$argv[1]" = '--help'
 		echo "Usage: oldshell"
 		echo
 		echo -e (functions -vD (status current-function))[5]

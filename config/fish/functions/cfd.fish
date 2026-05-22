@@ -1,7 +1,7 @@
 function cfd -d \
 'Compressed file decompression'
 	
-	if set -q argv[1] && test $argv[1] = "--help"
+	if set -q argv[1] && test "$argv[1]" = "--help"
 		echo "Usage: cfd FILE [ DESTINATION ]"
 		echo
 		echo -e (functions -vD (status current-function))[5]

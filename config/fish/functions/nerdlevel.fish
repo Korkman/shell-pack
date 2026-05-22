@@ -1,6 +1,6 @@
 function nerdlevel -d "Adjust font symbols or leave FISH shell"
 	
-	if ! set -q argv[1] || test $argv[1] = "--help"
+	if ! set -q argv[1] || test "$argv[1]" = "--help"
 		echo "Usage: nerdlevel LEVEL"
 		echo
 		echo "Enter or leave FISH shell with Shell-Pack, adjust symbol support"

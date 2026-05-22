@@ -3,7 +3,7 @@ function venv -a arg_cd -d \
 its ascendants and certain subdirectories and activates it"
 	
 	# usage from description
-	if test $argv[1] = "--help"
+	if test "$argv[1]" = "--help"
 		echo "Usage: venv [ DIR ]"
 		echo
 		echo -e (functions -vD (status current-function))[5]
