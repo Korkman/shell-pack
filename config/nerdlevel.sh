@@ -8,6 +8,16 @@ nerdlevel() {
 		# that break when one shell changes into another
 		return
 	fi
+	
+	if [ "$1" = "--help" ]; then
+		echo "Enter or leave FISH shell with Shell-Pack, adjust symbol support"
+		echo "  0 = return to \$OLDSHELL ($OLDSHELL)"
+		echo "  1 = no symbols"
+		echo "  2 = powerline font"
+		echo "  3 = font awesome"
+		return 1
+	fi >&2
+	
 	export LC_NERDLEVEL="$1"
 	if [ "${TMUX:-}" != "" ]; then
 		echo "tmux note: new and existing windows will inherit new LC_NERDLEVEL"

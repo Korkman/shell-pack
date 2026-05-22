@@ -1,4 +1,6 @@
-function dl -d "Download a file, via https:// by default, use either curl or wget, ask to resume or overwrite if already present"
+function dl -d \
+"Download a file, via https:// by default, using either curl or wget. 
+Will ask to resume or overwrite if already present. Pipe friendly."
 	# set defaults
 	set -l preferred wget
 	set -l force_preferred no
@@ -7,17 +9,18 @@ function dl -d "Download a file, via https:// by default, use either curl or wge
 	set -l to_stdout no
 	set -l resume_dl ask
 	
-	if [ (count $argv) = 0 ]
-		begin
-			echo "Usage: dl [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] <url> [output_file]"
-			echo "  Preferred backend is $preferred."
-			if test "$resume_dl" = "yes"
-				echo "  By default, downloads are resumed if already present."
-				echo "  Does not apply when redirecting to stdout."
-			end
-		end >&2
+	if test (count $argv) = 0 || test $argv[1] = '--help'
+		echo "Usage: dl [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] <url> [output_file]"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo
+		echo "Preferred backend is $preferred."
+		if test "$resume_dl" = "yes"
+			echo "  By default, downloads are resumed if already present."
+			echo "  Does not apply when redirecting to stdout."
+		end
 		return 1
-	end
+	end >&2
 	
 	# interpret, filter dash prefixed args
 	set -l args

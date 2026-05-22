@@ -1,11 +1,12 @@
 function venv -a arg_cd -d \
-	"Searches for a Python virtual environment in the current directory, its ascendants and certain subdirectories and activates it"
+"Searches for a Python virtual environment in the current directory,
+its ascendants and certain subdirectories and activates it"
 	
 	# usage from description
 	if test $argv[1] = "--help"
 		echo "Usage: venv [ DIR ]"
-		echo ""
-		echo (functions -vD venv)[5]
+		echo
+		echo -e (functions -vD (status current-function))[5]
 		return 1
 	end >&2
 	

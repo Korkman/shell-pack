@@ -1,5 +1,14 @@
-function oldshell \
--d "Convenient access to the system default shell $OLDSHELL"
+function oldshell -d \
+"Convenient access to the user's default shell $OLDSHELL"
+	if set -q $argv[1] && test $argv[1] == '--help'
+		echo "Usage: oldshell"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo 
+		echo "Creates a subshell. Exit to return."
+		return 1
+	end >&2
+	
 	if test "$OLDSHELL" = ""
 		echo "\$OLDSHELL not set - was nerdlevel.sh sourced in your profile?"
 		return
@@ -16,6 +25,6 @@ function oldshell \
 		# importing tmux env, which can cause loops
 		set -lu TMUX
 		# changing LC_NERDLEVEL without triggering event
-		env LC_NERDLEVEL=0 $OLDSHELL $argv
+		env LC_NERDLEVEL=0 $OLDSHELL -l $argv
 	end
 end

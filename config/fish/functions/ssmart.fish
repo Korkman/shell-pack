@@ -1,11 +1,11 @@
 #! /usr/bin/env -S fish -c ssmart
 
-function ssmart -d \
-	"Super smartctl"
+function ssmart -d "Pages 'smartctl -x' output for a device"
+	
 	if test $argv[1] = "" || test $argv[1] = '--help'
-		echo "Pages 'smartctl -x' output for a device"
-		echo
 		echo "Usage: ssmart [ OPTIONS ... ] DEVICE"
+		echo
+		echo -e (functions -vD (status current-function))[5]
 		echo
 		echo "Extra OPTIONS are passed directly to smartctl."
 		echo "Key values of interest are highlighted in output."

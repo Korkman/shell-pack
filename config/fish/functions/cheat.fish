@@ -99,7 +99,7 @@ Append '&| less'              Alt-P
 Prepend 'sudo'                Alt-S
 Manpage for current cmd       Alt-H             F1
 What is word at cursor        Alt-W
-Edit commandline in \$EDITOR  Alt-E
+Edit commandline in \$EDITOR   Alt-E
 Clear line, exit shell        F10
 
 
