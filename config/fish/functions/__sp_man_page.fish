@@ -54,6 +54,7 @@ function __sp_man_page
 	if contains -- $search_cmd $wl_dash_dash_help
 		begin
 			$search_cmd --help
+			# hack: echo this to STDOUT so it appears at the end
 			echo "" >&1
 			echo (set_color brwhite)"NOTICE:"(set_color normal)" No man page found, paging '$search_cmd --help' instead"(set_color normal) >&1
 		end &| $pager

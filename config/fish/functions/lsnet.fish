@@ -1,7 +1,14 @@
 #! /usr/bin/env -S fish -c lsnet
 
-# ssshow outgoing inet sockets
-function lsnet
+function lsnet -d \
+"List network connections, program names and process IDs"
+  if test $argv[1] = "--help"
+    echo "Usage: lsnet"
+    echo
+    echo -e (functions -vD (status current-function))[5]
+    return 1
+  end >&2
+  
   # estimated max width of 2* (IPv6 + 5 digit port + 6 chr interface) + "tcp" = 110
   set -l procWidth (math $COLUMNS-110)
   if $__cap_ss

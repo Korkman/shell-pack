@@ -9,6 +9,15 @@ set -eu
 portToScan=22
 if [ -n "${1+x}" ]
 then
+	if [ "$1" = "--help" ]
+	then
+		echo "Usage: ffingerprints [ HOST  [ PORT ] ]"
+		echo
+		echo "Show SSH host fingerprints of either localhost or passed HOST."
+		echo "Pass PORT if ssh is not on port 22."
+		return 1
+	fi >&2
+	
 	hostToScan="$1"
 	if [ -n "${2+x}" ]
 	then
