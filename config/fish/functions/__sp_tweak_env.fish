@@ -96,6 +96,15 @@ function __sp_tweak_env -d \
 		;
 		
 		mmux --grab-hooks
+		
+		# __sp_man_page needs a backup copy of the preset "man" function
+		if ! functions -q __sp_man_page_default && functions -q man
+			functions --copy man __sp_man_page_default
+		end
+		# then override it
+		function man
+			__sp_man_page $argv
+		end
 	end
 end
 
