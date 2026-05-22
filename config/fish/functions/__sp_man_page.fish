@@ -38,7 +38,8 @@ function __sp_man_page
 	#       to support systems which lack man pages. attempting to strike some balance.
 	set wl_dash_dash_help \
 		# shell-pack functions
-		venv lsports lsnet cheat dl ssmart create qcrypt oldshell ddool nerdlevel cfc cfd qssh ggit qmount qumount \
+		venv lsports lsnet cheat dl ssmart create qcrypt oldshell ddool nerdlevel \
+		cfc cfd qssh ggit qmount qumount ffingerprints ppage grasp \
 		# basics (portability: BSD utils don't support --help, but they will show usage - ignore the warning) \
 		tar cp mv chown chmod awk sed grep \
 		# tools

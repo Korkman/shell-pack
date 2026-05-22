@@ -1,5 +1,29 @@
 function grasp -d \
-	"Pipe live stream or file through fzf"
+"Pipe live stream or file through 'fzf' for searching and filtering."
+	if test "$argv[1]" = "--help"
+		echo "Usage: grasp FILE [ OPTIONS ]"
+		echo "   or: cat FILE | grasp [ OPTIONS ]"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo
+		echo "Limited to 10000 lines by default."
+		echo
+		echo "Options:"
+		echo
+		echo "  --tail=[COUNT], -t[COUNT]"
+		echo "      Change line limit to COUNT."
+		echo
+		echo "  --line-number, -n"
+		echo "      Add line numbers."
+		echo "      When reading from STDIN, use 'alt-l' hotkey instead (works on a snapshot)."
+		echo
+		echo "  --pager, -p"
+		echo "      Use as pager. Starts at the top and changes default line limit to 100000."
+		echo "      'ppage' is a shorthand for this."
+		echo 
+		echo "When launched, hit 'alt-b' for a list of keybinds. 'q' quits, '/' opens search."
+		return 1
+	end >&2
 	
 	set -l default_lines 10000
 	set -l default_pager_lines 100000
