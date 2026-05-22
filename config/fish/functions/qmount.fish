@@ -1,14 +1,20 @@
 function qmount -d \
-	"Mount and browse devices and disk image files with autocomplete"
+"Mount and browse devices and disk image files."
 	# - creates directories derived from the device path in /run/q/
 	# - mounts with default options
 	# - cd && ls
 	
-	if test "$argv[1]" = ""
-		echo "qmount will create /run/q/[device name], mount and cd there"
-		echo "arg #1: device name (without /dev) required"
+	if test "$argv[1]" = "" || test "$argv[1]" = "--help"
+		echo "Usage: qmount FILE|DEVICE"
+		echo
+		echo -e (functions -vD (status current-function))[5]
+		echo
+		echo "qmount will mount FILE|DEVICE to /run/q/[device name]"
+		echo "The path '/dev/' can be omitted."
+		echo
+		echo "Autocomplete lists suitable devices and files."
 		return 1
-	end
+	end >&2
 	
 	if test "$argv[2]" != ""
 		echo "no more than 1 argument allowed"

@@ -1,5 +1,5 @@
 function qumount -d \
-	"Umount blockdevices mounted in /run/q/"
+"Unmount blockdevices previously mounted with 'qmount' in /run/q/."
 	
 	set -l devdisk
 	
@@ -13,6 +13,16 @@ function qumount -d \
 	
 	# accept or imply first argument DEVICE
 	if test "$argv[1]" != ""
+		if test "$argv[1]" = "--help"
+			echo "Usage: qumount [ DIRECTORY | DEVICE ]"
+			echo
+			echo -e (functions -vD (status current-function))[5]
+			echo
+			echo "Pass either a DEVICE or a DIRECTORY in /run/q."
+			echo "Omit to unmount current subdirectory of /run/q/."
+			return 1
+		end >&2
+		
 		set devdisk "$argv[1]"
 	else if string match -q "/run/q/*" -- "$PWD"
 		set -l original_pwd "$PWD"
