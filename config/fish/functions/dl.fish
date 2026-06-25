@@ -160,7 +160,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		test "$silent" = "yes" || echo "Download with wget ..." >&2
 		set -l base_opt --max-redirect=10 --tries 3 --no-use-server-timestamps
 		if $__cap_wget_has_glob
-			set -a base_opt -- --no-glob
+			set -a base_opt --no-glob
 		end
 		set -l silent_opt
 		set -l show_prog_opt "--show-progress"
