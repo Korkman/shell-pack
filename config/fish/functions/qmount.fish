@@ -4,21 +4,46 @@ function qmount -d \
 	# - mounts with default options
 	# - cd && ls
 	
-	if test "$argv[1]" = "" || test "$argv[1]" = "--help"
-		echo "Usage: qmount FILE|DEVICE"
+	argparse 'rw' 'ro' 'tmp-rw=?' 'help' -- $argv
+	or return 1
+
+	if test (count $argv) -eq 0 || set -q _flag_help
+		echo "Usage: qmount [--ro|--rw|--tmp-rw] FILE|DEVICE"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
 		echo "qmount will mount FILE|DEVICE to /run/q/[device name]"
 		echo "The path '/dev/' can be omitted."
 		echo
+		echo "  --ro      Mount read-only at block device (nbd) level (default)"
+		echo "  --rw      Mount read-write at block device (nbd) level"
+		echo "  --tmp-rw[=FILE]  Redirect writes to a temporary overlay (original unchanged)"
+		echo "                  Without FILE, a temporary file in /tmp is used."
+		echo "                  With FILE, a qcow2 overlay is created at that path."
+		echo
 		echo "Autocomplete lists suitable devices and files."
-		return 1
+		if set -q _flag_help
+			return 0
+		else
+			return 1
+		end
 	end >&2
-	
-	if test "$argv[2]" != ""
+
+	if test (count $argv) -gt 1
 		echo "no more than 1 argument allowed"
 		return 1
+	end
+
+	# --rw/--ro/--tmp-rw flag to forward through recursive calls
+	set -l _qmount_rw_flag --ro
+	if set -q _flag_rw
+		set _qmount_rw_flag --rw
+	else if set -q _flag_tmp_rw
+		if test -n "$_flag_tmp_rw"
+			set _qmount_rw_flag "--tmp-rw=$_flag_tmp_rw"
+		else
+			set _qmount_rw_flag --tmp-rw
+		end
 	end
 
 	set -l devdisk "$argv[1]"
@@ -72,15 +97,39 @@ function qmount -d \
 		string match -qr '^file format: (?<qemu_img_format>.*)' -- $qemu_img_info
 		or echo "failed to find image format in output" && return 1
 		
-		set -l qemu_readonly
-		if ! test -w "$devdisk"
-			set qemu_readonly "--read-only"
+		# Default to read-only at block device level; --rw/--tmp-rw override
+		set -l qemu_extra_flags --read-only
+		set -l qemu_connect_file "$devdisk"
+		set -l qemu_connect_format $qemu_img_format
+		if set -q _flag_rw
+			set qemu_extra_flags
+		else if set -q _flag_tmp_rw
+			if test -n "$_flag_tmp_rw"
+				if test -f "$_flag_tmp_rw"
+					# overlay already exists — verify it still points to the same backing file
+					set -l overlay_backing (qemu-img info --output=json "$_flag_tmp_rw" | grep -oP '"backing-filename":\s*"\K[^"\']+')
+					set -l devdisk_real (realpath "$devdisk")
+					if test "$overlay_backing" != "$devdisk_real"
+						echo "Overlay $_flag_tmp_rw exists but its backing file ($overlay_backing) does not match $devdisk_real — refusing to reuse"
+						return 1
+					end
+					echo "Reusing existing overlay $_flag_tmp_rw (backing file matches)"
+				else
+					# create a qcow2 overlay at the specified path
+					qemu-img create -f qcow2 -F $qemu_img_format -b (realpath "$devdisk") "$_flag_tmp_rw"
+					or echo "failed to create overlay at $_flag_tmp_rw" && return 1
+				end
+				set qemu_extra_flags
+				set qemu_connect_file "$_flag_tmp_rw"
+				set qemu_connect_format qcow2
+			else
+				set qemu_extra_flags --snapshot
+			end
 		end
-		
+
 		# connect nbd device
-		echo "Connecting $qemu_img_format disk image $devdisk to /dev/$freenbd ..."
-		qemu-nbd -f $qemu_img_format $qemu_readonly --connect=/dev/$freenbd "$devdisk"
-		or qemu-nbd -f $qemu_img_format --read-only --connect=/dev/$freenbd "$devdisk"
+		echo "Connecting $qemu_connect_format disk image $qemu_connect_file to /dev/$freenbd ..."
+		qemu-nbd -f $qemu_connect_format $qemu_extra_flags --connect=/dev/$freenbd "$qemu_connect_file"
 		or echo "failed to connect qemu-nbd" && return 1
 		
 		# we need a moment to let the kernel notice the new device
@@ -93,7 +142,7 @@ function qmount -d \
 		end
 		
 		# Recurse into created block device
-		qmount /dev/$freenbd
+		qmount $_qmount_rw_flag /dev/$freenbd
 		or begin
 			read -P "Undo $freenbd setup? (Y/n)" answer || set answer "n"
 			if string match -qri '^(y|)$' -- "$answer"
@@ -134,7 +183,7 @@ function qmount -d \
 		end
 		cryptsetup luksOpen "$devdisk" "$cryptname"
 		or echo "Cryptsetup failed" && return 1
-		qmount "$cryptdev"
+		qmount $_qmount_rw_flag "$cryptdev"
 		or begin
 			set -l rs $status
 			read -P "Undo $cryptname setup? (Y/n)" answer || set answer "n"
@@ -161,7 +210,7 @@ function qmount -d \
 		for i in $lvlist
 			set has_parts yes
 			set i "/dev/$vgname/$i"
-			qmount "$i" && set -a parts "$i"
+			qmount $_qmount_rw_flag "$i" && set -a parts "$i"
 			or set -a parts_failed "$i"
 		end
 		echo "NOTE: while qmount can recurse LVM, qumount can't yet."
@@ -187,7 +236,7 @@ function qmount -d \
 			string match -qr ' PATH="(?<partpath>[^"]+)"' -- "$i"
 			string match -qr '^NAME="(?<partname>[^"]+)"' -- "$i"
 			echo "Recursing into partition $partname"
-			qmount "$partpath" && set -a parts "$partname"
+			qmount $_qmount_rw_flag "$partpath" && set -a parts "$partname"
 			or set -a parts_failed "$partname"
 		end
 	end
