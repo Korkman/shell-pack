@@ -123,7 +123,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	
 	if test "$use_tool" = "curl"
 		test "$silent" = "yes" || echo "Download with curl ..." >&2
-		set -l base_opt -L --max-redirs 10 --retry 3 -f
+		set -l base_opt -L --max-redirs 10 --retry 3 --globoff -f
 		set -l silent_opt
 		set -l writeout_opt --write-out '%{url_effective}\n-> HTTP %{http_code} %{content_type}\n'
 		set -l resume_opt -C -
@@ -158,7 +158,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		
 	else if test "$use_tool" = "wget"
 		test "$silent" = "yes" || echo "Download with wget ..." >&2
-		set -l base_opt --max-redirect=10 --tries 3 --no-use-server-timestamps
+		set -l base_opt --max-redirect=10 --tries 3 --no-glob --no-use-server-timestamps
 		set -l silent_opt
 		set -l show_prog_opt "--show-progress"
 		set -l resume_opt -c
