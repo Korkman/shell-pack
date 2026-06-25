@@ -4,7 +4,8 @@
 command -v fish > /dev/null || {
 	echo "Fish not in PATH, installer failed!"
 	cat "$HOME/fish_installer.log"
-	exit 1
+	bash -l
+	exit
 }
 
 # simulate pre-installed binaries

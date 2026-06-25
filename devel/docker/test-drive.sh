@@ -10,10 +10,12 @@
 # be more strict about errors
 set -eu
 # initialize defaults
+EXTRA_MOUNTS=${EXTRA_MOUNTS:-} # list of mounts to add to the container under /mnt
 AUTOSTART=${AUTOSTART:-yes} # run installer in guest-startup.sh
 FORCE_DOCKER=${FORCE_DOCKER:-no} # force use of docker although podman is available
 FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
+FISH_INSTALL=${FISH_INSTALL:-yes} # install fish
 FISH_STATIC=${FISH_STATIC:-no} # install fish static binary (4.0 beta and up)
 FISH_NIGHTLY=${FISH_NIGHTLY:-no} # install fish nightly
 PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
@@ -30,10 +32,13 @@ Options:
   rm                 Remove persisted container
 
 Environment Variables:
+  EXTRA_MOUNTS           Space-separated host paths to mount under /mnt
+                         (supports host_path[:container_path[:options]])
   AUTOSTART              Run installer on startup (default: yes)
   FORCE_DOCKER           Force Docker instead of Podman (default: no)
   FORCE_NO_SUDO          Skip sudo for Docker (default: no)
   USE_CACHED_DOWNLOADS   Use cached downloads (default: yes)
+  FISH_INSTALL           Install fish (default: yes)
   FISH_STATIC            Install fish static binary (default: yes)
   FISH_NIGHTLY           Force install fish nightly (default: no)
   PLATFORM               Set platform e.g. linux/arm64 (default: auto)
@@ -172,14 +177,19 @@ case "$BUILD_FROM" in
 esac
 
 tagname="$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')${PLATFORM_TAG_SUFFIX}"
-# append "fish4" to tagname if SP_FISH4 is yes
-if [ "$FISH_STATIC" = "yes" ]
+# append variants to tagname
+if [ "$FISH_INSTALL" = "yes" ]
 then
-	tagname="${tagname}-fish-static"
-fi
-if [ "$FISH_NIGHTLY" = "yes" ]
-then
-	tagname="${tagname}-fish-nightly"
+	if [ "$FISH_STATIC" = "yes" ]
+	then
+		tagname="${tagname}-fish-static"
+	fi
+	if [ "$FISH_NIGHTLY" = "yes" ]
+	then
+		tagname="${tagname}-fish-nightly"
+	fi
+else
+	tagname="${tagname}-no-fish"
 fi
 
 # script location
@@ -199,6 +209,7 @@ then
 	container_id=$($docker ps -a --format '{{ .ID }}' --filter "name=^$persist_container_name\$" 2>/dev/null) || container_id=""
 	arg_container_name="--name $persist_container_name"
 else
+	container_id=""
 	arg_container_name=""
 fi
 
@@ -211,6 +222,11 @@ then
 	fi
 	echo "❌ Discarding $persist_container_name ..."
 	$docker rm "$container_id"
+	if $docker image inspect "shell-pack:test-drive-${tagname}-committed" >/dev/null 2>&1
+	then
+		echo "🧹 Removing committed image shell-pack:test-drive-${tagname}-committed ..."
+		$docker rmi "shell-pack:test-drive-${tagname}-committed" || true
+	fi
 	exit 0
 fi
 
@@ -230,6 +246,7 @@ then
 	$docker build \
 		$cache_arg \
 		--pull \
+		--build-arg "FISH_INSTALL=$FISH_INSTALL" \
 		--build-arg "FISH_STATIC=$FISH_STATIC" \
 		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
 		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
@@ -272,9 +289,154 @@ then
 	done
 fi
 
+extra_mounts_args=""
+desired_mount_list=""
+if [ -n "$EXTRA_MOUNTS" ]
+then
+	for mount in $EXTRA_MOUNTS
+	do
+		# Format is: host_path[:container_path[:options]]
+		host_path=""
+		container_path=""
+		opts="rw"
 
+		case "$mount" in
+			*:*:* )
+				host_path="${mount%%:*}"
+				rest="${mount#*:}"
+				container_path="${rest%%:*}"
+				opts="${rest#*:}"
+				;;
+			*:* )
+				host_path="${mount%%:*}"
+				container_path="${mount#*:}"
+				;;
+			* )
+				host_path="$mount"
+				container_path="/mnt/$(basename "$host_path")"
+				;;
+		esac
+
+		# Ensure host_path is absolute
+		case "$host_path" in
+			/* ) ;;
+			* ) host_path="$PWD/$host_path" ;;
+		esac
+
+		# Ensure container_path starts with /
+		case "$container_path" in
+			/* ) ;;
+			* ) container_path="/mnt/$container_path" ;;
+		esac
+
+		extra_mounts_args="$extra_mounts_args --volume $host_path:$container_path:$opts"
+		desired_mount_list="$desired_mount_list $host_path:$container_path:$opts"
+	done
+fi
+
+if [ "${container_id:-}" != "" ]
+then
+	# Check if mounted volumes have changed. Since docker/podman do not support
+	# changing volumes of an existing container via "start", we commit the state,
+	# destroy the old container, and recreate it with the new mounts.
+	existing_mounts=$($docker inspect --format '{{range .Mounts}}{{.Source}}:{{.Destination}}:{{.Mode}} {{end}}' "$container_id" 2>/dev/null || true)
+	mounts_changed="no"
+
+	for dm in $desired_mount_list
+	do
+		dm_host="${dm%%:*}"
+		rest="${dm#*:}"
+		dm_container="${rest%%:*}"
+		dm_opts="${rest#*:}"
+
+		found="no"
+		for em in $existing_mounts
+		do
+			em_host="${em%%:*}"
+			em_rest="${em#*:}"
+			em_container="${em_rest%%:*}"
+			em_mode="${em_rest#*:}"
+
+			if [ "$dm_host" = "$em_host" ] && [ "$dm_container" = "$em_container" ]
+			then
+				case "$em_mode" in
+					*"$dm_opts"* ) found="yes"; break ;;
+					* )
+						if [ "$dm_opts" = "rw" ] || [ -z "$dm_opts" ]
+						then
+							found="yes"
+							break
+						fi
+						;;
+				esac
+			fi
+		done
+
+		if [ "$found" = "no" ]
+		then
+			echo "🔍 Detected missing or modified mount: $dm_host -> $dm_container"
+			mounts_changed="yes"
+			break
+		fi
+	done
+
+	if [ "$mounts_changed" = "no" ]
+	then
+		for em in $existing_mounts
+		do
+			em_host="${em%%:*}"
+			em_rest="${em#*:}"
+			em_container="${em_rest%%:*}"
+
+			case "$em_container" in
+				/mnt/* )
+					found="no"
+					for dm in $desired_mount_list
+					do
+						dm_host="${dm%%:*}"
+						rest="${dm#*:}"
+						dm_container="${rest%%:*}"
+						if [ "$em_host" = "$dm_host" ] && [ "$em_container" = "$dm_container" ]
+						then
+							found="yes"
+							break
+						fi
+					done
+					if [ "$found" = "no" ]
+					then
+						echo "🔍 Detected stale mount to remove: $em_container"
+						mounts_changed="yes"
+						break
+					fi
+					;;
+			esac
+		done
+	fi
+
+	if [ "$mounts_changed" = "yes" ]
+	then
+		echo "🔄 Volume mounts changed. Committing container state and recreating container..."
+		if $docker commit "$container_id" "shell-pack:test-drive-${tagname}-committed" >/dev/null 2>&1
+		then
+			echo "💾 Container state saved to shell-pack:test-drive-${tagname}-committed"
+			$docker rm -f "$container_id" >/dev/null
+			container_id=""
+		else
+			echo "⚠️ Failed to commit container state. Recreating container from base image..."
+			$docker rm -f "$container_id" >/dev/null
+			container_id=""
+		fi
+	fi
+fi
+
+run_image="shell-pack:test-drive-${tagname}"
 if [ "${container_id:-}" = "" ]
 then
+	if [ "$persist" = "yes" ] && $docker image inspect "shell-pack:test-drive-${tagname}-committed" >/dev/null 2>&1
+	then
+		run_image="shell-pack:test-drive-${tagname}-committed"
+	fi
+
 	# a new container must be created
 	container_id=$(
 		$docker run \
@@ -283,12 +445,13 @@ then
 		--hostname "test-${tagname}" \
 		--volume "$tmpdir:/root/Downloads:rw" \
 		--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
+		$extra_mounts_args \
 		$PLATFORM_ARG \
 		--interactive \
 		--tty \
 		--detach \
 		$arg_container_name \
-		"shell-pack:test-drive-${tagname}"
+		"$run_image"
 	)
 
 	echo "Attaching $container_id ..."
