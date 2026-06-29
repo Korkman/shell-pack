@@ -334,7 +334,9 @@ ctrl-a, lift keys, then
     alias: y, alt-up, will immediately scroll to previous prompt
     alias: alt-pgup, scroll to start of history
     in copy-mode:
-      space / enter: modify and copy selection
+      mouse: supports drag, double- and tripleclick to copy
+      space / enter: start, copy selection, exit copy-mode
+      c: copy selection but stay in copy-mode
       y / x / alt-up / alt-down: scroll to previous / next prompt
       alt-pgup / alt-pgdn: scroll to start / end of history
   v: paste previously copied text
@@ -356,7 +358,7 @@ ctrl-a, lift keys, then
     alias: \
 
 notes:
-- mouse works, can scroll in history when in copy mode and resize panes
+- mouse works, can scroll or drag to enter and exit copy-mode, resize panes
 - alt-right-click opens a context menu in recent tmux versions
 - window numbering starts at 1, ends on 0 to be more natural on keyboard
 - environment variables are being taken care of
