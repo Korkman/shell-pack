@@ -62,7 +62,7 @@ function ddool -w dool
 			end
 		end
 		# remove all arguments for remaining processing
-		set -e argv
+		set argv
 	end
 	
 	if test "$argv[1]" = "--remove"
@@ -70,14 +70,14 @@ function ddool -w dool
 		set argv $argv[2..-1]
 		set -U ddool_addon_args (string replace -r -- "$argv" "$ddool_addon_args")
 		# remove all arguments for remaining processing
-		set -e argv
+		set argv
 	end
 	
 	# if only an interval (and optional count) is passed, do not persist it
 	set -l ddool_temp_args
 	if string match -q --regex -- '^[0-9]+(\s+[0-9]+){0,1}$' "$argv"
 		set -a ddool_temp_args $argv
-		set -e argv
+		set argv
 	end
 	
 	# persist arguments

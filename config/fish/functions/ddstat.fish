@@ -53,7 +53,7 @@ function ddstat -w dstat
 			end
 		end
 		# remove all arguments for remaining processing
-		set -e argv
+		set argv
 	end
 	
 	if test "$argv[1]" = "--remove"
@@ -61,14 +61,14 @@ function ddstat -w dstat
 		set argv $argv[2..-1]
 		set -U ddstat_addon_params (string replace -r -- "$argv" "$ddstat_addon_params")
 		# remove all arguments for remaining processing
-		set -e argv
+		set argv
 	end
 	
 	# if only an interval is passed, do not persist it
 	set -l ddstat_temp_args
 	if string match -q --regex -- '^([0-9]+)$' "$argv"
 		set -a ddstat_temp_args "$argv"
-		set -e argv
+		set argv
 	end
 	
 	# persist arguments
@@ -81,6 +81,19 @@ function ddstat -w dstat
 	for arg in $ddstat_base_args $ddstat_addon_params $ddstat_temp_args
 		echo -n " "(string escape --style script -- "$arg")
 	end
-	echo ""
-	dstat $ddstat_base_args $ddstat_addon_params $ddstat_temp_args
+	echo -n (set_color brgreen)
+	for arg in $ddstat_addon_args
+		echo -n " "(string escape --style script -- "$arg")
+	end
+	echo -n (set_color bryellow)
+	for arg in $ddstat_temp_args
+		echo -n " "(string escape --style script -- "$arg")
+	end
+	echo (set_color normal)""
+	
+	set -l dstatcmd "dstat"
+	set -a dstatcmd $ddstat_base_args
+	set -a dstatcmd $ddstat_addon_args
+	set -a dstatcmd $ddstat_temp_args
+	$dstatcmd
 end
