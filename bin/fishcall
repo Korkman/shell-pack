@@ -26,7 +26,11 @@ function int_handler --on-signal SIGINT --on-signal SIGTERM --on-signal SIGQUIT
 end
 
 if type -q $funcname
-	$funcname $argv
+	# move global scoped argv into local scope so functions potentially calling
+	# `set -e argv` don't fall back to global scope on further reads by accident
+	set -l fishcall_argv $argv
+	set -e argv
+	$funcname $fishcall_argv
 else
 	echo "Fish function does not exist: $funcname"
 	exit 1
