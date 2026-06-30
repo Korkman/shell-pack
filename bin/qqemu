@@ -2,8 +2,7 @@
 {
 
 # quick qemu demoboot
-# test boot in a qemu instance (disks snapshotted, no network)
-# ~pbeck 2020
+# test boot in a qemu instance (disks snapshotted, no network by default)
 
 set -eu
 set -o pipefail
@@ -104,7 +103,7 @@ do
 		pci_dev=$((vdisk_idx0 + 9))
 		vdisk_cmd="$vdisk_cmd \
 			-drive file=${vdisk},format=raw,if=none,id=drive-disk${vdisk_idx0},snapshot=on \
-			-device virtio-blk-pci,scsi=off,bus=pci.0,addr=${pci_dev},drive=drive-disk${vdisk_idx0},id=virtio-disk${vdisk_idx0},bootindex=${vdisk_idx1} \
+			-device virtio-blk-pci,bus=pci.0,addr=${pci_dev},drive=drive-disk${vdisk_idx0},id=virtio-disk${vdisk_idx0},bootindex=${vdisk_idx1} \
 		"
 	elif [ "$drive_type" = "scsi" ]
 	then
@@ -177,7 +176,6 @@ if [ "${CPU:-""}" = "" ]
 then
 	cpu_cnt=$(nproc)
 	((cpu_cnt=(cpu_cnt+1)/2))
-	cpu_cnt=1
 else
 	cpu_cnt=$CPU
 fi
@@ -189,13 +187,16 @@ echo 1 > /proc/sys/vm/drop_caches
 
 echo "Launching virtual machine with snapshotted disks"
 echo "VNC Display is: ${vnc_display}"
-echo "VM will start suspended, type 'c' in CLI monitor to boot, 'q' to turn off"
+echo "Hints:"
+echo "  Send keys like this: sendkey ctrl-alt-sysrq-r"
+echo "  Resize the window before boot to define initial resolution"
+echo "  Starting suspended: type 'c' in CLI monitor to boot, 'q' to turn off"
 qemu-system-x86_64 \
 	${enable_kvm} \
 	-name demoboot \
 	-S \
-	-machine pc-i440fx-2.1${accel_kvm},usb=off \
-	-cpu qemu64 \
+	-machine pc${accel_kvm},usb=off,hpet=off \
+	-cpu host \
 	-smp sockets=1,dies=1,cores=$cpu_cnt,threads=1 \
 	-m ${memory} \
 	${bios_cmd} \
@@ -205,7 +206,6 @@ qemu-system-x86_64 \
 	-monitor stdio \
 	-rtc base=utc,driftfix=slew \
 	-global kvm-pit.lost_tick_policy=discard \
-	-no-hpet \
 	-no-shutdown \
 	-global PIIX4_PM.disable_s3=1 \
 	-global PIIX4_PM.disable_s4=1 \
@@ -220,7 +220,7 @@ qemu-system-x86_64 \
 	-vnc ${vnc_display},non-adaptive=on \
 	${display_cmd2} \
 	${keyboard} \
-	-device qxl-vga,id=video0,ram_size=67108864,vram_size=67108864,bus=pci.0,addr=0x2 \
+	-device virtio-vga,xres=1024,yres=768,id=video0,bus=pci.0,addr=0x3 \
 	-device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x8 \
 	${net_cmd} \
 	${custom_cmd} \
