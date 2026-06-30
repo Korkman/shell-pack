@@ -312,8 +312,32 @@ end
 
 function __cheat_tmux
 	echo "
-tmux keys - as configured by shell-pack
-
+TMUX AS CONFIGURED BY SHELL-PACK
+ 
+# THE STATUS BAR
+ 
+left side:
+  mode indicator:
+    NORM: normal input
+    COPY: copy-mode active (scrolled, selected text)
+    PRFX: prefix active (ctrl-a was pressed)
+    SYNC: input is mirrored to all panes (ctrl-a shift-b)
+  hostname, '/', session name
+ 
+center: window tabs
+  1:tab = the first tab (ctrl-a 1)
+  tab* = the current tab
+  tab- = the previous tab (ctrl-a ctrl-a)
+  !tab = a bell was recorded in the tab
+  tab# = activity monitor triggered (ctrl-a shift-m)
+  tab~ = silence monitor triggered (ctrl-a _)
+  
+right side:
+  load average
+  clock, date
+ 
+# THE KEYBOARD
+ 
 ctrl-a: is an alias for ctrl-b because it is more accessible (and tradition)
 ctrl-a, lift keys, then
   f1: show this help
@@ -350,16 +374,32 @@ ctrl-a, lift keys, then
   s: swap pane with marked
   shift-b: toggle broadcast mode, sending keystrokes to all panes
   w: show sessions and their windows
-  shift-W: move window to other session with picker
-  alt-W: move window to (new) other session
-  shift-Q: break out a pane into a dedicated window
+  shift-w: move window to other session with picker
+  alt-w: move window to (new) other session
+  shift-q: break out a pane into a dedicated window
     alias: !
   shift-k: kill all windows and exit (if confirmed)
     alias: \
-
-notes:
-- mouse works, can scroll or drag to enter and exit copy-mode, resize panes
-- alt-right-click opens a context menu in recent tmux versions
+ 
+# THE MOUSE
+ 
+- scroll or drag in pane immediately enters copy-mode
+- selection is copied to tmux clipboard and terminal host if supported
+- selection does not exit copy-mode to accomodate copying multiple strings
+- (alt-)right-click context menus are available from tmux
+- click on left status toggles prefix mode
+- double-click on left status shows session tree chooser
+- prefix + wheelup/-down on left status moves status bar to top / bottom
+- double-click on tab creates new window next to it
+- button 2 on tab closes window with confirm
+- prefix + button 2 on tab closes window without confirm
+- hold left button on right status for precise time
+- double-click on right status to run dool + htop in new windows
+- double-click in empty area to create new window at end
+- wheelup/-down on status switches through tabs
+ 
+# FURTHER NOTES
+ 
 - window numbering starts at 1, ends on 0 to be more natural on keyboard
 - environment variables are being taken care of
   - most notably enabling ssh agent forwarding
