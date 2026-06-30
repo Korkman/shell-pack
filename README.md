@@ -9,39 +9,43 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * vibrant colors, nice icons
  * execution time, exit status and pipe status visibility
  * background job execution time, exit status, PID visibility
- * a cheat sheet for itself, ```cheat```, and a test for your terminal, ```cheat --glyphs```
+ * improved `ctrl-r` history navigation and deletion
  * advanced directory navigation
    * `shift-arrows` or `alt-arrows` navigate history back, forward, dir up and dive with menu
    * `alt-d` or alias `d` jumps to bookmarks set with `tagdir`, `untagdir`
    * `alt-c` shows recursive change directory menu
- * improved `ctrl-r` history navigation and deletion
- * private mode alias `private`
  * recursive search for filenames with `alt-f`
- * tab / window title control with ```tag```, ```untag```, informative generated titles
- * tmux shortcuts, including exclusive session ```one``` for shared access
+ * tmux session shortcuts (`one`, `mmux`)
+ * tmux, midnight commander, htop config presets (optional)
+ * tab / window title control with `tag`, `untag`, informative generated titles
+ * private mode (`private`)
+ * fiddle mode (`fiddle`, F11)
+ * cheat sheet tool (`cheat`) for help on shell-pack + cheat.sh proxy
 
 ## Custom tools
- * `dl`: download URL with either curl or wget as backend
+ * `dl`: download URL with either curl or wget as backend, supports resume
  * `cfc`: compressed file creation, shortcut for tar, 7z, zstd, etc.
  * `cfd`: compressed file decompression
  * `qssh`: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`): an easy to use ripgrep file content search with preview
- * `ggit`: quickly review changes, add files to the commit
+ * `ggit`: quickly review changes, add files to the commit and push
  * `venv`: activate / deactivate Python virtual env corresponding to current directory
  * `eenv`: load variables from .env file with POSIX shell support
  * `zero-unused-space`: fill 90% of free space with null-bytes
  * `create`, create and edit boilerplate files of various types
  * `qcrypt`, encrypt file or stream with password utilizing `openssl` or `gpg`
  * `grasp`, pipe a stream through fzf for real-time filtering
+ * `ppage`, page a file into `grasp` (configured as $PAGER if unset)
+ * `fishcall`, to call any fish alias from non-fish shells
  * Linux only
    * `lsports`: list open ports in compact manner or perform nmap scan (see --help)
    * `lsnet`: list active network connections in compact manner
    * `ddool`: a dool wrapper with "sticky" arguments
-   * `qmount`: mount a partition to /run/q/name (blockdevice autocomplete)
+   * `qmount`: mount partition or file to /run/q/name (blockdevice autocomplete)
    * `ssmart`: shortcut to smartctl -x (skip /dev/), highlights key data
    * `qchroot`: enter a Linux chroot, mounting all the necessities of modern Linux life
-   * `qqemu`: start a disk or partition in a temporary VM without modifying the disk or network connectivity
-   * `@`: ad-hoc ```atd``` replacement for executing commands at a given time as if typed into the prompt
+   * `qqemu`: ad-hoc boot of a disk or partition in a qemu VM, writes redirected to tmp and network disconnected
+   * `@`: ad-hoc `atd` replacement for executing commands at a given time, aliases supported
 
 ## Bundled tools
 On first startup, these tools will be downloaded and installed into a dedicated directory if not readily available
