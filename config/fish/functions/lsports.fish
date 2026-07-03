@@ -27,8 +27,19 @@ function lsports
 		
 		echo "Remote scan requested - nmap mode"
 		if command -q nmap
-			# (sane?) defaults: all ports, verbose, no DNS resolution, 300s host timeout 
-			set -l -- nmap_args -PE -PP -PM -v -p- -n --host-timeout 300s
+			# (sane?) defaults: all ports, verbose, no DNS resolution, 300s host timeout
+			# skip -p- if user already passed -p
+			set -l user_has_p false
+			for arg in $argv
+				if string match -qr -- '^-p' $arg
+					set user_has_p true
+					break
+				end
+			end
+			set -l -- nmap_args -PE -PP -PM -v -n --host-timeout 300s
+			if not $user_has_p
+				set -a nmap_args -p-
+			end
 			
 			if contains -- "--quiet" $argv
 				# remove --quiet and -v from args
