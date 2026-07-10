@@ -4,7 +4,9 @@ function qmount -d \
 	# - mounts with default options
 	# - cd && ls
 	
-	argparse 'rw' 'ro' 'tmp-rw=?' 'help' -- $argv
+	# --nbd-wrapped is an internal marker set on every recursive call once the
+	# outermost device has been wrapped in qemu-nbd; it prevents re-wrapping (see below)
+	argparse 'rw' 'ro' 'tmp-rw=?' 'help' 'nbd-wrapped' -- $argv
 	or return 1
 
 	if test (count $argv) -eq 0 || set -q _flag_help
@@ -48,11 +50,39 @@ function qmount -d \
 
 	set -l devdisk "$argv[1]"
 	set -l premount_undo
-	
-	if test -f "$devdisk"
-		# a file was specified: treat as a disk image and mount it with qemu-nbd
-		echo "Attempting to mount disk image"
-		
+
+	# not an absolute path and does not exist: fix up path by trying a /dev/ prefix
+	if ! test -e "$devdisk" && ! string match -q '/*' -- "$devdisk"
+		if test -b "/dev/$devdisk"
+			set devdisk "/dev/$devdisk"
+		end
+	end
+
+	# Decide whether to route through qemu-nbd. We do this for regular files (disk
+	# images) and for block devices, so that --ro/--tmp-rw are enforced at the block
+	# level and the on-disk data is protected (the same way we treat files).
+	#
+	# The wrap must happen EXACTLY ONCE, at the outermost device. Everything that is
+	# discovered by recursing into the resulting nbd device — its partitions and the
+	# dm-crypt/LVM layers that cryptsetup/lvm2 stack on top — must NOT be wrapped
+	# again, or the recursion would never terminate. Rather than trying to recognise
+	# those layers by their device paths (fragile), we carry an explicit
+	# --nbd-wrapped marker into every recursive call: once it is set, we never wrap
+	# again, so at most one qemu-nbd wrap happens per invocation chain.
+	set -l via_nbd no
+	if ! set -q _flag_nbd_wrapped
+		if test -f "$devdisk" || test -b "$devdisk"
+			set via_nbd yes
+		end
+	end
+
+	if test "$via_nbd" = yes
+		if test -f "$devdisk"
+			echo "Attempting to mount disk image"
+		else
+			echo "Attempting to mount block device via qemu-nbd"
+		end
+
 		# detect nbd module presence (this also serves as a barrier to stop non-linux users)
 		modinfo nbd > /dev/null
 		or echo "kernel module nbd not available (this function is Linux only)" && return 1
@@ -81,21 +111,26 @@ function qmount -d \
 			return 1
 		end
 		if ! type -q qemu-nbd || ! type -q qemu-img
-			echo "a file was specified, presumably a disk image, which qmount would mount with qemu-nbd"
-			echo "for safety and compatibility, but qemu-nbd or qemu-img is not available - exiting"
+			echo "qmount mounts files and block devices with qemu-nbd for safety and"
+			echo "compatibility, but qemu-nbd or qemu-img is not available - exiting"
 			return 1
 		end
 		
-		# detect image format with qemu-img - note: qemu-img sometimes mistakes vpc (.vhd) for raw, so we help
-		set -l format
-		if string match -qir '.vhd$' -- "$devdisk"
-			set format -f vpc
+		# detect the backing format:
+		#  - files: ask qemu-img (helping it with vpc/.vhd, which it sometimes reads as raw)
+		#  - block devices: always raw, using the partition itself as the backing device
+		set -l qemu_img_format raw
+		if test -f "$devdisk"
+			set -l format
+			if string match -qir '.vhd$' -- "$devdisk"
+				set format -f vpc
+			end
+			set qemu_img_info (qemu-img info $format "$devdisk")
+			or echo "qemu-img failed to detect disk image format" && return 1
+			#printf '%s\n' $qemu_img_info
+			string match -qr '^file format: (?<qemu_img_format>.*)' -- $qemu_img_info
+			or echo "failed to find image format in output" && return 1
 		end
-		set qemu_img_info (qemu-img info $format "$devdisk")
-		or echo "qemu-img failed to detect disk image format" && return 1
-		#printf '%s\n' $qemu_img_info
-		string match -qr '^file format: (?<qemu_img_format>.*)' -- $qemu_img_info
-		or echo "failed to find image format in output" && return 1
 		
 		# Default to read-only at block device level; --rw/--tmp-rw override
 		set -l qemu_extra_flags --read-only
@@ -128,7 +163,7 @@ function qmount -d \
 		end
 
 		# connect nbd device
-		echo "Connecting $qemu_connect_format disk image $qemu_connect_file to /dev/$freenbd ..."
+		echo "Connecting $qemu_connect_format source $qemu_connect_file to /dev/$freenbd ..."
 		qemu-nbd -f $qemu_connect_format $qemu_extra_flags --connect=/dev/$freenbd "$qemu_connect_file"
 		or echo "failed to connect qemu-nbd" && return 1
 		
@@ -141,8 +176,8 @@ function qmount -d \
 			sleep 1
 		end
 		
-		# Recurse into created block device
-		qmount $_qmount_rw_flag /dev/$freenbd
+		# Recurse into created block device (never wrap again below this point)
+		qmount $_qmount_rw_flag --nbd-wrapped /dev/$freenbd
 		or begin
 			read -P "Undo $freenbd setup? (Y/n)" answer || set answer "n"
 			if string match -qri '^(y|)$' -- "$answer"
@@ -150,12 +185,6 @@ function qmount -d \
 			end
 		end
 		return
-	else if ! test -b "$devdisk" && ! string match '/*' "$devdisk"
-		# not an absolute path, does not exist: fix up path
-		if test -b "/dev/$devdisk"
-			# try prepend /dev/
-			set devdisk "/dev/$devdisk"
-		end
 	end
 	
 	# gain intel about block device with blkid
@@ -183,7 +212,7 @@ function qmount -d \
 		end
 		cryptsetup luksOpen "$devdisk" "$cryptname"
 		or echo "Cryptsetup failed" && return 1
-		qmount $_qmount_rw_flag "$cryptdev"
+		qmount $_qmount_rw_flag --nbd-wrapped "$cryptdev"
 		or begin
 			set -l rs $status
 			read -P "Undo $cryptname setup? (Y/n)" answer || set answer "n"
@@ -210,7 +239,7 @@ function qmount -d \
 		for i in $lvlist
 			set has_parts yes
 			set i "/dev/$vgname/$i"
-			qmount $_qmount_rw_flag "$i" && set -a parts "$i"
+			qmount $_qmount_rw_flag --nbd-wrapped "$i" && set -a parts "$i"
 			or set -a parts_failed "$i"
 		end
 		echo "NOTE: while qmount can recurse LVM, qumount can't yet."
@@ -236,7 +265,7 @@ function qmount -d \
 			string match -qr ' PATH="(?<partpath>[^"]+)"' -- "$i"
 			string match -qr '^NAME="(?<partname>[^"]+)"' -- "$i"
 			echo "Recursing into partition $partname"
-			qmount $_qmount_rw_flag "$partpath" && set -a parts "$partname"
+			qmount $_qmount_rw_flag --nbd-wrapped "$partpath" && set -a parts "$partname"
 			or set -a parts_failed "$partname"
 		end
 	end
