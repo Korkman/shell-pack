@@ -95,8 +95,8 @@ Do not speficy DIRECTORY to use current directory.
 		# inside chroot, run env to copy over a few select variables
 		# pass them as whitelist to "su", which creates a login shell by default
 		env -i (command -v chroot) "$targetDir" \
-			env "debian_chroot=$debian_chroot" "LC_NERDLEVEL=$LC_NERDLEVEL" "TERM=$TERM" \
-			su -s /bin/sh --whitelist-environment LC_NERDLEVEL,debian_chroot \
+			env "debian_chroot=$debian_chroot" "LC_NERDLEVEL=$LC_NERDLEVEL" "TERM=$TERM" "LANG=$LANG" \
+			su -s /bin/sh --whitelist-environment LC_NERDLEVEL,debian_chroot,LANG,TERM \
 			$su_args \
 		;
 		if ! set -q _flag_keep
