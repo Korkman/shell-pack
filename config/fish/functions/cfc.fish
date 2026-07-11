@@ -242,81 +242,81 @@ function cfc -d \
 			case 'zip'
 				__sp_require_cmd zip || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				zip $passed_args -r "$filename" (basename "$src")
-				cd -
+				popd
 			case '7z'
 				__sp_require_cmd $bin_7z || return 1
 				$bin_7z a $passed_args "$filename" "$src"
 			case 'cpio'
 				__sp_require_cmd cpio || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.gz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd gzip || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | gzip $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.zst'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd zstd || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | zstd $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.bz2'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd bzip2 || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | bzip2 $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.xz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd xz || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | xz $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.lz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzip || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzip $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.lzma'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzma || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzma $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.lzo'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzop || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzop $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.lz4'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lz4 || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args > "$filename"
-				cd -
+				popd
 			case 'cpio.Z'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
 				set filename (realpath "$filename")
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | compress $passed_args > "$filename"
-				cd -
+				popd
 			case 'gz'
 				__sp_require_cmd gzip || return 1
 				gzip $passed_args -c "$src" > "$filename"
@@ -404,9 +404,9 @@ function cfc -d \
 				tar $tar_base_opts | zstd $passed_args
 			case 'zip'
 				__sp_require_cmd zip || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				zip $passed_args -r - (basename "$src")
-				cd -
+				popd
 			case '7z'
 				__sp_require_cmd $bin_7z || return 1
 				echo "The 7z compressor cannot stream to stdout, it needs seek operations" >&2
@@ -414,63 +414,63 @@ function cfc -d \
 				$bin_7z a $passed_args -so "$src"
 			case 'cpio'
 				__sp_require_cmd cpio || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc $passed_args
-				cd -
+				popd
 			case 'cpio.gz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd gzip || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | gzip $passed_args
-				cd -
+				popd
 			case 'cpio.zst'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd zstd || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | zstd $passed_args
-				cd -
+				popd
 			case 'cpio.bz2'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd bzip2 || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | bzip2 $passed_args
-				cd -
+				popd
 			case 'cpio.xz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd xz || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | xz $passed_args
-				cd -
+				popd
 			case 'cpio.lz'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzip || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzip $passed_args
-				cd -
+				popd
 			case 'cpio.lzma'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzma || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzma $passed_args
-				cd -
+				popd
 			case 'cpio.lzo'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzop || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzop $passed_args
-				cd -
+				popd
 			case 'cpio.lz4'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lz4 || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args
-				cd -
+				popd
 			case 'cpio.Z'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
-				cd "$src/.."
+				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | compress $passed_args
-				cd -
+				popd
 			case 'gz'
 				__sp_require_cmd gzip || return 1
 				gzip $passed_args -c "$src"
