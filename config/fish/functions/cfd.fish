@@ -38,67 +38,127 @@ function cfd -d \
 		end
 	end
 	
+	# Detect format from file extension
+	set -l format ""
 	if string match -qir '\.zip$' -- "$filename"
+		set format zip
+	else if string match -qir '\.(tar\.[^\.]+|tb2|tbz|tbz2|tz2|taz|tgz|tlz|txz|tZ|taZ|tzst)$' -- "$filename"
+		set format tar
+	else if string match -qir '\.tar$' -- "$filename"
+		set format tar
+	else if string match -qir '\.cpio$' -- "$filename"
+		set format cpio
+	else if string match -qir '\.7z$' -- "$filename"
+		set format 7z
+	else if string match -qir '\.gz$' -- "$filename"
+		set format gz
+	else if string match -qir '\.zst$' -- "$filename"
+		set format zst
+	else if string match -qir '\.bz2$' -- "$filename"
+		set format bz2
+	else if string match -qir '\.lz4$' -- "$filename"
+		set format lz4
+	else if string match -qir '\.lz$' -- "$filename"
+		set format lz
+	else if string match -qir '\.lzma$' -- "$filename"
+		set format lzma
+	else if string match -qir '\.lzo$' -- "$filename"
+		set format lzo
+	else if string match -qir '\.xz$' -- "$filename"
+		set format xz
+	else if string match -qir '\.Z$' -- "$filename"
+		set format gz
+	end
+
+	# Fall back to file(1) magic detection when extension gives no match
+	if test -z "$format"
+		if ! command -q file
+			echo "Unsupported file type (install 'file' for magic-based detection)" >&2
+			return 1
+		end
+		set -l mime (file --mime-type -b -- "$filename")
+		if string match -q 'application/zip' -- "$mime"
+			set format zip
+		else if string match -q 'application/x-tar' -- "$mime"
+			set format tar
+		else if string match -q 'application/x-7z-compressed' -- "$mime"
+			set format 7z
+		else if string match -q 'application/gzip' -- "$mime"; or string match -q 'application/x-gzip' -- "$mime"
+			set format gz
+		else if string match -q 'application/x-bzip2' -- "$mime"
+			set format bz2
+		else if string match -q 'application/x-xz' -- "$mime"
+			set format xz
+		else if string match -q 'application/zstd' -- "$mime"; or string match -q 'application/x-zstd' -- "$mime"
+			set format zst
+		else if string match -q 'application/x-lz4' -- "$mime"
+			set format lz4
+		else if string match -q 'application/x-lzma' -- "$mime"
+			set format lzma
+		else if string match -q 'application/x-lzip' -- "$mime"
+			set format lz
+		else if string match -q 'application/x-lzop' -- "$mime"
+			set format lzo
+		else if string match -q 'application/x-cpio' -- "$mime"
+			set format cpio
+		else
+			echo "Unsupported file type (MIME: $mime)" >&2
+			return 1
+		end
+	end
+
+	# Dispatch to the appropriate decompressor
+	switch $format
+	case zip
 		__sp_require_cmd unzip || return 1
 		__sp_cfd_make_dst_dir || return 2
 		unzip "$filename" -d "$dst"
-	else if string match -qir '\.(tar\.[^\.]+|tb2|tbz|tbz2|tz2|taz|tgz|tlz|txz|tZ|taZ|tzst)$' -- "$filename"
+	case tar
 		__sp_require_cmd tar || return 1
 		__sp_cfd_make_dst_dir || return 2
 		tar -xf "$filename" -C "$dst"
-	else if string match -qir '\.tar$' -- "$filename"
-		__sp_require_cmd tar || return 1
-		__sp_cfd_make_dst_dir || return 2
-		tar -xf "$filename" -C "$dst"
-	else if string match -qir '\.cpio$' -- "$filename"
+	case cpio
 		__sp_require_cmd cpio || return 1
 		__sp_cfd_make_dst_dir || return 2
 		pushd "$dst"
 		cpio -id < "$filename"
 		popd
-	else if string match -qir '\.7z$' -- "$filename"
+	case 7z
 		__sp_require_cmd $bin_7z || return 1
 		__sp_cfd_make_dst_dir || return 2
 		$bin_7z x "$filename" -o"$dst"
-	else if string match -qir '\.gz$' -- "$filename"
+	case gz
 		__sp_require_cmd gunzip || return 1
 		__sp_cfd_make_dst_file || return 2
 		gunzip -c "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.zst$' -- "$filename"
+	case zst
 		__sp_require_cmd zstd || return 1
 		__sp_cfd_make_dst_file || return 2
 		zstd --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.bz2$' -- "$filename"
+	case bz2
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
 		bzip2 --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.lz4$' -- "$filename"
+	case lz4
 		__sp_require_cmd lz4 || return 1
 		__sp_cfd_make_dst_file || return 2
 		lz4 --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.lz$' -- "$filename"
+	case lz
 		__sp_require_cmd lzip || return 1
 		__sp_cfd_make_dst_file || return 2
 		lzip --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.lzma$' -- "$filename"
+	case lzma
 		__sp_require_cmd lzma || return 1
 		__sp_cfd_make_dst_file || return 2
 		lzma --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.lzo$' -- "$filename"
+	case lzo
 		__sp_require_cmd lzop || return 1
 		__sp_cfd_make_dst_file || return 2
 		lzop --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.xz$' -- "$filename"
+	case xz
 		__sp_require_cmd xz || return 1
 		__sp_cfd_make_dst_file || return 2
 		xz --stdout -d "$filename" | __sp_redirect_out "$dst"
-	else if string match -qir '\.Z$' -- "$filename"
-		__sp_require_cmd gzip || return 1
-		__sp_cfd_make_dst_file || return 2
-		gunzip -c "$filename" | __sp_redirect_out "$dst"
-	else
-		echo "Unsupported file type" >&2
-		return 1
 	end
 end
 
