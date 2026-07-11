@@ -198,7 +198,7 @@ function __sp_cfd_make_dst_file --no-scope-shadowing
 		set dst "$filename_minus_ext"
 	end
 	if test -d "$dst"
-		set dst (realpath "$dst")"/$filename_minus_ext"
+		set dst (builtin path resolve "$dst")"/$filename_minus_ext"
 	end
 	if test -e "$dst"
 		read -P "File '$dst' exists. Overwrite? (Y/n): " -l answer || set -l answer n
