@@ -50,6 +50,12 @@ function cfd -d \
 		__sp_require_cmd tar || return 1
 		__sp_cfd_make_dst_dir || return 2
 		tar -xf "$filename" -C "$dst"
+	else if string match -qir '\.cpio$' -- "$filename"
+		__sp_require_cmd cpio || return 1
+		__sp_cfd_make_dst_dir || return 2
+		pushd "$dst"
+		cpio -id < "$filename"
+		popd
 	else if string match -qir '\.7z$' -- "$filename"
 		__sp_require_cmd $bin_7z || return 1
 		__sp_cfd_make_dst_dir || return 2
