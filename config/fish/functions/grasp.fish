@@ -105,9 +105,9 @@ function grasp -d \
 	# what command to use for repeatedly cat'ing the input
 	set -l recat_cmd
 	if set -q GRASP_PAGER
-		set recat_cmd "cat {*f}"
+		set recat_cmd "(_f={*f}; cat \"\$_f\"; rm -f \"\$_f\")"
 	else
-		set recat_cmd "if [ -x tac ]; then tac {*f}; else fishcall tac {*f}; fi"
+		set recat_cmd "(_f={*f}; if [ -x tac ]; then tac \"\$_f\"; else fishcall tac \"\$_f\"; fi; rm -f \"\$_f\")"
 	end
 
 	set -l columns_margin 2
