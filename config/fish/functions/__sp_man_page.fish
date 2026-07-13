@@ -40,6 +40,7 @@ function __sp_man_page
 		# shell-pack functions
 		venv lsports lsnet cheat dl ssmart create qcrypt oldshell ddool nerdlevel \
 		cfc cfd qssh ggit qmount qumount ffingerprints ppage grasp mmux one rrg qchroot \
+		cclip \
 		# basics (portability: BSD utils don't support --help, but they will show usage - ignore the warning) \
 		tar cp mv chown chmod awk sed grep \
 		# tools
