@@ -182,7 +182,7 @@ function fish_prompt -d \
 end
 
 function __sp_on_fs_read_only --on-variable __sp_fs_read_only_learned
-	echo (__spt status_fail)" "(__spt lock)" "(__spt right_arrow)" Read-only filesystem!"
+	echo (__spt status_fail)" "(__spt lock)" "(__spt right_arrow)" Read-only directory!"
 end
 
 function __sp_on_fs_low_space --on-variable __sp_fs_low_space_learned
