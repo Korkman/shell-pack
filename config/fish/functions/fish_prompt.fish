@@ -10,13 +10,6 @@ function fish_prompt -d \
 	if [ (status function) = "fish_prompt_mc" ]
 		# this function was copied and renamed by mc to fish_prompt_mc
 		
-		# it is likely mc spammed the history, so we erase it immediately
-		# (Debian Jessie and Stretch affected, fixed in Buster)
-		if ! set -q __mc_history_cleared
-			set -g __mc_history_cleared yes
-			echo "all" | history delete --prefix "if not functions -q fish_prompt_mc;" &> /dev/null
-		end
-		
 		# some hotfixing for the mc prompt
 		if ! set -q mc_prompt_fixed
 			# fish 3.3.0 started sending \r in capable terminals, which mc does not expect.
@@ -140,18 +133,25 @@ function fish_prompt -d \
 		# trigger warning message outside of prompt
 		set -q __sp_fs_read_only_learned
 		or set -g __sp_fs_read_only_learned yes
-	else if type -q timeout && type -q df && timeout 1s df . | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
-		# low space warning: less than 10GB free and more than 90% used
-		set -q __sp_fs_used_pct_threshold
-		or set __sp_fs_used_pct_threshold 90
-		set -q __sp_fs_free_threshold
-		or set __sp_fs_free_threshold 10240000
-		if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
-			set fs_free_pct (math 100 - $fs_used_pct)
-			fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
-			# trigger warning message outside of prompt
-			set -q __sp_fs_low_space_learned
-			or set -g __sp_fs_low_space_learned yes
+	else if ! set -q __sp_disable_df_prompt && type -q df
+		if ! set __sp_fs_df_result (timeout 1s df .)
+			set -g __sp_disable_df_prompt yes
+			echo "!!! df query failed, disabled free space warning" >&2
+		end
+		if echo "$__sp_fs_df_result" | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
+			# low space warning: less than 10GB free and more than 90% used
+			set -q __sp_fs_used_pct_threshold
+			or set __sp_fs_used_pct_threshold 90
+			set -q __sp_fs_free_threshold
+			or set __sp_fs_free_threshold 10240000
+			
+			if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
+				set fs_free_pct (math 100 - $fs_used_pct)
+				fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
+				# trigger warning message outside of prompt
+				set -q __sp_fs_low_space_learned
+				or set -g __sp_fs_low_space_learned yes
+			end
 		end
 	end
 	
