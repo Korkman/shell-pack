@@ -21,10 +21,8 @@ RUN dnf install -y netcat || dnf install -y nc
 #       move them to the combined line above.
 
 COPY added/fish-installer.sh /fish-installer.sh
-ARG FISH_INSTALL=yes
-ARG FISH_STATIC=no
-ARG FISH_NIGHTLY=no
-RUN [ "${FISH_INSTALL}" != "yes" ] || (export FISH_NIGHTLY=${FISH_NIGHTLY}; export FISH_STATIC=${FISH_STATIC}; /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1))
+ARG INSTALL_FISH=static-latest
+RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1))
 
 # nerdlevel 3 by default
 ENV LC_NERDLEVEL=3

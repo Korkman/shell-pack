@@ -15,9 +15,7 @@ AUTOSTART=${AUTOSTART:-yes} # run installer in guest-startup.sh
 FORCE_DOCKER=${FORCE_DOCKER:-no} # force use of docker although podman is available
 FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
-FISH_INSTALL=${FISH_INSTALL:-yes} # install fish
-FISH_STATIC=${FISH_STATIC:-no} # install fish static binary (4.0 beta and up)
-FISH_NIGHTLY=${FISH_NIGHTLY:-no} # install fish nightly
+INSTALL_FISH=${INSTALL_FISH:-static-latest} # none|distro|repo-nightly|repo-release|static-latest|static-VERSION
 PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
 
 usage() {
@@ -38,9 +36,13 @@ Environment Variables:
   FORCE_DOCKER           Force Docker instead of Podman (default: no)
   FORCE_NO_SUDO          Skip sudo for Docker (default: no)
   USE_CACHED_DOWNLOADS   Use cached downloads (default: yes)
-  FISH_INSTALL           Install fish (default: yes)
-  FISH_STATIC            Install fish static binary (default: yes)
-  FISH_NIGHTLY           Force install fish nightly (default: no)
+  INSTALL_FISH           Fish install method (default: static-latest)
+                           none            - skip fish installation
+                           distro          - use distro package manager
+                           repo-release    - add release repo, install fish
+                           repo-nightly    - add nightly repo, install fish
+                           static-latest   - download latest static binary
+                           static-VERSION  - download specific static binary
   PLATFORM               Set platform e.g. linux/arm64 (default: auto)
                          (add support with qemu-user-binfmt)
 
@@ -177,20 +179,8 @@ case "$BUILD_FROM" in
 esac
 
 tagname="$(echo "$BUILD_FROM" | sed 's/[:\/]/-/g')${PLATFORM_TAG_SUFFIX}"
-# append variants to tagname
-if [ "$FISH_INSTALL" = "yes" ]
-then
-	if [ "$FISH_STATIC" = "yes" ]
-	then
-		tagname="${tagname}-fish-static"
-	fi
-	if [ "$FISH_NIGHTLY" = "yes" ]
-	then
-		tagname="${tagname}-fish-nightly"
-	fi
-else
-	tagname="${tagname}-no-fish"
-fi
+# append INSTALL_FISH variant to tagname
+tagname="${tagname}-fish-$(echo "$INSTALL_FISH" | sed 's/[^a-zA-Z0-9._-]/-/g')"
 
 # script location
 whereiam="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
@@ -246,9 +236,7 @@ then
 	$docker build \
 		$cache_arg \
 		--pull \
-		--build-arg "FISH_INSTALL=$FISH_INSTALL" \
-		--build-arg "FISH_STATIC=$FISH_STATIC" \
-		--build-arg "FISH_NIGHTLY=$FISH_NIGHTLY" \
+		--build-arg "INSTALL_FISH=$INSTALL_FISH" \
 		--build-arg "BUILD_FROM=docker.io/$BUILD_FROM" \
 		$PLATFORM_ARG \
 		-t "shell-pack:test-drive-${tagname}" -f "${dockerfile}" .
