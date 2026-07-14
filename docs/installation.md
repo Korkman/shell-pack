@@ -2,12 +2,15 @@
 Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
-  * [fish shell](https://fishshell.com/) version 3.2 or higher
+  * [fish shell](https://fishshell.com/) version 3.5.1 or higher
     * Either `apt install fish`
-    * or automated installer for several distros (installs static binary by default), YMMV:
+    * or automated installer for several distros, YMMV:
       ```bash
-      # if you don't want a static build
-      export FISH_STATIC=no
+      # if desired, select an alternative to the default latest static build (repo-* have limited support):
+      export INSTALL_FISH=static-4.7.1
+      export INSTALL_FISH=distro
+      export INSTALL_FISH=repo-release
+      export INSTALL_FISH=repo-nightly
       ```
       ```bash
       # with wget
