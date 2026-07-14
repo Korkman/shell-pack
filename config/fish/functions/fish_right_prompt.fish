@@ -2,7 +2,7 @@ function fish_right_prompt
 	if [ "$MC_SID" != "" ]
 		# make sure no right prompt is displayed when on mc subshell in stretch and jessie
 		# NOTE: newer versions of mc erase fish_right_prompt, so we do it here as well
-		functions -e fish_right_prompt
+		disable-right-prompt
 		return
 	end
 
@@ -14,14 +14,7 @@ function fish_right_prompt
 		set -e __skip_right_prompt
 		return
 	end
-
-	if [ "$MC_SID" != "" ]
-		# make sure no right prompt is displayed when on mc subshell in stretch and jessie
-		# NOTE: newer versions of mc erase fish_right_prompt, so we do it here as well
-		functions -e fish_right_prompt
-		return
-	end
-	
+		
 	# bookkeeping
 	if [ "$__display_cmd_stats" = "yes" ]
 		# NOTE: assuming the fish_right_prompt is called last
@@ -89,7 +82,7 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 	clean and resizable scrollback buffer'
 	
 	if set -q __right_prompt_pid_once
-		# this is the only exception to keep it: for the stuff only displayed once
+		# exception to keep it: for the stuff only displayed once
 		set -eg __right_prompt_pid_once
 		return
 	end
@@ -127,8 +120,6 @@ function __unpaint_right_prompt --on-event sp_submit_commandline -d \
 		
 	end
 	
-	# set (and reset) a timer to repaint the right prompt when resizing is complete
-	__sp_set_timer "right_prompt_repaint" 1.5
 end
 
 function __unpaint_right_prompt_cancel --on-event sp_cancel_commandline -d \
@@ -146,36 +137,23 @@ function __unpaint_right_prompt_cancel --on-event sp_cancel_commandline -d \
 		commandline -f repaint
 	end
 	
-	# set (and reset) a timer to repaint the right prompt when resizing is complete
-	__sp_set_timer "right_prompt_repaint" 1.5
 end
 
 function __unpaint_right_prompt_winch --on-signal winch -d \
-	'Remove the right prompt when the terminal is resized to keep a 
-	clean and resizable scrollback buffer'
-	
-	if ! set -q __skip_right_prompt_until_reset
-		set -g __skip_right_prompt_until_reset yes
-		commandline -f repaint
-	end
-	
-	# set (and reset) a timer to repaint the right prompt when resizing is complete
-	__sp_set_timer "right_prompt_repaint" 1.5
-end
-
-function __sp_right_prompt_repaint --on-event "sp_timer_right_prompt_repaint"
-	set -eg __skip_right_prompt_until_reset
-	# do not repaint while in fiddle mode, clears output, as observed in fish 4.2.1
-	set -q __sp_fiddle_mode
-	and return
-	
+	'Repaint the right prompt when the terminal is resized'
 	commandline -f repaint
 end
 
-function __clear_skip_right_prompt_until_reset --on-event fish_preexec -d \
+function __clear_skip_right_prompt_until_reset --on-event fish_prompt -d \
 	'Re-enable right prompt at preexec event'
 	set -eg __skip_right_prompt_until_reset
 	set -eg __right_prompt_pid_once
+end
+
+function __repaint_right_prompt_after_cancel --on-event fish_cancel -d \
+	'Repaint after ctrl-c'
+	__clear_skip_right_prompt_until_reset
+	commandline -f repaint
 end
 
 function disable-right-prompt -d \
@@ -185,6 +163,7 @@ function disable-right-prompt -d \
 	functions -e __unpaint_right_prompt_cancel
 	functions -e __unpaint_right_prompt_winch
 	functions -e __clear_skip_right_prompt_until_reset
+	functions -e __repaint_right_prompt_after_cancel
 end
 
 function enable-right-prompt -d \
