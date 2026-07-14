@@ -3,37 +3,69 @@
 
 set -eu
 
-# automatically installs fish shell on various (all?) distros
-# notable environment variables:
-# - FISH_NIGHTLY=yes - install latest nightly build
-# - FISH_STATIC=yes - force static release binary
+# automatically installs fish shell on most distros
+# control release and version with INSTALL_FISH.
+# 
+# by default, the latest static release is downloaded from github:
+#   INSTALL_FISH=static-latest ./fish-installer.sh
+# specify a version:
+#   INSTALL_FISH=static-4.7.1 ./fish-installer.sh
+# to install the distro package instead:
+#   INSTALL_FISH=distro
+# to use the official FISH repo for the distro (limited support):
+#   INSTALL_FISH=repo-release
+# the official repo also offers nightlies:
+#   INSTALL_FISH=repo-nightly
+
 
 main() {
 	installer_log="$HOME/fish_installer.log"
 	echo "fish installer started, logging to '$installer_log'"
 	touch "$installer_log"
 	echo "args: $0" >> "$installer_log"
-	# finds latest release versions on github via api.github.com
-	FISH_VERSION=$(get_latest_fish_version) || FISH_VERSION="4.1.2"
-	fish_latest="$FISH_VERSION"
-	fish_static_latest="$FISH_VERSION"
 	cmake_version="3.27.0"
+	MAKE_J=${MAKE_J:-1} # NOTE: going beyond 1 sometimes deadlocks, 2 gives OOM in default podman machines
 	deploy_channel="release"
 	deploy_branch="4"
-	if [ "${FISH_NIGHTLY:-no}" = "yes" ]
-	then
-		deploy_channel="nightly"
-		deploy_branch="master"
-	fi
-	MAKE_J=${MAKE_J:-1} # NOTE: going beyond 1 sometimes deadlocks, 2 gives OOM in default podman machines
-	
-	if [ "${FISH_STATIC:-yes}" = "yes" ]
-	then
-		installer_case="Static"
-	else
-		installer_case=$(get_installer_for_distro)
-	fi
-	run_installer "$installer_case"
+	fish_version="unknown"
+
+	INSTALL_FISH="${INSTALL_FISH:-static-latest}"
+	echo "INSTALL_FISH=$INSTALL_FISH" >> "$installer_log"
+
+	case "$INSTALL_FISH" in
+		none)
+			echo "INSTALL_FISH=none, skipping fish installation"
+			exit 0
+			;;
+		static-latest)
+			fish_version=$(get_latest_fish_version) || fish_version="4.1.2"
+			run_installer "Static"
+			;;
+		static-*)
+			fish_version="${INSTALL_FISH#static-}"
+			run_installer "Static"
+			;;
+		distro)
+			installer_case=$(get_distro_installer)
+			run_installer "$installer_case"
+			;;
+		repo-release)
+			deploy_channel="release"
+			deploy_branch="4"
+			installer_case=$(get_repo_installer)
+			run_installer "$installer_case"
+			;;
+		repo-nightly)
+			deploy_channel="nightly"
+			deploy_branch="master"
+			installer_case=$(get_repo_installer)
+			run_installer "$installer_case"
+			;;
+		*)
+			echo "Unknown INSTALL_FISH value: $INSTALL_FISH" >&2
+			exit 1
+			;;
+	esac
 }
 
 download() {
@@ -81,68 +113,94 @@ get_latest_fish_version() {
 	download "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
 }
 
-get_installer_for_distro() {
-	# get data from release files
+read_os_release() {
 	if [ -e /etc/os-release ]
 	then
-		# read ID, VERSION_ID (major) and ID_LIKE from /etc/os-release without importing all variables
 		distro=$(. /etc/os-release; echo "$ID")
 		distro_version=$(. /etc/os-release; echo "${VERSION_ID:-}" | cut -d. -f1)
 		distro_like=$(. /etc/os-release; echo "${ID_LIKE:-}")
 	else
-		echo "Distro unsuported by fish-installer.sh - check list for release file" >> "$installer_log"
+		echo "Distro unsupported by fish-installer.sh - check list for release file" >> "$installer_log"
 		ls "/etc" >> "$installer_log"
-		exit
+		exit 1
 	fi
-	
-	# select installer_case for specific distros
-	case "$distro" in
-		'debian')
-			# only the two most recent releases have repos. for anything older, use static binary
-			if [ "$distro_version" -ge 12 ]
-			then
-				installer_case="Debian-$distro_version"
-			else
-				installer_case="Static"
-				
-			fi
-		;;
-		'ubuntu')
-			installer_case="Ubuntu-Any"
-		;;
-		'fedora')
-			installer_case="Redhat-Any"
-		;;
-		'arch')
-			installer_case="Archlinux-Any"
-		;;
-		*)
-			# select installer_case based on ID_LIKE
-			if echo "$distro_like" | grep -Fwq "fedora"
-			then
-				installer_case="Redhat-Any"
-			elif echo "$distro_like" | grep -Fwq "ubuntu"
-			then
-				installer_case="Ubuntu-Any"
-			elif echo "$distro_like" | grep -Fwq "debian"
-			then
-				installer_case="Static"
-			elif echo "$distro_like" | grep -Fwq "arch"
-			then
-				installer_case="Archlinux-Any"
-			else
-				installer_case="Static"
-			fi
-		;;
-	esac
-
 	echo "detected os: $distro-$distro_version" >> "$installer_log"
 	if [ "$distro_like" != "" ]
 	then
 		echo "os like: $distro_like" >> "$installer_log"
 	fi
-	
-	echo "$installer_case"
+}
+
+# Returns installer_case for distro-native package manager (no extra repos added)
+get_distro_installer() {
+	read_os_release
+	case "$distro" in
+		'alpine')
+			echo "Alpine-Any" ;;
+		'debian' | 'raspbian')
+			echo "Debian-Distro" ;;
+		'ubuntu')
+			echo "Ubuntu-Distro" ;;
+		'fedora' | 'rhel' | 'centos' | 'rocky' | 'almalinux')
+			echo "Redhat-Any" ;;
+		'arch')
+			echo "Archlinux-Any" ;;
+		*)
+			if echo "$distro_like" | grep -Fwq "alpine"; then
+				echo "Alpine-Any"
+			elif echo "$distro_like" | grep -Fwq "fedora" || echo "$distro_like" | grep -Fwq "rhel"; then
+				echo "Redhat-Any"
+			elif echo "$distro_like" | grep -Fwq "arch"; then
+				echo "Archlinux-Any"
+			elif echo "$distro_like" | grep -Fwq "ubuntu"; then
+				echo "Ubuntu-Distro"
+			elif echo "$distro_like" | grep -Fwq "debian"; then
+				echo "Debian-Distro"
+			else
+				echo "Static"
+			fi
+			;;
+	esac
+}
+
+# Returns installer_case using external repos (opensuse build service, Ubuntu PPA, etc.)
+get_repo_installer() {
+	read_os_release
+	case "$distro" in
+		'alpine')
+			# Alpine fish package is from official repos only; fall back to distro
+			echo "Alpine-Any" ;;
+		'debian' | 'raspbian')
+			# only Debian 12+ have opensuse build service repos
+			if [ -n "$distro_version" ] && [ "$distro_version" -ge 12 ] 2>/dev/null
+			then
+				echo "Debian-$distro_version"
+			else
+				echo "Static"
+			fi
+			;;
+		'ubuntu')
+			echo "Ubuntu-Any" ;;
+		'fedora' | 'rhel' | 'centos' | 'rocky' | 'almalinux')
+			echo "Redhat-Any" ;;
+		'arch')
+			echo "Archlinux-Any" ;;
+		*)
+			if echo "$distro_like" | grep -Fwq "alpine"; then
+				echo "Alpine-Any"
+			elif echo "$distro_like" | grep -Fwq "fedora" || echo "$distro_like" | grep -Fwq "rhel"; then
+				echo "Redhat-Any"
+			elif echo "$distro_like" | grep -Fwq "arch"; then
+				echo "Archlinux-Any"
+			elif echo "$distro_like" | grep -Fwq "ubuntu"; then
+				echo "Ubuntu-Any"
+			elif echo "$distro_like" | grep -Fwq "debian"; then
+				echo "Static"
+			else
+				echo "Static"
+			fi
+			;;
+	esac
 }
 
 run_installer() {
@@ -167,11 +225,22 @@ run_installer() {
 			sudo apt-get update
 			sudo apt-get -y install fish
 		;;
+		'Debian-Distro')
+			sudo apt-get update
+			sudo apt-get -y install fish
+		;;
+		'Ubuntu-Distro')
+			sudo apt-get update
+			sudo apt-get -y install fish
+		;;
+		'Alpine-Any')
+			apk add fish
+		;;
 		'Debian-Make') # deprecated method, use static binary build by default
 			apt-get -y install build-essential gettext libncurses5-dev git
 			cd /usr/local/src
 			install_cmake >> "$installer_log" 2>&1
-			build_fish "$fish_latest" >> "$installer_log" 2>&1
+			build_fish "$fish_version" >> "$installer_log" 2>&1
 		;;
 		'Ubuntu-Any')
 			sudo apt-get -y install software-properties-common
@@ -208,7 +277,7 @@ run_installer() {
 				fi
 			fi
 
-			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_static_latest/fish-$fish_static_latest-linux-$install_arch.tar.xz"
+			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_version/fish-$fish_version-linux-$install_arch.tar.xz"
 			echo "installing static release from $static_release_file" | tee -a "$installer_log"
 			# test if /usr/local/bin is writable, cd and install there
 			if [ -w /usr/local/bin ]
