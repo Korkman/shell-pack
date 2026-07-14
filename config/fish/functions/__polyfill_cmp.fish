@@ -3,6 +3,14 @@ function __polyfill_cmp -d \
 	'Polyfills the basic functionality of cmp, for comparing two files'
 	if ! command -q cmp
 		function cmp
+			
+			# the polyfill self-destructs when the native command becomes available
+			if command -q cmp
+				functions -e cmp
+				command cmp $argv
+				return
+			end
+			
 			argparse --min-args=2 --max-args=2 \
 				'b/print-bytes' 'i/ignore-initial' 'l/verbose' 'n/bytes' 'help' \
 				's/silent' 'quiet' \
