@@ -15,12 +15,12 @@ function reinstall-shell-pack-prefs \
 		end
 	end
 	
-	if  cmp --silent -- "$__sp_config_dir/.tmux.conf" ~/.tmux.conf
-	and cmp --silent -- "$__sp_config_dir/.screenrc" ~/.screenrc
-	and cmp --silent -- "$__sp_config_dir/htop/$htop_config" ~/.config/htop/htoprc
-	and cmp --silent -- "$__sp_config_dir/mc/ini" ~/.config/mc/ini
-	and cmp --silent -- "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
-	and cmp --silent -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
+	if  cmp -s -- "$__sp_config_dir/.tmux.conf" ~/.tmux.conf
+	and cmp -s -- "$__sp_config_dir/.screenrc" ~/.screenrc
+	and cmp -s -- "$__sp_config_dir/htop/$htop_config" ~/.config/htop/htoprc
+	and cmp -s -- "$__sp_config_dir/mc/ini" ~/.config/mc/ini
+	and cmp -s -- "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
+	and cmp -s -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
 		echo "Your preferences are up-to-date"
 		return
 	end
