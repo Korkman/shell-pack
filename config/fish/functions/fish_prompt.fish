@@ -133,24 +133,31 @@ function fish_prompt -d \
 		# trigger warning message outside of prompt
 		set -q __sp_fs_read_only_learned
 		or set -g __sp_fs_read_only_learned yes
-	else if ! set -q __sp_disable_df_prompt && type -q df
-		if ! set __sp_fs_df_result (timeout 1s df .)
-			set -g __sp_disable_df_prompt yes
-			echo "!!! df query failed, disabled free space warning" >&2
-		end
-		if echo "$__sp_fs_df_result" | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
-			# low space warning: less than 10GB free and more than 90% used
-			set -q __sp_fs_used_pct_threshold
-			or set __sp_fs_used_pct_threshold 90
-			set -q __sp_fs_free_threshold
-			or set __sp_fs_free_threshold 10240000
-			
-			if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
-				set fs_free_pct (math 100 - $fs_used_pct)
-				fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
-				# trigger warning message outside of prompt
-				set -q __sp_fs_low_space_learned
-				or set -g __sp_fs_low_space_learned yes
+	else if type -q df
+		if set -q __sp_disable_df_prompt
+			set -g __sp_disable_df_prompt (math -- $__sp_disable_df_prompt - 1)
+			if test $__sp_disable_df_prompt -lt 1
+				set -eg __sp_disable_df_prompt
+			end
+		else
+			if ! set __sp_fs_df_result (timeout 1s df .)
+				set -g __sp_disable_df_prompt 20
+				__sp_error "Failed to run 'df'. Free space warning temporarily disabled."
+			end
+			if echo "$__sp_fs_df_result" | string match -q --regex '[^ ]+ +(?<fs_size>\d+) +(?<fs_used>\d+) +(?<fs_free>\d+) +(?<fs_used_pct>\d+)% +(?<fs_mount>.+)'
+				# low space warning: less than 10GB free and more than 90% used
+				set -q __sp_fs_used_pct_threshold
+				or set __sp_fs_used_pct_threshold 90
+				set -q __sp_fs_free_threshold
+				or set __sp_fs_free_threshold 10240000
+				
+				if ! contains $fs_mount -- $__sp_fs_ignore_low_space && test $fs_used_pct -gt $__sp_fs_used_pct_threshold && test $fs_free -lt $__sp_fs_free_threshold
+					set fs_free_pct (math 100 - $fs_used_pct)
+					fish_prompt_segment "readonly_bg" "readonly_fg" (__spt lowspace)
+					# trigger warning message outside of prompt
+					set -q __sp_fs_low_space_learned
+					or set -g __sp_fs_low_space_learned yes
+				end
 			end
 		end
 	end
@@ -182,12 +189,12 @@ function fish_prompt -d \
 end
 
 function __sp_on_fs_read_only --on-variable __sp_fs_read_only_learned
-	echo (__spt status_fail)" "(__spt lock)" "(__spt right_arrow)" Read-only directory!"
+	__sp_error ""(__spt lock)(__spt nfsymspace)" Read-only directory!"
 end
 
 function __sp_on_fs_low_space --on-variable __sp_fs_low_space_learned
-	echo (__spt status_fail)" "(__spt lowspace)" "(__spt right_arrow)" Disk space running low!"(set_color normal)
-	df -h .
+	__sp_error ""(__spt lowspace)(__spt nfsymspace)" Running low on free space! "
+	df -h . >&2
 end
 
 function __sp_prompt_add_path_segments --no-scope-shadowing

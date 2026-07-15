@@ -243,6 +243,13 @@ function __spt -d \
 			case clock
 				echo ' '
 				return
+			case warnsign
+				echo '[!]'
+				return
+			case nfsymspace
+				# a space, but only if nf symbols are used
+				echo ''
+				return
 		end
 	end
 
@@ -312,6 +319,13 @@ function __spt -d \
 			return
 		case clock
 			echo ' '
+			return
+		case warnsign
+			echo ' '
+			return
+		case nfsymspace
+			# a space, but only if nf symbols are used
+			echo ' '
 			return
 		case *
 			echo "Unknown component: $component" >&2
