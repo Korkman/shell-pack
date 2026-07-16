@@ -244,7 +244,7 @@ function __spt -d \
 				echo ' '
 				return
 			case warnsign
-				echo '[!]'
+				echo '! '
 				return
 			case nfsymspace
 				# a space, but only if nf symbols are used
