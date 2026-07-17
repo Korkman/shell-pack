@@ -161,6 +161,7 @@ mount --rbind /dev, /proc, /sys    qchroot [ OPTS.. ] [ DIR [ CMD [ ARGS ] ] ]
   into DIRECTORY, then chroot,
   then umount on exit
 
+Fetch man page from internet       onman [ SECTION ] PAGE
 Download with curl or wget         dl URL [ FILENAME ]
 Compressed file creation           cfc FILE|DIR [ FILE|ALGO ]
 Compressed file decompression      cfd FILE [ DESTINATION ]
