@@ -10,7 +10,8 @@ function __sp_http
 	else if command -q wget
 		wget --timeout $timeout --max-redirect 10 --quiet -O- "$argv[1]"
 	else
-		echo "Error: Neither curl nor wget is installed." >&2
+		# this function is compatible with wget2
+		echo "Error: Neither curl nor wget/wget2 is installed." >&2
 		return 1
 	end
 end

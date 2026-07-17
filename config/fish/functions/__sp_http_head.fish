@@ -8,10 +8,13 @@ function __sp_http_head
 	
 	if command -q curl
 		curl -o /dev/null -D - --max-time $timeout --location --max-redirs 10 --retry 0 --fail --silent "$argv[1]"
-	else if command -q wget
+	else if command -q wget && ! wget --version | string match -q "GNU Wget2*"
+		# classic wget writes --server-response headers to stderr
 		wget -O /dev/null --server-response --timeout $timeout --max-redirect 10 --quiet "$argv[1]" 2>&1
 	else
-		echo "Error: Neither curl nor wget is installed." >&2
+		# this function is not compatible with wget2. making it work is non-trivial.
+		# TODO: implement wget2 compatibility
+		echo "Error: Neither curl nor wget 1.x is installed." >&2
 		return 1
 	end
 end

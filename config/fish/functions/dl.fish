@@ -1,5 +1,5 @@
 function dl -d \
-"Download a file, via https:// by default, using either curl or wget. 
+"Download a file, via https:// by default, using either curl or wget 1.x. 
 Will ask to resume or overwrite if already present. Pipe friendly."
 	# set defaults
 	set -l preferred wget
@@ -54,19 +54,30 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	end
 	test "$to_stdout,$silent" = "yes,no" && echo "Redirection detected, writing to stdout" >&2
 	
+	type -q curl
+	and set -l curl_available yes
+	or set -l curl_available no
+	
+	# this function is not compatible with wget2. making it work is non-trivial.
+	# TODO: implement wget2 compatibility
+	type -q wget && ! wget --version | string match -q "GNU Wget2*"
+	and set -l wget_available yes
+	or set -l wget_available no
+	
 	# select backend
 	set -l use_tool $preferred
-	if ! type -q $preferred
+	set -l test_var $preferred"_available"
+	if test $$test_var = no
 		if test "$force_preferred" = "yes"
 			echo "$preferred not available." >&2
 			return 1
 		end
-		if type -q curl
+		if test $curl_available = yes
 			set use_tool curl
-		else if type -q wget
+		else if test $wget_available = yes
 			set use_tool wget
 		else
-			echo "Neither curl nor wget available." >&2
+			echo "Neither curl nor wget 1.x available." >&2
 			return 1
 		end
 	end
@@ -185,6 +196,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		else if test "$to_stdout" = "no"
 			set final_opt "$url"
 		else
+			# TODO: redirecting STDOUT of wget2 in fedora 43 includes the progressbar
 			set final_opt -O - "$url"
 		end
 		# switch to --verbose for very old versions of wget (Debian Wheezy)
