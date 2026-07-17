@@ -166,6 +166,9 @@ function __spt -d \
 		case fish_command_color
 			echo -n "00ff87"
 			return
+		case fish_comment_color
+			echo -n "d1b5ff"
+			return
 		case fish_autosuggestion_color
 			if test $__cap_colors -ge 256
 				echo -n "9e9e9e"
@@ -374,5 +377,6 @@ function __spt_init -d \
 	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
 	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
 	set -g fish_color_command (__spt fish_command_color)
+	set -g fish_color_comment (__spt fish_comment_color)
 	set -g fish_color_autosuggestion (__spt fish_autosuggestion_color)
 end
