@@ -1,0 +1,28 @@
+ARG BUILD_FROM=opensuse/tumbleweed:latest
+FROM $BUILD_FROM
+
+# upgrade from LC_ALL "C" to add utf-8 support (prompt does not display glyphs otherwise)
+ENV LC_ALL=C.UTF-8
+
+RUN zypper --non-interactive refresh
+
+RUN zypper --non-interactive install \
+	man \
+	htop tmux procps mc screen \
+	less sudo vim git python3 gettext wget curl \
+	xz zip zstd lz4 p7zip netcat-openbsd
+
+# NOTE: use cache to run more zypper lines during development, then
+#       move them to the combined line above.
+
+COPY added/fish-installer.sh /fish-installer.sh
+ARG INSTALL_FISH=static-latest
+RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1))
+
+# nerdlevel 3 by default
+ENV LC_NERDLEVEL=3
+
+COPY added/guest-startup.sh /guest-startup.sh
+COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
+WORKDIR /root/Downloads
+ENTRYPOINT [ "/guest-startup.sh" ]

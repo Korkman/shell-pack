@@ -165,6 +165,9 @@ case "$BUILD_FROM" in
 	fedora:* | centos:* | redhat/*:* | rockylinux:* | almalinux:* )
 		dockerfile="Dockerfile-Redhat"
 		;;
+	opensuse/* )
+		dockerfile="Dockerfile-opensuse"
+		;;
 	archlinux:* )
 		dockerfile="Dockerfile-Archlinux"
 		;;
