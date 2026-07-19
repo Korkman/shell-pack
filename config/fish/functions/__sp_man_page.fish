@@ -117,6 +117,15 @@ function __sp_man_page
 			echo "  4|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			echo "  q) quit"
 			echo
+			set -l onman_urls (onman --urls $argv)
+			if test "$onman_urls" != ""
+				echo "or visit"
+				for line in $onman_urls
+					echo "  "(set_color $fish_color_redirection)(set_color $fish_color_valid_path)"$line"(set_color normal)
+				end
+				echo
+			end
+			
 			read --prompt-str="Choice [1234hoc]: " --nchars 1 _sp_choice
 			echo
 
