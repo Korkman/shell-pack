@@ -298,7 +298,7 @@ function onman -d \
 			end
 			
 			__sp_blob_cache --clear $cache_fail_key
-			cat $tmpfile | __sp_blob_cache --set $cache_key 1d
+			cat $tmpfile | __sp_blob_cache --set $cache_key 7d
 		else
 			set result_from_cache yes
 		end
