@@ -162,7 +162,8 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		end
 		
 		if test -n "$output_file"
-			curl $base_opt $silent_opt $writeout_opt $resume_opt -o "$output_file" "$url" || return 1
+			curl $base_opt $silent_opt $writeout_opt $resume_opt -o "$output_file" "$url"
+			or begin; test -e "$output_file" && test (stat -c %s "$output_file") -eq 0 && rm "$output_file"; return 1; end
 		else if test "$to_stdout" = "no"
 			curl $base_opt $silent_opt $writeout_opt $resume_opt -O "$url" 1>&2 || return 1
 		else
@@ -203,7 +204,13 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		if set -q show_prog_opt && ! wget --help | string match -q -- "*--show-progress*"
 			set show_prog_opt "--verbose"
 		end
-		wget $base_opt $silent_opt $show_prog_opt $resume_opt $final_opt || return 1
+		wget $base_opt $silent_opt $show_prog_opt $resume_opt $final_opt
+		or begin
+			if test -n "$output_file" && test -e "$output_file" && test (stat -c %s "$output_file") -eq 0
+				rm "$output_file"
+			end
+			return 1
+		end
 		
 		
 	else
