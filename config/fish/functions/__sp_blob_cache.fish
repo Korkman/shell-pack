@@ -126,6 +126,7 @@ function __sp_blob_cache -d \
 				rm "$_flag_move_file"
 				mv "$target.new" "$target"
 			end
+			__sp_blob_cache_gc "$cache_dir" "$name_md5"
 			return $status
 		end
 
@@ -142,6 +143,7 @@ function __sp_blob_cache -d \
 		end
 
 		mv "$tmp_file" "$target"
+		__sp_blob_cache_gc "$cache_dir" "$name_md5"
 		return $status
 	end
 
@@ -150,10 +152,8 @@ function __sp_blob_cache -d \
 		return 10
 	end
 
-	# list all cache files for this name, sorted by mtime descending (most recent first)
-	set -l matches (find "$cache_dir" -maxdepth 1 -name "*.$name_md5" -printf '%T@ %p\n' 2>/dev/null \
-		| sort -rn \
-		| string replace --regex -- '^\S+ ' '')
+	# list all cache files for this name, sorted by expiry desc
+	set -l matches (find "$cache_dir" -maxdepth 1 -name "*.$name_md5" 2>/dev/null | sort -rn )
 
 	if test (count $matches) -eq 0
 		return 10
@@ -178,4 +178,28 @@ function __sp_blob_cache -d \
 		cat "$cache_file" | $uncompressor
 	end
 	return 0
+end
+
+function __sp_blob_cache_gc -a cache_dir -a name_md5
+	# Delete all cache files expired more than 180 days ago
+	set -l cutoff (math (date +%s) - 180 \* 86400)
+	for f in (find "$cache_dir" -maxdepth 1 -type f -not -name '.*' 2>/dev/null)
+		set -l fname (basename "$f")
+		set -l fexpiry (string replace --regex -- '\..*$' '' "$fname")
+		if string match --quiet --regex -- '^[0-9]+$' "$fexpiry"
+			if test $fexpiry -lt $cutoff
+				rm -f "$f"
+			end
+		end
+	end
+
+	# For the current name, keep only the file with the longest (highest) expiry
+	if test -n "$name_md5"
+		set -l name_files (find "$cache_dir" -maxdepth 1 -name "*.$name_md5" 2>/dev/null | sort -rn)
+		if test (count $name_files) -gt 1
+			for f in $name_files[2..]
+				rm -f "$f"
+			end
+		end
+	end
 end
