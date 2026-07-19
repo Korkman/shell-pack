@@ -1,6 +1,6 @@
 function onman -d \
 	'Show a man page fetched from an online source.'
-	argparse 'h/help' 'debug' 't/txt' 'text' 'groff' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' -- $argv
+	argparse 'h/help' 'debug' 't/txt' 'text' 'groff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' -- $argv
 	or return 1
 
 	if set -q _flag_help; or test (count $argv) -eq 0
@@ -15,6 +15,8 @@ function onman -d \
 		echo "  --debug       Print each URL attempted to stderr"
 		echo "  --txt/--text  Force plain-text URLs (skip groff sources)"
 		echo "  --groff       Force groff URLs (skip plain-text sources)"
+		echo "  --html                   Include browser-accessible HTML URLs (alongside groff/txt)"
+		echo "  --urls               Print all candidate URLs (any mode) and exit; implies --html"
 		echo "  --os <type>              Override OS type (e.g. Linux, Darwin, FreeBSD)"
 		echo "  --os-id <id>             Override OS ID from os-release (e.g. debian, arch)"
 		echo "  --os-version-id <ver>    Override VERSION_ID from os-release (e.g. 15, 43)"
@@ -22,16 +24,26 @@ function onman -d \
 		return 0
 	end >&2
 
-	# resolve flag aliases
+	# resolve flags → single mode variable
 	set -l flag_debug no
-	set -l flag_txt no
-	set -l flag_groff no
+	set -l flag_urls no
 	if set -q _flag_debug; set flag_debug yes; end
-	if set -q _flag_txt; or set -q _flag_text; set flag_txt yes; end
-	if set -q _flag_groff; set flag_groff yes; end
-	if test "$flag_txt" = yes -a "$flag_groff" = yes
-		echo "onman: --txt and --groff are mutually exclusive" >&2
+	if set -q _flag_urls; set flag_urls yes; end
+
+	# mode: groff | txt | html  (default resolved after checking for `man`)
+	set -l mode_flag_count 0
+	set -l mode auto
+	if set -q _flag_groff;           set mode groff; set mode_flag_count (math $mode_flag_count + 1); end
+	if set -q _flag_txt; or set -q _flag_text
+	                                 set mode txt;   set mode_flag_count (math $mode_flag_count + 1); end
+	if set -q _flag_html;            set mode html;  set mode_flag_count (math $mode_flag_count + 1); end
+	if test $mode_flag_count -gt 1
+		echo "onman: --groff, --txt, and --html are mutually exclusive" >&2
 		return 1
+	end
+	# --urls implies html when no mode flag was given
+	if test "$flag_urls" = yes -a "$mode" = auto
+		set mode html
 	end
 
 	set -l page ""
@@ -99,14 +111,13 @@ function onman -d \
 		set manned_distro "freebsd"
 	end
 
-	# --- decide rendering mode ---
-	set -l use_groff no
-	if test "$flag_txt" = yes
-		set use_groff no
-	else if test "$flag_groff" = yes
-		set use_groff yes
-	else if command -q man
-		set use_groff yes
+	# --- resolve auto mode ---
+	if test "$mode" = auto
+		if command -q man
+			set mode groff
+		else
+			set mode txt
+		end
 	end
 
 	# --- build URL list: one URL per source, groff or txt based on mode ---
@@ -115,9 +126,13 @@ function onman -d \
 
 	# section suffix for URLs
 	set -l sec_suffix ""
+	set -l forced_section 1
 	if test -n "$section"
 		set sec_suffix ".$section"
+		set forced_section $section
 	end
+	set -l forced_sec_suffix ".$forced_section"
+	
 
 	# distro lineage flags
 	set -l is_debian_like no
@@ -138,62 +153,97 @@ function onman -d \
 
 	if test "$is_arch_like" = yes
 		# Arch Linux itself prioritized over manned.org
-		if test "$use_groff" = yes
-			set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
-			set -a url_modes groff
-		else
-			set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
-			set -a url_modes txt
+		switch $mode
+			case groff
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
+				set -a url_modes groff
+			case txt
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
+				set -a url_modes txt
+			case html
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
+				set -a url_modes html
 		end
 	end
 
 	# manned.org: good distro coverage including BSD, albeit outdated at times
 	if test -n "$manned_distro"
-		if test "$use_groff" = yes
-			set -a urls "https://manned.org/raw/$manned_distro/$page$sec_suffix"
-			set -a url_modes groff
-		else
-			set -a urls "https://manned.org/txt/$manned_distro/$page$sec_suffix"
-			set -a url_modes html
+		switch $mode
+			case groff
+				set -a urls "https://manned.org/raw/$manned_distro/$page$sec_suffix"
+				set -a url_modes groff
+			case txt
+				set -a urls "https://manned.org/txt/$manned_distro/$page$sec_suffix"
+				set -a url_modes ihtml
+			case html
+				set -a urls "https://manned.org/man/$manned_distro/$page$sec_suffix"
+				set -a url_modes html
 		end
 	end
 
 	# Generic Ubuntu template for ubuntu-like
 	if test "$is_ubuntu_like" = yes
-		if test "$use_groff" = yes
-			set -a urls "https://manpages.ubuntu.com/man$section/$page.gz"
-			set -a url_modes groff
+		switch $mode
+			case groff
+				set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
+				set -a url_modes groff
+			case html
+				set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
+				set -a url_modes html
 		end
 	end
 
 	# Generic Debian template for debian-like (includes Ubuntu)
 	if test "$is_debian_like" = yes
-		if test "$use_groff" = yes
-			set -a urls "https://manpages.debian.org/man$section/$page.gz"
-			set -a url_modes groff
+		set -l deb_codename $os_codename
+		if test -z "$deb_codename" -o "$os_id" != "debian"; set deb_codename unstable; end
+		switch $mode
+			case groff
+				set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
+				set -a url_modes groff
+			case html
+				set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
+				set -a url_modes html
 		end
 	end
 
 	if test "$os_type" = FreeBSD
-		# FreeBSD man CGI (plain text only)
-		set -l base_url "https://man.freebsd.org/cgi/man.cgi?query=$page&manpath=FreeBSD+$os_version_id-RELEASE+and+Ports.quarterly&format=ascii"
+		# FreeBSD man CGI (plain text / HTML)
+		set -l base_url "https://man.freebsd.org/cgi/man.cgi?query=$page&manpath=FreeBSD+$os_version_id-RELEASE+and+Ports.quarterly"
 		if test -n "$section"
-			set -a urls $base_url"&sektion=$section"
-		else
-			set -a urls $base_url
+			set base_url $base_url"&sektion=$section"
 		end
-		set -a url_modes txt
+		switch $mode
+			case txt groff
+				set -a urls $base_url"&format=ascii"
+				set -a url_modes txt
+			case html
+				set -a urls $base_url
+				set -a url_modes html
+		end
 	end
 
 	# Arch Linux used as universal fallback for everyone else
 	if test "$is_arch_like" = no
-		if test "$use_groff" = yes
-			set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
-			set -a url_modes groff
-		else
-			set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
-			set -a url_modes txt
+		switch $mode
+			case groff
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
+				set -a url_modes groff
+			case txt
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
+				set -a url_modes txt
+			case html
+				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
+				set -a url_modes html
 		end
+	end
+
+	# --- if --urls: print all candidate URLs (any mode) and exit ---
+	if test "$flag_urls" = yes
+		for i in (seq (count $urls))
+			echo $urls[$i]
+		end
+		return 0
 	end
 
 	# --- try each URL ---
@@ -250,9 +300,13 @@ function onman -d \
 					# NOTE: man -l fails on opensuse tumbleweed; the above low-level commands work
 					MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat man -l $tmpfile
 				end
-			else if test "$url_mode" = html
+			else if test "$url_mode" = ihtml
+				# inline html mode (only formatting and some escapes, from manned.org/txt/)
 				set -l esc (printf '\033')
 				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc"[3m/g; s/<\/i>/"$esc"[23m/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile
+			else if test "$url_mode" = html
+				# full html mode, render with lynx or w3m?
+				__sp_html2text $tmpfile
 			else
 				cat $tmpfile
 			end
