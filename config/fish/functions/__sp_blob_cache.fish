@@ -1,11 +1,15 @@
 function __sp_blob_cache -d \
 	'Cache management for blobs. Write: echo DATA | __sp_blob_cache --set NAME EXPIRY. Read: __sp_blob_cache --get [--allow-stale] NAME'
 
-	argparse 'set' 'get' 'allow-stale' 'status' 'get-tmpfile' 'move-file=' 'compress=' -- $argv
+	argparse 'set' 'get' 'allow-stale' 'status' 'clear' 'get-tmpfile' 'move-file=' 'compress=' -- $argv
 	or return 1
 
-	if not set -q _flag_set; and not set -q _flag_get; and not set -q _flag_get_tmpfile; and not set -q _flag_status
-		echo "__sp_blob_cache: one of --set, --get, --status or --get-tmpfile is required" >&2
+	if not set -q _flag_set;
+		and not set -q _flag_get;
+		and not set -q _flag_get_tmpfile;
+		and not set -q _flag_clear;
+		and not set -q _flag_status
+		echo "__sp_blob_cache: one of --set, --get, --status, --clear or --get-tmpfile is required" >&2
 		return 1
 	end
 
@@ -77,6 +81,14 @@ function __sp_blob_cache -d \
 		set -l tmp_file (mktemp "$cache_dir/.blob_cache_tmp.XXXXXX")
 		or return 1
 		echo "$tmp_file"
+		return 0
+	end
+	
+	# --- CLEAR MODE ---
+	if set -q _flag_clear
+		if test -d "$cache_dir"
+			find "$cache_dir" -maxdepth 1 -name "*.$name_md5" -delete
+		end
 		return 0
 	end
 

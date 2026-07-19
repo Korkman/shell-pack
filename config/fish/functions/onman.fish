@@ -1,6 +1,6 @@
 function onman -d \
 	'Show a man page fetched from an online source.'
-	argparse 'h/help' 'debug' 't/txt' 'text' 'groff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' -- $argv
+	argparse 'h/help' 'debug' 't/txt' 'text' 'groff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' -- $argv
 	or return 1
 
 	if set -q _flag_help; or test (count $argv) -eq 0
@@ -21,6 +21,7 @@ function onman -d \
 		echo "  --os-id <id>             Override OS ID from os-release (e.g. debian, arch)"
 		echo "  --os-version-id <ver>    Override VERSION_ID from os-release (e.g. 15, 43)"
 		echo "  --os-codename <name>     Override VERSION_CODENAME from os-release (e.g. bookworm, noble)"
+		echo "  --refresh                Refresh cache"
 		return 0
 	end >&2
 
@@ -267,25 +268,39 @@ function onman -d \
 	end
 
 	# --- try each URL ---
+	set -l result_from_cache no
 	for i in (seq (count $urls))
 		set -l url $urls[$i]
 		set -l url_mode $url_modes[$i]
 
 		if test "$flag_debug" = yes; echo "onman: trying $url_mode $url" >&2; end
-
-		set -l tmpfile (mktemp /tmp/online-man-XXXXXX)
-		if test "$flag_debug" = yes
-			timeout 3 dl --tries=1 "$url" > $tmpfile
-		else
-			timeout 3 dl --silent --tries=1 "$url" > $tmpfile 2>/dev/null
+		
+		set -l cache_key "onman-source:"$url
+		set -l cache_fail_key "onman-source-failed:"$url
+		if ! set -q _flag_refresh && __sp_blob_cache --status $cache_fail_key
+			continue
 		end
 		
-		#if test "$flag_debug" = yes; echo "onman: tmpfile = $tmpfile" >&2; read; end
+		set -l tmpfile (mktemp /tmp/online-man-XXXXXX)
 		
-		if test $status -ne 0; or test ! -s $tmpfile
-			if test "$flag_debug" = yes; echo "onman: discarding $url (download failed or empty)" >&2; end
-			rm -f $tmpfile
-			continue
+		if set -q _flag_refresh || ! __sp_blob_cache --allow-stale --get $cache_key > $tmpfile
+			set -l cmd timeout 3 dl --tries=1
+			if ! test "$flag_debug" = yes
+				set -a cmd --silent
+			end
+			set -a cmd "$url"
+			$cmd > $tmpfile
+			if test $status -ne 0; or test ! -s $tmpfile
+				if test "$flag_debug" = yes; echo "onman: discarding $url (download failed or empty)" >&2; end
+				rm -f $tmpfile
+				echo failed | __sp_blob_cache --set $cache_fail_key 1h
+				continue
+			end
+			
+			__sp_blob_cache --clear $cache_fail_key
+			cat $tmpfile | __sp_blob_cache --set $cache_key 1d
+		else
+			set result_from_cache yes
 		end
 
 		if test "$url_mode" = groff
@@ -309,7 +324,11 @@ function onman -d \
 		# For groff, use groff/mandoc/man -l so bold/overstrike sequences are always
 		# emitted regardless of whether stdout is a tty.
 		begin
-			printf (set_color --bold brwhite)'NOTE:'(set_color normal)' Not a local manpage, sourced from %s\n\n' $url
+			echo -n (set_color --bold brwhite)'NOTE:'(set_color normal)' Not a local manpage, sourced from '$url
+			if test $result_from_cache = yes
+				echo -n (set_color --bold brwhite)', CACHED'(set_color normal)
+			end
+			echo
 			if test "$url_mode" = groff
 				# lower-level commands when available on Linux and BSD
 				if command -q groff
