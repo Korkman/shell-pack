@@ -22,9 +22,9 @@ function cheat
 	if [ "$argv[1]" = "--chtsh" ]
 		set -e argv[1]
 		if test -z "$argv[1]"
-			dl --silent https://cheat.sh | __sp_pager -R
+			dl --cache=7d --cache-allow-stale --silent https://cheat.sh | __sp_pager -R
 		else
-			dl --silent https://cheat.sh/$argv[1] | __sp_pager -R
+			dl --cache=7d --cache-allow-stale --silent https://cheat.sh/$argv[1] | __sp_pager -R
 		end
 		return
 	end
