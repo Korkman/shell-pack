@@ -330,7 +330,7 @@ then
 	# Check if mounted volumes have changed. Since docker/podman do not support
 	# changing volumes of an existing container via "start", we commit the state,
 	# destroy the old container, and recreate it with the new mounts.
-	existing_mounts=$($docker inspect --format '{{range .Mounts}}{{.Source}}:{{.Destination}}:{{.Mode}} {{end}}' "$container_id" 2>/dev/null || true)
+	existing_mounts=$($docker inspect --format '{{range .Mounts}}{{.Source}}:{{.Destination}}:{{if .RW}}rw{{else}}ro{{end}} {{end}}' "$container_id" 2>/dev/null || true)
 	mounts_changed="no"
 
 	for dm in $desired_mount_list
