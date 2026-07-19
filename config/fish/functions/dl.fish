@@ -10,8 +10,12 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	set -l resume_dl ask
 	set -l retry_count 3
 	
+	set -l cache_pass_args
+	set -l cache_key_args
+	set -l cache_allow_stale no
+	
 	if test (count $argv) = 0 || test "$argv[1]" = '--help'
-		echo "Usage: dl [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] [--retry=N] <url> [output_file]"
+		echo "Usage: dl [--cache=EXPIRY] [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] [--retry=N] <url> [output_file]"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
@@ -27,27 +31,74 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	set -l args
 	for arg in $argv
 		switch $arg
+			case '--cache=*'
+				set cache_expiry (string replace -r '^--[^=]+=?' '' -- "$arg")
+			case '--cache-allow-stale'
+				set cache_allow_stale yes
 			case '--curl'
 				set preferred curl
 				set force_preferred yes
+				set -a cache_pass_args '--curl'
+				set -a cache_key_args '--curl'
 			case '--wget'
 				set preferred wget
 				set force_preferred yes
+				set -a cache_pass_args '--wget'
+				set -a cache_key_args '--wget'
 			case '-v' '--verbose'
 				set verbose yes
+				set -a cache_pass_args '-v'
 			case '-s' '--silent' '-q' '--quiet'
 				set silent yes
+				set -a cache_pass_args '-s'
 			case '-c' '--continue' '--resume'
 				set resume_dl yes
+				# silently ignored for --cache
 			case '-n' '--no-resume' '--new' '--restart' '--no-continue' '--overwrite'
 				set resume_dl no
+				# silently ignored for --cache
 			case '--retry=*' '--tries=*'
 				set retry_count (string replace -r '^--[^=]+=?' '' -- "$arg")
+				set -a cache_pass_args "$arg"
 			case '*'
 				set -a args "$arg"
+				set -a cache_pass_args "$arg"
+				set -a cache_key_args "$arg"
 		end
 	end
 	set argv $args
+	set url $argv[1]
+	set output_file $argv[2]
+
+	if test -n "$cache_expiry"
+		set -l cache_key (string join0 -- $cache_key_args | __sp_getmd5)
+		__sp_blob_cache --status $cache_key
+		set -l cache_status $status
+		if test $cache_status -ne 0
+			set -l tmpfile (__sp_blob_cache --get-tmpfile) || return
+			dl $cache_pass_args > $tmpfile
+			set -l dl_status $status
+			if test $dl_status -eq 0
+				__sp_blob_cache --set --move-file=$tmpfile $cache_key $cache_expiry
+			else
+				rm $tmpfile
+				if ! test $cache_allow_stale = yes || ! test $cache_status -eq 20
+					# cache is unavailable or stale and stale was not allowed
+					return 1
+				end
+				test "$silent" = "yes" || echo "Fetching from cache (stale!) ..." >&2
+			end
+		else
+			test "$silent" = "yes" || echo "Fetching from cache ..." >&2
+		end
+		
+		if test -n "$output_file"
+			__sp_blob_cache --allow-stale --get $cache_key > $output_file
+		else
+			__sp_blob_cache --allow-stale --get $cache_key
+		end
+		return 0
+	end
 	
 	if ! isatty 1
 		set to_stdout yes
@@ -82,16 +133,10 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		end
 	end
 	
-	# process url
-	set url $argv[1]
-	
 	# if no protocol given, assume https://
 	if ! string match -q --regex '^[^:/]+://' -- "$url"
 		set url "https://$url"
 	end
-	
-	# process output_file
-	set output_file $argv[2]
 	
 	# determine output_file so we can ask for resume and harmonize curl / wget naming behavior
 	if test "$to_stdout" = "no"
