@@ -69,6 +69,25 @@ function onman -d \
 		set os_version_id (grep -m1 '^VERSION_ID='     /etc/os-release | string replace 'VERSION_ID='       '' | string trim -c '"')
 		set os_codename (grep -m1 '^VERSION_CODENAME=' /etc/os-release | string replace 'VERSION_CODENAME=' '' | string trim -c '"')
 	end
+	
+	# --- if section is unset or 1, check if the binary lives outside distro paths ---
+	# If it does, it was likely installed from source/manually and has a recent version;
+	# use Arch Linux (rolling release) as the distro so the latest man page is fetched.
+	if test -z "$section" -o "$section" = 1
+		set -l bin_path (command -v $page 2>/dev/null)
+		if test -n "$bin_path"
+			# Non-distro paths: /usr/local, /home, /opt (but not /opt/homebrew handled by Darwin above)
+			if string match -qr '^(/usr/local/|/home/|/opt/)' -- $bin_path
+				if test "$flag_debug" = yes
+					echo "onman: $page found at $bin_path (non-distro path) → pretend archlinux for latest" >&2
+				end
+				set os_id "arch"
+				set os_id_like ""
+				set os_version_id "20260712.0.555161"
+			end
+		end
+	end
+	
 	if set -q _flag_os_id;         set os_id         $_flag_os_id;         set os_id_like ""; end
 	if set -q _flag_os_version_id; set os_version_id $_flag_os_version_id; end
 	if set -q _flag_os_codename;   set os_codename   $_flag_os_codename;   end
@@ -127,6 +146,7 @@ function onman -d \
 	# section suffix for URLs
 	set -l sec_suffix ""
 	set -l forced_section 1
+	
 	if test -n "$section"
 		set sec_suffix ".$section"
 		set forced_section $section
