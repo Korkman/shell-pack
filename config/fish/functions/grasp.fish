@@ -174,7 +174,7 @@ function grasp -d \
 	
 	# add keybinds and more to list of args
 	set -a fzf_defaults --highlight-line \
-		--wrap-word --multi --exact --ansi \
+		--multi --exact --ansi \
 		--no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" \
 		--height=-1 --history "$GRASP_HIST_FILE"
 
