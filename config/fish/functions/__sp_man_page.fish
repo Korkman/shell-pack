@@ -125,8 +125,8 @@ function __sp_man_page
 			set -l onman_urls (onman --urls $argv)
 			if test "$onman_urls" != ""
 				echo "or visit"
-				for line in $onman_urls
-					echo "  "(__spt link)"$line"(set_color normal)
+				for url in $onman_urls
+					echo "  "(__sp_osc8_url $url)
 				end
 				echo
 			end
