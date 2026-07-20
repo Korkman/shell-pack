@@ -324,10 +324,13 @@ function onman -d \
 		# For groff, use groff/mandoc/man -l so bold/overstrike sequences are always
 		# emitted regardless of whether stdout is a tty.
 		begin
-			echo -n (set_color --bold brwhite)'NOTE:'(set_color normal)' Not a local manpage, sourced from '$url
+			set -l url_prefix (string match -rg '(^.+?://[^/]+/)' -- $url)
+			echo -n (set_color --bold brwhite)'NOTE:'(set_color normal)' Non-local man page'
 			if test $result_from_cache = yes
 				echo -n (set_color --bold brwhite)', CACHED'(set_color normal)
 			end
+			echo -n '. Sourced from: '$url_prefix
+			echo
 			echo
 			if test "$url_mode" = groff
 				# lower-level commands when available on Linux and BSD
@@ -349,6 +352,8 @@ function onman -d \
 			else
 				cat $tmpfile
 			end
+			echo
+			echo (set_color --bold brwhite)'Download URL: '(set_color normal)"$url"
 		end | __sp_pager
 		rm -f $tmpfile
 		return
