@@ -329,13 +329,16 @@ function onman -d \
 			if test $result_from_cache = yes
 				echo -n (set_color --bold brwhite)', CACHED'(set_color normal)
 			end
-			echo -n '. Sourced from: '$url_prefix
+			echo -n '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
 			echo
 			echo
 			if test "$url_mode" = groff
 				# lower-level commands when available on Linux and BSD
-				if command -q groff
-					groff -Tutf8 -man $tmpfile 2>/dev/null
+				set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
+				if command -q nroff
+					nroff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
+				else if command -q groff
+					groff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
 				else if command -q mandoc
 					mandoc -T utf8 $tmpfile 2>/dev/null
 				else
@@ -353,7 +356,7 @@ function onman -d \
 				cat $tmpfile
 			end
 			echo
-			echo (set_color --bold brwhite)'Download URL: '(set_color normal)"$url"
+			echo (set_color --bold brwhite)(__sp_osc8_url $url 'Download URL')': '(set_color normal)(__sp_osc8_url $url)
 		end | __sp_pager
 		rm -f $tmpfile
 		return
