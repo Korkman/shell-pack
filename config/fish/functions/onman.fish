@@ -356,7 +356,7 @@ function onman -d \
 				cat $tmpfile
 			end
 			echo
-			echo (set_color --bold brwhite)(__sp_osc8_url $url 'Download URL')': '(set_color normal)(__sp_osc8_url $url)
+			echo 'Download URL: '(__sp_osc8_url $url)
 		end | __sp_pager
 		rm -f $tmpfile
 		return

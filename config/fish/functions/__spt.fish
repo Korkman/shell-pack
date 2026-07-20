@@ -157,14 +157,16 @@ function __spt -d \
 		case prompt_fg
 			$scolor "ff0"
 			return
-		case fish_command_fg
-			$scolor "00ff87"
-			return
-		case linenumber
+		case fish_command_fg linenumber
 			$scolor "00ff87"
 			return
 		case fish_command_color
 			echo -n "00ff87"
+		case unavailable_option
+			$scolor --dim --strikethrough
+			return
+		case link
+			$scolor --underline "00afff"
 			return
 		case fish_comment_color
 			echo -n "d1b5ff"
