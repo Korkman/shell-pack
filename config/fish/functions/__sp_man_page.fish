@@ -86,8 +86,8 @@ function __sp_man_page
 			echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd --help' instead"(set_color normal)
 			echo ""
 			# close STDIN on search_cmd so any interactive input is cancelled
-			echo -n | $search_cmd --help
-		end &| $pager
+			echo -n | $search_cmd --help 2>&1
+		end | $pager
 		return
 	end
 
@@ -96,8 +96,8 @@ function __sp_man_page
 			echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd -h' instead"(set_color normal)
 			echo ""
 			# close STDIN on search_cmd so any interactive input is cancelled
-			echo -n | $search_cmd -h
-		end &| $pager
+			echo -n | $search_cmd -h 2>&1
+		end | $pager
 		return
 	end
 	# in case we were summoned in the commandline
