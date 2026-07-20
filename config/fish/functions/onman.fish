@@ -64,6 +64,7 @@ function onman -d \
 	set -l os_id_like ""
 	set -l os_version_id ""
 	set -l os_codename ""
+	set -l skip_distro_releases no
 	if test -r /etc/os-release
 		set os_id       (grep -m1 '^ID='               /etc/os-release | string replace 'ID='               '' | string trim -c '"')
 		set os_id_like  (grep -m1 '^ID_LIKE='          /etc/os-release | string replace 'ID_LIKE='          '' | string trim -c '"')
@@ -80,12 +81,9 @@ function onman -d \
 			# Non-distro paths: /usr/local, /home, /opt (but not /opt/homebrew handled by Darwin above)
 			if string match -qr '^(/usr/local/|/home/|/opt/)' -- $bin_path
 				if test "$flag_debug" = yes
-					echo "onman: $page found at $bin_path (non-distro path) → pretend archlinux for latest" >&2
+					echo "onman: $page found at $bin_path (non-distro path) → skip distro release URLs for latest" >&2
 				end
-				set os_type Linux
-				set os_id "arch"
-				set os_id_like ""
-				set os_version_id "20260712.0.555161"
+				set skip_distro_releases yes
 			end
 		end
 	end
@@ -97,7 +95,9 @@ function onman -d \
 	# --- detect distro for manned.org slug ---
 	set -l manned_distro ""
 
-	if test "$os_type" = Linux
+	if test "$skip_distro_releases" = yes
+		set manned_distro "arch"
+	else if test "$os_type" = Linux
 		# Map known IDs to manned.org distro slugs
 		# manned.org slugs: debian-trixie, debian-bookworm, ubuntu-questing, arch, fedora-43, alpine-3.23, etc.
 		switch $os_id
@@ -202,46 +202,48 @@ function onman -d \
 				set -a url_modes html
 		end
 	end
-
-	# Generic Ubuntu template for ubuntu-like
-	if test "$is_ubuntu_like" = yes
-		switch $mode
-			case groff
-				set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
-				set -a url_modes groff
-			case html
-				set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
-				set -a url_modes html
+	
+	if test "$skip_distro_releases" = no
+		# Generic Ubuntu template for ubuntu-like
+		if test "$is_ubuntu_like" = yes
+			switch $mode
+				case groff
+					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
+					set -a url_modes groff
+				case html
+					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
+					set -a url_modes html
+			end
 		end
-	end
 
-	# Generic Debian template for debian-like (includes Ubuntu)
-	if test "$is_debian_like" = yes
-		set -l deb_codename $os_codename
-		if test -z "$deb_codename" -o "$os_id" != "debian"; set deb_codename unstable; end
-		switch $mode
-			case groff
-				set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
-				set -a url_modes groff
-			case html
-				set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
-				set -a url_modes html
+		# Generic Debian template for debian-like (includes Ubuntu)
+		if test "$is_debian_like" = yes
+			set -l deb_codename $os_codename
+			if test -z "$deb_codename" -o "$os_id" != "debian"; set deb_codename unstable; end
+			switch $mode
+				case groff
+					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
+					set -a url_modes groff
+				case html
+					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
+					set -a url_modes html
+			end
 		end
-	end
 
-	if test "$os_type" = FreeBSD
-		# FreeBSD man CGI (plain text / HTML)
-		set -l base_url "https://man.freebsd.org/cgi/man.cgi?query=$page&manpath=FreeBSD+$os_version_id-RELEASE+and+Ports.quarterly"
-		if test -n "$section"
-			set base_url $base_url"&sektion=$section"
-		end
-		switch $mode
-			case txt groff
-				set -a urls $base_url"&format=ascii"
-				set -a url_modes txt
-			case html
-				set -a urls $base_url
-				set -a url_modes html
+		if test "$os_type" = FreeBSD
+			# FreeBSD man CGI (plain text / HTML)
+			set -l base_url "https://man.freebsd.org/cgi/man.cgi?query=$page&manpath=FreeBSD+$os_version_id-RELEASE+and+Ports.quarterly"
+			if test -n "$section"
+				set base_url $base_url"&sektion=$section"
+			end
+			switch $mode
+				case txt groff
+					set -a urls $base_url"&format=ascii"
+					set -a url_modes txt
+				case html
+					set -a urls $base_url
+					set -a url_modes html
+			end
 		end
 	end
 
