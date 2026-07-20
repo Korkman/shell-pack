@@ -82,6 +82,7 @@ function onman -d \
 				if test "$flag_debug" = yes
 					echo "onman: $page found at $bin_path (non-distro path) → pretend archlinux for latest" >&2
 				end
+				set os_type Linux
 				set os_id "arch"
 				set os_id_like ""
 				set os_version_id "20260712.0.555161"
