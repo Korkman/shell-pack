@@ -111,8 +111,13 @@ function __sp_man_page
 	if isatty stdin && isatty stdout
 		while true
 			echo "Alternatives to "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$search_cmd"(set_color normal)
-			echo "  1|h) "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"--help"(set_color normal)
-			echo "  2)   "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"-h"(set_color normal)
+			if type -q $search_cmd
+				echo "  1|h) "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"--help"(set_color normal)
+				echo "  2)   "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"-h"(set_color normal)
+			else
+				echo "  "(__spt unavailable_option)"1|h) $search_cmd --help"(set_color normal)(set_color $fish_color_comment)" # not a valid cmd"(set_color normal)
+				echo "  "(__spt unavailable_option)"2)   $search_cmd -h"(set_color normal)(set_color $fish_color_comment)"     # not a valid cmd"(set_color normal)
+			end
 			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch man page from internet"(set_color normal)
 			echo "  4|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			echo "  q) quit"
@@ -121,7 +126,7 @@ function __sp_man_page
 			if test "$onman_urls" != ""
 				echo "or visit"
 				for line in $onman_urls
-					echo "  "(set_color $fish_color_redirection)(set_color $fish_color_valid_path)"$line"(set_color normal)
+					echo "  "(__spt link)"$line"(set_color normal)
 				end
 				echo
 			end
@@ -134,9 +139,17 @@ function __sp_man_page
 			
 			switch $_sp_choice
 				case 1 h
+					if ! type -q $search_cmd
+						__sp_error "Not a valid command: $search_cmd"
+						continue
+					end
 					set chosen_flag --help
 					set chosen_var dash_dash_help_for_man
 				case 2
+					if ! type -q $search_cmd
+						__sp_error "Not a valid command: $search_cmd"
+						continue
+					end
 					set chosen_flag -h
 					set chosen_var dash_h_for_man
 				case 3 o 
