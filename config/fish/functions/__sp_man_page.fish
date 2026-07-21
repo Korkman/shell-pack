@@ -1,9 +1,9 @@
 function __sp_man_page
-	# handle --reset: strip flag, remember it
-	set -l do_reset no
-	if contains -- --reset $argv
-		set do_reset yes
-		set argv (string match --invert --entire --regex '^--reset$' -- $argv)
+	# handle --reconfigure: strip flag, remember it
+	set -l do_reconfigure no
+	if contains -- --reconfigure $argv
+		set do_reconfigure yes
+		set argv (string match --invert --entire --regex '^--reconfigure$' -- $argv)
 	end
 
 	# if no backup exists, proxy to "man"
@@ -21,19 +21,21 @@ function __sp_man_page
 	set -l man_args_plain no
 	set -l man_arg_section
 	set -l man_arg_topic
-	if ! set -q argv[2] && ! string match -q --regex '^-' -- $argv[1]
-		# e.g. "man ls"
-		set man_args_plain yes
-		set man_arg_topic $argv[1]
-	else if ! set -q argv[3] && string match -q --regex '^[0-9]+$' -- $argv[1] && ! string match -q --regex '^-' -- $argv[2]
-		# e.g. "man 7 signal"
-		set man_args_plain yes
-		set man_arg_section $argv[1]
-		set man_arg_topic $argv[2]
+	if set -q argv[1]
+		if ! set -q argv[2] && ! string match -q --regex '^-' -- $argv[1]
+			# e.g. "man ls"
+			set man_args_plain yes
+			set man_arg_topic $argv[1]
+		else if ! set -q argv[3] && string match -q --regex '^[0-9]+$' -- $argv[1] && ! string match -q --regex '^-' -- $argv[2]
+			# e.g. "man 7 signal"
+			set man_args_plain yes
+			set man_arg_section $argv[1]
+			set man_arg_topic $argv[2]
+		end
 	end
 	
 	if test $man_args_plain = no
-		# e.g. "man --help" or "man -k keyword"
+		# e.g. "man --help" or "man -k keyword" or just "man"
 		# doesn't translate to --help or onman calls
 		__sp_man_page_default $argv
 		return
@@ -54,17 +56,6 @@ function __sp_man_page
 	end
 	
 	set -l search_cmd $man_arg_topic
-
-	# derive a safe universal-variable name for the persisted preference
-	set -l pref_var __sp_man_page_pref_(string replace --all --regex '[^a-zA-Z0-9]' '_' -- $search_cmd)
-
-	# --reset: erase persisted preference and continue normally
-	if test $do_reset = yes
-		if set -q $pref_var
-			set -e $pref_var
-			echo >&2 (set_color --bold brwhite)"NOTE:"(set_color normal)" Cleared saved help preference for '$search_cmd'"
-		end
-	end
 
 	# choose appropriate pager
 	if set -q MANPAGER
@@ -99,41 +90,53 @@ function __sp_man_page
 		set -a wl_dash_h $dash_h_for_man
 	end
 
+	set -l _persisted_method
 	if contains -- $search_cmd $wl_dash_dash_help
-		set $pref_var hh
+		set _persisted_method hh
 	end
 
 	if contains -- $search_cmd $wl_dash_h
-		set $pref_var h
+		set _persisted_method h
 	end
-	# apply persisted help-method preference (set by choosing option 6 in the menu)
-	if set -q $pref_var
-		switch $$pref_var
+
+	# apply persisted help-method preference (one universal list var per method)
+	for _method in hh h o t c
+		set -l _var __sp_man_page_saved_$_method
+		if set -q $_var && contains -- $search_cmd $$_var
+			set _persisted_method $_method
+			break
+		end
+	end
+	
+	# --reconfigure: remove command from whichever persisted-preference list it appears in
+	if test $do_reconfigure = yes
+		set -l _cleared no
+		for _method in hh h o t c
+			set -l _var __sp_man_page_saved_$_method
+			if set -q $_var && contains -- $search_cmd $$_var
+				set -U $_var (string match --invert --entire --regex '^'(string escape --style=regex -- $search_cmd)'$' -- $$_var)
+				set _cleared yes
+			end
+		end
+		if test $_cleared = yes
+			echo >&2 (set_color --bold brwhite)"NOTE:"(set_color normal)" Cleared saved help preference for '$search_cmd'"
+		end
+		set _persisted_method
+	end
+	
+	set -l _sp_choice
+	if test -n "$_persisted_method"
+		switch $_persisted_method
 			case hh
-				begin
-					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd --help' instead"(set_color normal)
-					echo ""
-					# close STDIN on search_cmd so any interactive input is cancelled
-					echo -n | $search_cmd --help 2>&1
-				end | $pager
-				return
+				set _sp_choice h
 			case h
-				begin
-					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd -h' instead"(set_color normal)
-					echo ""
-					# close STDIN on search_cmd so any interactive input is cancelled
-					echo -n | $search_cmd -h 2>&1
-				end | $pager
-				return
+				set _sp_choice 2
 			case o
-				onman $argv
-				return
+				set _sp_choice o
 			case t
-				onman --txt $argv
-				return
+				set _sp_choice t
 			case c
-				cheat $search_cmd
-				return
+				set _sp_choice c
 		end
 	end
 
@@ -144,12 +147,17 @@ function __sp_man_page
 	;
 	echo >&2
 
-	# interactive fallback: offer to try --help or -h when stdin is a tty
-	if isatty stdin && isatty stdout
-		# for saving the previous choice
-		set -l chosen_method
-		set -l chosen_method_char
-		while true
+	set -l chosen_method
+	set -l chosen_method_char
+	set -l interactive_mode no
+	if isatty stdin && isatty stdout && test -z $_persisted_method
+		set interactive_mode yes
+	end
+	
+	while true
+		if test $interactive_mode = yes
+			# interactive mode
+			# for saving the previous choice
 			echo "Alternatives to "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$search_cmd"(set_color normal)
 			if type -q $search_cmd
 				echo "  1|h) "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"--help"(set_color normal)
@@ -162,7 +170,7 @@ function __sp_man_page
 			echo "  4|t) "(set_color $fish_color_command)"onman --txt "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet (plain text)"(set_color normal)
 			echo "  5|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd         "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			if test -n "$chosen_method"
-				echo "  6|s) "(set_color $fish_color_command)"always use $chosen_method_char) for this command"(set_color normal)
+				echo "  6|s) "(set_color normal)"Save"(set_color normal)" option $chosen_method_char) for "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$argv"(set_color normal)(set_color $fish_color_comment)"  # reset with 'man --reconfigure $argv'"(set_color normal)
 			end
 			echo "  q) quit"
 			echo
@@ -177,58 +185,79 @@ function __sp_man_page
 			
 			read --prompt-str="Choice: " --nchars 1 _sp_choice
 			echo
-
-			set -l chosen_var
-			set -l chosen_flag
-			set chosen_method_char $_sp_choice
-			switch $_sp_choice
-				case 1 h
-					if ! type -q $search_cmd
-						__sp_error "Not a valid command: $search_cmd"
-						continue
-					end
-					set chosen_flag --help
-					set chosen_var dash_dash_help_for_man
-					set chosen_method hh
-				case 2
-					if ! type -q $search_cmd
-						__sp_error "Not a valid command: $search_cmd"
-						continue
-					end
-					set chosen_flag -h
-					set chosen_var dash_h_for_man
-					set chosen_method h
-				case 3 o 
-					onman $argv
-					set chosen_method o
-					continue
-				case 4 t 
-					onman --txt $argv
-					set chosen_method t
-					continue
-				case 5 c
-					cheat $search_cmd
-					set chosen_method c
-					continue
-				case 6 s
-					if test -z "$chosen_method"
-						__sp_error "Make a choice first before saving"
-						continue
-					end
-					set -U $pref_var $chosen_method
-					echo (set_color --bold brwhite)"Saved:"(set_color normal)" will always use '$chosen_method_char' for '$search_cmd' (run 'man --reset $search_cmd' to clear)"
-					return
-				case '*'
-					return 0
-			end
-			
-			# temporarily whitelist and recurse
-			set -lx $chosen_var $$chosen_var
-			set -a $chosen_var $search_cmd
-			echo -n | __sp_man_page $argv
 		end
-		return
+		switch $_sp_choice
+			case 1 h
+				if ! type -q $search_cmd
+					__sp_error "Not a valid command: $search_cmd"
+					test $interactive_mode = yes; and continue; or return 1
+				end
+				begin
+					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" Showing '$search_cmd --help'"(set_color normal)
+					echo ""
+					# close STDIN on search_cmd so any interactive input is cancelled
+					echo -n | $search_cmd --help 2>&1
+				end | $pager
+				set -l cmd_status $status
+				set chosen_method hh
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 2
+				if ! type -q $search_cmd
+					__sp_error "Not a valid command: $search_cmd"
+					continue
+				end
+				begin
+					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" Showing '$search_cmd -h'"(set_color normal)
+					echo ""
+					# close STDIN on search_cmd so any interactive input is cancelled
+					echo -n | $search_cmd -h 2>&1
+				end | $pager
+				set -l cmd_status $status
+				set chosen_method h
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 3 o 
+				onman $argv
+				set -l cmd_status $status
+				set chosen_method o
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 4 t 
+				onman --txt $argv
+				set -l cmd_status $status
+				set chosen_method t
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 5 c
+				cheat $search_cmd
+				set -l cmd_status $status
+				set chosen_method c
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 6 s
+				if test -z "$chosen_method"
+					__sp_error "Attempt to persist without making a choice first"
+					return 2
+				end
+				
+				# remove from any other method list first
+				for _method in hh h o t c
+					set -l _var __sp_man_page_saved_$_method
+					if set -q $_var && contains -- $search_cmd $$_var
+						set -U $_var (string match --invert --entire --regex '^'(string escape --style=regex -- $search_cmd)'$' -- $$_var)
+					end
+				end
+				set -Ua __sp_man_page_saved_$chosen_method $search_cmd
+				echo (set_color --bold brwhite)"Saved:"(set_color normal)" will always use '$chosen_method_char' for '$search_cmd' (run 'man --reconfigure $search_cmd' to clear)"
+				return
+			case '*'
+				break
+		end
+		
+		return 99
 	end
+
 	
 	# fool __fish_man_page: there's always a way, if we're not asked to search for cmd-assumedverb
 	if ! type -q $search_cmd && string match -q -- "*-*" "$search_cmd"
