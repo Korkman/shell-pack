@@ -1,4 +1,11 @@
 function __sp_man_page
+	# handle --reset: strip flag, remember it
+	set -l do_reset no
+	if contains -- --reset $argv
+		set do_reset yes
+		set argv (string match --invert --entire --regex '^--reset$' -- $argv)
+	end
+
 	# if no backup exists, proxy to "man"
 	if ! functions -q __sp_man_page_default
 		function __sp_man_page_default
@@ -47,7 +54,18 @@ function __sp_man_page
 	end
 	
 	set -l search_cmd $man_arg_topic
-	
+
+	# derive a safe universal-variable name for the persisted preference
+	set -l pref_var __sp_man_page_pref_(string replace --all --regex '[^a-zA-Z0-9]' '_' -- $search_cmd)
+
+	# --reset: erase persisted preference and continue normally
+	if test $do_reset = yes
+		if set -q $pref_var
+			set -e $pref_var
+			echo >&2 (set_color --bold brwhite)"NOTE:"(set_color normal)" Cleared saved help preference for '$search_cmd'"
+		end
+	end
+
 	# choose appropriate pager
 	if set -q MANPAGER
 		set pager $MANPAGER
@@ -82,24 +100,43 @@ function __sp_man_page
 	end
 
 	if contains -- $search_cmd $wl_dash_dash_help
-		begin
-			echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd --help' instead"(set_color normal)
-			echo ""
-			# close STDIN on search_cmd so any interactive input is cancelled
-			echo -n | $search_cmd --help 2>&1
-		end | $pager
-		return
+		set $pref_var hh
 	end
 
 	if contains -- $search_cmd $wl_dash_h
-		begin
-			echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd -h' instead"(set_color normal)
-			echo ""
-			# close STDIN on search_cmd so any interactive input is cancelled
-			echo -n | $search_cmd -h 2>&1
-		end | $pager
-		return
+		set $pref_var h
 	end
+	# apply persisted help-method preference (set by choosing option 6 in the menu)
+	if set -q $pref_var
+		switch $$pref_var
+			case hh
+				begin
+					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd --help' instead"(set_color normal)
+					echo ""
+					# close STDIN on search_cmd so any interactive input is cancelled
+					echo -n | $search_cmd --help 2>&1
+				end | $pager
+				return
+			case h
+				begin
+					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" No man page found, paging '$search_cmd -h' instead"(set_color normal)
+					echo ""
+					# close STDIN on search_cmd so any interactive input is cancelled
+					echo -n | $search_cmd -h 2>&1
+				end | $pager
+				return
+			case o
+				onman $argv
+				return
+			case t
+				onman --txt $argv
+				return
+			case c
+				cheat $search_cmd
+				return
+		end
+	end
+
 	# in case we were summoned in the commandline
 	echo >&2
 	__sp_error \
@@ -109,6 +146,9 @@ function __sp_man_page
 
 	# interactive fallback: offer to try --help or -h when stdin is a tty
 	if isatty stdin && isatty stdout
+		# for saving the previous choice
+		set -l chosen_method
+		set -l chosen_method_char
 		while true
 			echo "Alternatives to "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$search_cmd"(set_color normal)
 			if type -q $search_cmd
@@ -118,8 +158,12 @@ function __sp_man_page
 				echo "  "(__spt unavailable_option)"1|h) $search_cmd --help"(set_color normal)(set_color $fish_color_comment)"  # not a valid cmd"(set_color normal)
 				echo "  "(__spt unavailable_option)"2)   $search_cmd -h"(set_color normal)(set_color $fish_color_comment)"      # not a valid cmd"(set_color normal)
 			end
-			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet"(set_color normal)
-			echo "  4|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
+			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$argv         "(set_color $fish_color_comment)"# fetch man page from internet (roff if supported)"(set_color normal)
+			echo "  4|t) "(set_color $fish_color_command)"onman --txt "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet (plain text)"(set_color normal)
+			echo "  5|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd         "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
+			if test -n "$chosen_method"
+				echo "  6|s) "(set_color $fish_color_command)"always use $chosen_method_char) for this command"(set_color normal)
+			end
 			echo "  q) quit"
 			echo
 			set -l onman_urls (onman --urls $argv)
@@ -131,12 +175,12 @@ function __sp_man_page
 				echo
 			end
 			
-			read --prompt-str="Choice [1234hoc]: " --nchars 1 _sp_choice
+			read --prompt-str="Choice: " --nchars 1 _sp_choice
 			echo
 
 			set -l chosen_var
 			set -l chosen_flag
-			
+			set chosen_method_char $_sp_choice
 			switch $_sp_choice
 				case 1 h
 					if ! type -q $search_cmd
@@ -145,6 +189,7 @@ function __sp_man_page
 					end
 					set chosen_flag --help
 					set chosen_var dash_dash_help_for_man
+					set chosen_method hh
 				case 2
 					if ! type -q $search_cmd
 						__sp_error "Not a valid command: $search_cmd"
@@ -152,12 +197,27 @@ function __sp_man_page
 					end
 					set chosen_flag -h
 					set chosen_var dash_h_for_man
+					set chosen_method h
 				case 3 o 
 					onman $argv
+					set chosen_method o
 					continue
-				case 4 c
+				case 4 t 
+					onman --txt $argv
+					set chosen_method t
+					continue
+				case 5 c
 					cheat $search_cmd
+					set chosen_method c
 					continue
+				case 6 s
+					if test -z "$chosen_method"
+						__sp_error "Make a choice first before saving"
+						continue
+					end
+					set -U $pref_var $chosen_method
+					echo (set_color --bold brwhite)"Saved:"(set_color normal)" will always use '$chosen_method_char' for '$search_cmd' (run 'man --reset $search_cmd' to clear)"
+					return
 				case '*'
 					return 0
 			end
@@ -166,16 +226,6 @@ function __sp_man_page
 			set -lx $chosen_var $$chosen_var
 			set -a $chosen_var $search_cmd
 			echo -n | __sp_man_page $argv
-			
-			# offer to persist
-			# TODO: is this a good thing? choice is easy to select, whitelist hard to undo ...
-			#echo
-			#read --prompt-str="Persist '$search_cmd' in \$$chosen_var? [y/N]: " --nchars 1 _sp_persist
-			#echo
-			#if string match -qi y $_sp_persist
-			#	set -U -a $chosen_var $search_cmd
-			#	echo (set_color green)"Added '$search_cmd' to \$$chosen_var"(set_color normal)
-			#end
 		end
 		return
 	end
