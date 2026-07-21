@@ -1,6 +1,6 @@
 function onman -d \
 	'Show a man page fetched from an online source.'
-	argparse 'h/help' 'debug' 't/txt' 'text' 'groff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' -- $argv
+	argparse 'h/help' 'debug' 't/txt' 'text' 'roff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' -- $argv
 	or return 1
 
 	if set -q _flag_help; or test (count $argv) -eq 0
@@ -13,9 +13,9 @@ function onman -d \
 		echo
 		echo "Options:"
 		echo "  --debug       Print each URL attempted to stderr"
-		echo "  --txt/--text  Force plain-text URLs (skip groff sources)"
-		echo "  --groff       Force groff URLs (skip plain-text sources)"
-		echo "  --html                   Include browser-accessible HTML URLs (alongside groff/txt)"
+		echo "  --txt/--text  Force plain-text URLs (skip roff sources)"
+		echo "  --roff       Force roff URLs (skip plain-text sources)"
+		echo "  --html                   Include browser-accessible HTML URLs (alongside roff/txt)"
 		echo "  --urls               Print all candidate URLs (any mode) and exit; implies --html"
 		echo "  --os <type>              Override OS type (e.g. Linux, Darwin, FreeBSD)"
 		echo "  --os-id <id>             Override OS ID from os-release (e.g. debian, arch)"
@@ -31,15 +31,15 @@ function onman -d \
 	if set -q _flag_debug; set flag_debug yes; end
 	if set -q _flag_urls; set flag_urls yes; end
 
-	# mode: groff | txt | html  (default resolved after checking for `man`)
+	# mode: roff | txt | html  (default resolved after checking for `man`)
 	set -l mode_flag_count 0
 	set -l mode auto
-	if set -q _flag_groff;           set mode groff; set mode_flag_count (math $mode_flag_count + 1); end
+	if set -q _flag_roff;           set mode roff; set mode_flag_count (math $mode_flag_count + 1); end
 	if set -q _flag_txt; or set -q _flag_text
 	                                 set mode txt;   set mode_flag_count (math $mode_flag_count + 1); end
 	if set -q _flag_html;            set mode html;  set mode_flag_count (math $mode_flag_count + 1); end
 	if test $mode_flag_count -gt 1
-		echo "onman: --groff, --txt, and --html are mutually exclusive" >&2
+		echo "onman: --roff, --txt, and --html are mutually exclusive" >&2
 		return 1
 	end
 	# --urls implies html when no mode flag was given
@@ -135,15 +135,15 @@ function onman -d \
 	# --- resolve auto mode ---
 	if test "$mode" = auto
 		if command -q man
-			set mode groff
+			set mode roff
 		else
 			set mode txt
 		end
 	end
 
-	# --- build URL list: one URL per source, groff or txt based on mode ---
+	# --- build URL list: one URL per source, roff or txt based on mode ---
 	set -l urls
-	set -l url_modes  # parallel list: "groff" or "txt"
+	set -l url_modes  # parallel list: "roff" or "txt"
 
 	# section suffix for URLs
 	set -l sec_suffix ""
@@ -176,9 +176,9 @@ function onman -d \
 	if test "$is_arch_like" = yes
 		# Arch Linux itself prioritized over manned.org
 		switch $mode
-			case groff
+			case roff
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
-				set -a url_modes groff
+				set -a url_modes roff
 			case txt
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
 				set -a url_modes txt
@@ -191,9 +191,9 @@ function onman -d \
 	# manned.org: good distro coverage including BSD, albeit outdated at times
 	if test -n "$manned_distro"
 		switch $mode
-			case groff
+			case roff
 				set -a urls "https://manned.org/raw/$manned_distro/$page$sec_suffix"
-				set -a url_modes groff
+				set -a url_modes roff
 			case txt
 				set -a urls "https://manned.org/txt/$manned_distro/$page$sec_suffix"
 				set -a url_modes ihtml
@@ -207,9 +207,9 @@ function onman -d \
 		# Generic Ubuntu template for ubuntu-like
 		if test "$is_ubuntu_like" = yes
 			switch $mode
-				case groff
+				case roff
 					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
-					set -a url_modes groff
+					set -a url_modes roff
 				case html
 					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
 					set -a url_modes html
@@ -221,9 +221,9 @@ function onman -d \
 			set -l deb_codename $os_codename
 			if test -z "$deb_codename" -o "$os_id" != "debian"; set deb_codename unstable; end
 			switch $mode
-				case groff
+				case roff
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
-					set -a url_modes groff
+					set -a url_modes roff
 				case html
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
 					set -a url_modes html
@@ -237,7 +237,7 @@ function onman -d \
 				set base_url $base_url"&sektion=$section"
 			end
 			switch $mode
-				case txt groff
+				case txt roff
 					set -a urls $base_url"&format=ascii"
 					set -a url_modes txt
 				case html
@@ -250,9 +250,9 @@ function onman -d \
 	# Arch Linux used as universal fallback for everyone else
 	if test "$is_arch_like" = no
 		switch $mode
-			case groff
+			case roff
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
-				set -a url_modes groff
+				set -a url_modes roff
 			case txt
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
 				set -a url_modes txt
@@ -293,8 +293,9 @@ function onman -d \
 			end
 			set -a cmd "$url"
 			$cmd > $tmpfile
-			if test $status -ne 0; or test ! -s $tmpfile
-				if test "$flag_debug" = yes; echo "onman: discarding $url (download failed or empty)" >&2; end
+			set -l dl_status $status
+			if test $dl_status -ne 0 || ! test -s $tmpfile
+				if test "$flag_debug" = yes; echo "onman: discarding $url (download failed, empty, or too small: $filesize bytes)" >&2; end
 				rm -f $tmpfile
 				echo failed | __sp_blob_cache --set $cache_fail_key 1h
 				continue
@@ -305,15 +306,33 @@ function onman -d \
 		else
 			set result_from_cache yes
 		end
-
-		if test "$url_mode" = groff
-			# sanity: must look like groff (starts with ' or .)
+		
+		if test "$url_mode" = roff
+			# sanity: must look like roff (starts with ' or .)
 			set -l first_char (head -c 1 $tmpfile)
 			if test "$first_char" != '.' -a "$first_char" != "'"
-				if test "$flag_debug" = yes; echo "onman: discarding $url (not groff, first char: '$first_char')" >&2; end
+				if test "$flag_debug" = yes; echo "onman: discarding $url (not roff, first char: '$first_char')" >&2; end
 				rm -f $tmpfile
 				continue
 			end
+			
+			# small roff sources are likely to be a plain "include other page" command, which we pseudo-resolve through recursion
+			set -l filesize (wc -c < $tmpfile | string trim)
+			if test $filesize -lt 1024
+				set -l stack_count (status stack-trace | string match '*onman*' | count)
+				if test $stack_count -gt 8
+					__sp_error "onman roff 'see-other' recursion exceeded limit"
+					return 1
+				end
+				
+				set -l see_other (string match -m1 -rg '^\\.so .+/(.+)\.(.+)' < $tmpfile)
+				if test -n "$see_other"
+					onman $see_other[2] $see_other[1]
+					return
+				end
+				continue
+			end
+			
 		else if test "$url_mode" = txt
 			# sanity: reject obvious HTML error pages
 			if string match -q '<html*' -- (string lower -- (head -c 20 $tmpfile))
@@ -324,7 +343,7 @@ function onman -d \
 		end
 
 		# Render: prepend source header, then page.
-		# For groff, use groff/mandoc/man -l so bold/overstrike sequences are always
+		# For roff, use roff/mandoc/man -l so bold/overstrike sequences are always
 		# emitted regardless of whether stdout is a tty.
 		begin
 			set -l url_prefix (string match -rg '(^.+?://[^/]+/)' -- $url)
@@ -335,13 +354,13 @@ function onman -d \
 			echo -n '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
 			echo
 			echo
-			if test "$url_mode" = groff
+			if test "$url_mode" = roff
 				# lower-level commands when available on Linux and BSD
 				set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
-				if command -q nroff
-					nroff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
-				else if command -q groff
+				if command -q groff
 					groff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
+				else if command -q nroff
+					nroff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
 				else if command -q mandoc
 					mandoc -T utf8 $tmpfile 2>/dev/null
 				else
