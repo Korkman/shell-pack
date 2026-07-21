@@ -18,7 +18,7 @@ function __sp_man_page
 		# e.g. "man ls"
 		set man_args_plain yes
 		set man_arg_topic $argv[1]
-	else if ! set -q argv[3] && ! string match -q --regex '^-' -- $argv[1] && ! string match -q --regex '^-' -- $argv[2]
+	else if ! set -q argv[3] && string match -q --regex '^[0-9]+$' -- $argv[1] && ! string match -q --regex '^-' -- $argv[2]
 		# e.g. "man 7 signal"
 		set man_args_plain yes
 		set man_arg_section $argv[1]
@@ -118,7 +118,7 @@ function __sp_man_page
 				echo "  "(__spt unavailable_option)"1|h) $search_cmd --help"(set_color normal)(set_color $fish_color_comment)"  # not a valid cmd"(set_color normal)
 				echo "  "(__spt unavailable_option)"2)   $search_cmd -h"(set_color normal)(set_color $fish_color_comment)"      # not a valid cmd"(set_color normal)
 			end
-			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch man page from internet"(set_color normal)
+			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet"(set_color normal)
 			echo "  4|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd   "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			echo "  q) quit"
 			echo
@@ -156,7 +156,7 @@ function __sp_man_page
 					onman $argv
 					continue
 				case 4 c
-					cheat $argv
+					cheat $search_cmd
 					continue
 				case '*'
 					return 0
@@ -180,6 +180,9 @@ function __sp_man_page
 		return
 	end
 	
-	# fool fish_man_page: there's always a way
+	# fool __fish_man_page: there's always a way, if we're not asked to search for cmd-assumedverb
+	if ! type -q $search_cmd && string match -q -- "*-*" "$search_cmd"
+		return 1
+	end
 	return 0
 end
