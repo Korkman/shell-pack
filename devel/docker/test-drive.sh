@@ -17,6 +17,8 @@ FORCE_NO_SUDO=${FORCE_NO_SUDO:-no} # force skipping sudo for docker
 USE_CACHED_DOWNLOADS=${USE_CACHED_DOWNLOADS:-yes} # use cached downloads (rg, fzf, etc.)
 INSTALL_FISH=${INSTALL_FISH:-static-latest} # none|distro|repo-nightly|repo-release|static-latest|static-VERSION
 PLATFORM=${PLATFORM:-} # set for example to linux/arm64 for aarch64
+MEM_LIMIT=${MEM_LIMIT:-2g}
+MEMSWAP_LIMIT=${MEMSWAP_LIMIT:-3g}
 
 usage() {
 	cat << EOF
@@ -220,6 +222,7 @@ then
 		echo "🧹 Removing committed image shell-pack:test-drive-${tagname}-committed ..."
 		$docker rmi "shell-pack:test-drive-${tagname}-committed" || true
 	fi
+	rm -f "$HOME/.cache/shell-pack-devel/docker/$tagname/extra_mounts_state"
 	exit 0
 fi
 
@@ -325,83 +328,31 @@ then
 	done
 fi
 
+# Remember the set of extra mounts a persisted container was created with, so
+# we can detect additions, changes AND removals on the next invocation.
+# Comparing against a live "docker/podman inspect" of the container's mounts is
+# fragile (mount ordering, RW/RO string formatting, host path normalization
+# differ between docker/podman versions) and was found to miss removals, so we
+# just keep a plain record of what we asked for on disk instead.
+mounts_state_file="$cachedir/extra_mounts_state"
+previous_mount_list=""
+if [ -e "$mounts_state_file" ]
+then
+	previous_mount_list=$(cat "$mounts_state_file")
+fi
+
 if [ "${container_id:-}" != "" ]
 then
-	# Check if mounted volumes have changed. Since docker/podman do not support
-	# changing volumes of an existing container via "start", we commit the state,
-	# destroy the old container, and recreate it with the new mounts.
-	existing_mounts=$($docker inspect --format '{{range .Mounts}}{{.Source}}:{{.Destination}}:{{if .RW}}rw{{else}}ro{{end}} {{end}}' "$container_id" 2>/dev/null || true)
+	# Since docker/podman do not support changing volumes of an existing
+	# container via "start", we commit the state, destroy the old container,
+	# and recreate it with the new mounts whenever the desired set of extra
+	# mounts differs from the one the existing container was created with
+	# (including EXTRA_MOUNTS being cleared/reduced).
 	mounts_changed="no"
-
-	for dm in $desired_mount_list
-	do
-		dm_host="${dm%%:*}"
-		rest="${dm#*:}"
-		dm_container="${rest%%:*}"
-		dm_opts="${rest#*:}"
-
-		found="no"
-		for em in $existing_mounts
-		do
-			em_host="${em%%:*}"
-			em_rest="${em#*:}"
-			em_container="${em_rest%%:*}"
-			em_mode="${em_rest#*:}"
-
-			if [ "$dm_host" = "$em_host" ] && [ "$dm_container" = "$em_container" ]
-			then
-				case "$em_mode" in
-					*"$dm_opts"* ) found="yes"; break ;;
-					* )
-						if [ "$dm_opts" = "rw" ] || [ -z "$dm_opts" ]
-						then
-							found="yes"
-							break
-						fi
-						;;
-				esac
-			fi
-		done
-
-		if [ "$found" = "no" ]
-		then
-			echo "🔍 Detected missing or modified mount: $dm_host -> $dm_container"
-			mounts_changed="yes"
-			break
-		fi
-	done
-
-	if [ "$mounts_changed" = "no" ]
+	if [ "$desired_mount_list" != "$previous_mount_list" ]
 	then
-		for em in $existing_mounts
-		do
-			em_host="${em%%:*}"
-			em_rest="${em#*:}"
-			em_container="${em_rest%%:*}"
-
-			case "$em_container" in
-				/mnt/* )
-					found="no"
-					for dm in $desired_mount_list
-					do
-						dm_host="${dm%%:*}"
-						rest="${dm#*:}"
-						dm_container="${rest%%:*}"
-						if [ "$em_host" = "$dm_host" ] && [ "$em_container" = "$dm_container" ]
-						then
-							found="yes"
-							break
-						fi
-					done
-					if [ "$found" = "no" ]
-					then
-						echo "🔍 Detected stale mount to remove: $em_container"
-						mounts_changed="yes"
-						break
-					fi
-					;;
-			esac
-		done
+		echo "🔍 Detected change in EXTRA_MOUNTS since container was created"
+		mounts_changed="yes"
 	fi
 
 	if [ "$mounts_changed" = "yes" ]
@@ -439,11 +390,17 @@ then
 		$extra_mounts_args \
 		$PLATFORM_ARG \
 		--interactive \
+		--memory "$MEM_LIMIT" \
+		--memory-swap "$MEMSWAP_LIMIT" \
 		--tty \
 		--detach \
 		$arg_container_name \
 		"$run_image"
 	)
+
+	# Record the extra mounts this container was created with, so future
+	# invocations can detect when EXTRA_MOUNTS changes (including removals).
+	printf '%s' "$desired_mount_list" > "$mounts_state_file"
 
 	echo "Attaching $container_id ..."
 	rs=0
