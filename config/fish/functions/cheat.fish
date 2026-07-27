@@ -389,7 +389,7 @@ ctrl-a, lift keys, then
 - selection is copied to tmux clipboard and terminal host if supported
 - selection does not exit copy-mode to accomodate copying multiple strings
 - (alt-)right-click context menus are available from tmux
-- click on left status toggles prefix mode
+- hold left button on left status for user/host/session expansion
 - double-click on left status shows session tree chooser
 - prefix + wheelup/-down on left status moves status bar to top / bottom
 - double-click on tab creates new window next to it
