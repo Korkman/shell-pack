@@ -8,6 +8,8 @@ command -v fish > /dev/null || {
 	exit
 }
 
+shpuser_home="/problematic home/shpuser"
+
 # simulate pre-installed binaries
 if [ -e ~/Downloads/rg ]
 then
@@ -45,21 +47,21 @@ first_run() {
 	fi
 	# setup an unprivileged user
 	if command -v useradd > /dev/null; then
-		useradd shpuser
+		useradd shpuser --home-dir "$shpuser_home"
 	else
-		adduser --disabled-password --gecos "" shpuser
+		adduser --disabled-password --gecos "" --home "$shpuser_home" shpuser
 	fi
-	mkdir -p /home/shpuser
-	cp -aT /etc/skel /home/shpuser
+	mkdir -p "$shpuser_home"
+	cp -aT /etc/skel "$shpuser_home"
 	mkdir -p "/etc/sudoers.d"
 	echo "shpuser ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_shpuser"
 	echo "$(command -v fish)" >> /etc/shells
 	chsh shpuser -s "$(command -v fish)" || echo "chsh failed, might be unavailable in distro image. Please run 'fish'."
 
 	# ggit testing grounds
-	(cd ~
+	(cd ~ || return 1
 	mkdir -p ggit-test
-	cd ggit-test
+	cd ggit-test || return 1
 	git init -q
 	git config --global user.email "you@example.com"
 	git config --global user.name "Your Name"
@@ -76,23 +78,23 @@ then
 fi
 
 # update shpuser
-cp -a /root/Downloads /home/shpuser/
+cp -a /root/Downloads "$shpuser_home"
 if [ -e /root/.local/bin ]
 then
-	cp -a /root/.local/bin /home/shpuser/.local/bin
+	cp -a /root/.local/bin "$shpuser_home/.local/bin"
 fi
-chown -R shpuser:shpuser /home/shpuser
+chown -R shpuser:shpuser "$shpuser_home"
 
 # autorun installer
 if [ "$AUTOSTART" = "yes" ]; then
-	echo "-------------------------------------------------"
-	echo "         Installer 'get.sh'             "
-	echo "-------------------------------------------------"
-	cd ~/Downloads
+	echo "------------------------------------------------------------"
+	echo "                      Installer 'get.sh'                    "
+	echo "------------------------------------------------------------"
+	cd ~/Downloads || return 1
 	FORCE_PRE_DOWNLOADED=y ~/Downloads/get.sh
-	cd ~shpuser/Downloads
+	cd ~shpuser/Downloads || return 1
 	FORCE_PRE_DOWNLOADED=y su shpuser -c "./get.sh" > /dev/null
-	cd ~
+	cd ~ || return 1
 	if [ -e ~/Downloads/dool.d ]
 	then
 		echo "distributing dool.d ..."
@@ -102,22 +104,22 @@ if [ "$AUTOSTART" = "yes" ]; then
 		echo "dool.d not cached!"
 	fi
 	
-	echo "-------------------------------------------------"
-	echo " Environment:                                    "
-	echo " - shell-pack setup is done                      "
-	echo " - executing bash for 'root' with LC_NERDLEVEL=3 "
-	echo " - run 'su shpuser' for a non-root account       "
-	echo "-------------------------------------------------"
+	echo "------------------------------------------------------------"
+	echo " Environment:                                               "
+	echo " - shell-pack setup is done                                 "
+	echo " - executing bash for 'root' with LC_NERDLEVEL=3            "
+	echo " - run 'cd ~shpuser && su shpuser' for a non-root account   "
+	echo "------------------------------------------------------------"
 	bash -l
 else
-	cd ~
-	echo "-------------------------------------------------"
-	echo " Environment:                                    "
-	echo " - shell-pack setup was skipped                  "
-	echo " - get.sh is available in ~/Downloads            "
-	echo " - executing bash for 'root' with LC_NERDLEVEL=3 "
-	echo " - run 'su shpuser' for a non-root account       "
-	echo "-------------------------------------------------"
+	cd ~ || return 1
+	echo "------------------------------------------------------------"
+	echo " Environment:                                               "
+	echo " - shell-pack setup was skipped                             "
+	echo " - get.sh is available in ~/Downloads                       "
+	echo " - executing bash for 'root' with LC_NERDLEVEL=3            "
+	echo " - run 'cd ~shpuser && su shpuser' for a non-root account   "
+	echo "------------------------------------------------------------"
 	bash -l
 fi
 
