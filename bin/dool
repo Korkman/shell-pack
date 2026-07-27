@@ -20,12 +20,13 @@ if set -q __sp_dool_infinite_loop_breaker
 end
 set -x __sp_dool_infinite_loop_breaker 1
 
-set forced_bytes_arg ""
-# if dstat is available, run it - it might be a different tool (the Red Hat desaster)
+set forced_bytes_arg
+# if dstat is available, run it - it might be a different tool (the Red Hat disaster)
 if [ "$scriptname" = "dstat" ]
 	for search in (command -a dstat)
 		if [ (realpath "$search") != "$realfilename" ]
-			eval exec "$search" $argv
+			set -l cmd $search $argv
+			exec $cmd
 			exit 10 # this should never execute
 		end
 	end
@@ -36,21 +37,23 @@ end
 
 # if downloaded dool is available, run it
 if [ -x "$__sp_dir/bin/dool.d/dool" ]
-	#echo "exec local dool"
-	eval exec "$__sp_dir/bin/dool.d/dool" $forced_bytes_arg $argv
+	set -l cmd "$__sp_dir/bin/dool.d/dool" $forced_bytes_arg $argv
+	exec $cmd
 	exit 10 # this should never execute
 else
 	# try find globally installed dool, run that
 	for search in (command -a dool)
 		if [ (realpath "$search") != "$realfilename" ]
-			eval exec "$search" $forced_bytes_arg $argv
+			set -l cmd $search $forced_bytes_arg $argv
+			exec $cmd
 			exit 10 # this should never execute
 		end
 	end
 	# if not available, fall back to any installed dstat
 	for search in (command -a dstat)
 		if [ (realpath "$search") != "$realfilename" ]
-			eval exec "$search" $argv
+			set -l cmd $search $argv
+			exec $cmd
 			exit 10 # this should never execute
 		end
 	end
