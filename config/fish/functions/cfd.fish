@@ -19,7 +19,6 @@ function cfd -d \
 		echo "File does not exist: $filename" >&2
 		return 1
 	end
-	set filename (__sp_suggest_rename_file "$filename")
 	
 	# when no dst given and stdout is not a terminal, decompress to stdout
 	if test -z "$dst" && not isatty 1
