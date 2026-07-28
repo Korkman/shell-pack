@@ -1,6 +1,6 @@
 function onman -d \
 	'Show a man page fetched from an online source.'
-	argparse 'h/help' 'debug' 't/txt' 'text' 'roff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' -- $argv
+	argparse 'h/help' 'debug' 't/txt' 'text' 'roff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' 'renderer=' -- $argv
 	or return 1
 
 	if set -q _flag_help; or test (count $argv) -eq 0
@@ -22,6 +22,7 @@ function onman -d \
 		echo "  --os-version-id <ver>    Override VERSION_ID from os-release (e.g. 15, 43)"
 		echo "  --os-codename <name>     Override VERSION_CODENAME from os-release (e.g. bookworm, noble)"
 		echo "  --refresh                Refresh cache"
+		echo "  --renderer <man|mandoc|groff>  Force which tool renders roff man pages"
 		return 0
 	end >&2
 
@@ -30,6 +31,35 @@ function onman -d \
 	set -l flag_urls no
 	if set -q _flag_debug; set flag_debug yes; end
 	if set -q _flag_urls; set flag_urls yes; end
+
+	set -l flag_renderer ""
+	if set -q _flag_renderer
+		switch $_flag_renderer
+			case man mandoc groff
+				set flag_renderer $_flag_renderer
+			case '*'
+				echo "onman: --renderer must be one of: man, mandoc, groff" >&2
+				return 1
+		end
+	end
+
+	# --- resolve roff renderer once, up front (reused for mode auto-detect and rendering) ---
+	set -l roff_renderer ""
+	if test -n "$flag_renderer"
+		if command -q $flag_renderer
+			set roff_renderer $flag_renderer
+		else
+			echo (set_color --bold red)'Requested renderer not available: '$flag_renderer(set_color normal) >&2
+			return 1
+		end
+	else
+		for r in man mandoc groff
+			if command -q $r
+				set roff_renderer $r
+				break
+			end
+		end
+	end
 
 	# mode: roff | txt | html  (default resolved after checking for `man`)
 	set -l mode_flag_count 0
@@ -134,7 +164,7 @@ function onman -d \
 
 	# --- resolve auto mode ---
 	if test "$mode" = auto
-		if command -q man
+		if test -n "$roff_renderer"
 			set mode roff
 		else
 			set mode txt
@@ -353,25 +383,23 @@ function onman -d \
 			end
 			echo '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
 			if test "$url_mode" = roff
-				# lower-level commands when available on Linux and BSD
-				set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
-				if command -q man
-					# pass the man page to the native man -l command
-					# advantage: macro packages are best-effort automatically
-					# NOTE: man may fail in containers when host apparmor interferes (opensuse tumbleweed)
-					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' man -l'
-					MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man -l $tmpfile
-				else if command -q mandoc
-					# prefer mandoc, which is default in BSD but can be present on Linux where it is faster than groff
-					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' mandoc'
-					mandoc -T utf8 $tmpfile 2>/dev/null
-				else if command -q groff
-					# virtually all Linux uses groff by default, but we assume -man and -mdoc macro packages are available
-					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' groff'
-					groff -Tutf8 -man -mdoc -rLL={$cols}n $tmpfile 2>/dev/null
-				else
+				if test -z "$roff_renderer"
 					echo (set_color --bold red)'No roff renderer available. Consider passing --txt or --html for other formats.'(set_color normal)
 					cat $tmpfile
+				else
+					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' '$roff_renderer
+					switch $roff_renderer
+						case man
+							# advantage: macro packages are best-effort automatically
+							# NOTE: man may fail in containers when host apparmor interferes (opensuse tumbleweed)
+							MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man -l $tmpfile
+						case mandoc
+							mandoc -T utf8 $tmpfile 2>/dev/null
+						case groff
+							# we assume -man and -mdoc macro packages are available
+							set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
+							groff -Tutf8 -man -mdoc -rLL={$cols}n $tmpfile 2>/dev/null
+					end
 				end
 			else if test "$url_mode" = ihtml
 				# inline html mode (only formatting and some escapes, from manned.org/txt/)
