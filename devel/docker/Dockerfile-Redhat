@@ -28,6 +28,7 @@ RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fis
 ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/td.fish /etc/fish/functions/td.fish
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

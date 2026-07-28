@@ -6,11 +6,15 @@ ENV LC_ALL=C.UTF-8
 
 RUN zypper --non-interactive refresh
 
+# minimum packages for installer and basic functionality
 RUN zypper --non-interactive install \
-	man \
-	htop tmux procps mc screen \
-	less sudo vim git python3 gettext wget curl \
-	xz zip zstd lz4 p7zip netcat-openbsd
+	python3 procps findutils xz wget
+
+# extended packages - comment out for a "survival mode" container
+RUN zypper --non-interactive install \
+	htop tmux mc screen curl \
+	sudo vim git gettext \
+	less man-pages zip zstd lz4 p7zip netcat-openbsd
 
 # NOTE: use cache to run more zypper lines during development, then
 #       move them to the combined line above.
@@ -23,6 +27,7 @@ RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fis
 ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/td.fish /etc/fish/functions/td.fish
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

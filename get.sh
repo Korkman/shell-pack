@@ -27,22 +27,16 @@ TARGET_FISH_CONFIG_DIR="${HOME}/.config/fish"
 TARGET_FISH_CONFIG="${TARGET_FISH_CONFIG_DIR}/config.fish"
 
 # detect OS and machine type
-MACHINE="$(uname -m)" # x86_64 / i386 / ...
 META_DISTRO="$(uname -s)" # Darwin / Linux / ...
-DISTRO_NAME="unknown"
-DISTRO_RELEASE="unknown"
 case "${META_DISTRO}" in
 	"Darwin")
 		META_DISTRO="macos"
 		;;
 	"Linux")
 		META_DISTRO="linux"
-		# TODO: fill in DISTRO_NAME, DISTRO_RELEASE with lsb_release if available?
-		# currently, maintaining distro specific installation routines is not feasible
+		# currently, maintaining distro specific installation routines is not necessary
 		;;
 	*)
-		#echo "WARNING: Meta distribution unknown: ${META_DISTRO}"
-		#echo "         Trouble ahead"
 		;;
 esac
 
@@ -127,7 +121,9 @@ if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
 	exit 57
 fi
 
-rm "${DOWNLOAD_FILENAME}"
+if [ "${KEEP_DOWNLOAD:-n}" = "n" ]; then
+	rm "${DOWNLOAD_FILENAME}"
+fi
 if [ "${DOWNLOAD_TMPDIR:-}" != "" ]; then
 	rmdir "${DOWNLOAD_TMPDIR}"
 fi

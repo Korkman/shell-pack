@@ -7,9 +7,12 @@ RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 ENV LC_ALL=en_US.UTF-8
 
 RUN pacman -Sy
-RUN pacman --noconfirm -S gettext man-db htop tmux procps mc \
-    screen curl wget less sudo ncurses openssh openbsd-netcat git python3 \
-    xz zip zstd lz4 7zip
+# minimum packages for installer and basic functionality
+RUN pacman --noconfirm -S procps wget xz python3
+# extended packages - comment out for a "survival mode" container
+RUN pacman --noconfirm -S gettext man-db htop tmux mc \
+    screen curl less sudo ncurses openssh openbsd-netcat git \
+    zip zstd lz4 7zip
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
@@ -19,6 +22,7 @@ RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fis
 ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/td.fish /etc/fish/functions/td.fish
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

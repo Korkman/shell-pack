@@ -1,11 +1,18 @@
 ARG BUILD_FROM=alpine:latest
 FROM $BUILD_FROM
 
-RUN apk add coreutils mc htop curl netcat-openbsd openssh-server bash ncurses \
-    procps openssh-client tmux screen python3 wget zstd xz zip gzip bzip2 tar \
-    git shadow findutils
+# minimum packages for installer and basic functionality
+RUN apk add coreutils \
+    procps wget xz gzip tar \
+    findutils
+
+# extended packages - comment out for a "survival mode" container
+RUN apk add mc htop curl netcat-openbsd openssh-server bash ncurses \
+    openssh-client tmux screen python3 zstd zip gzip bzip2 tar \
+    git shadow
+
+# optional packages available only in more recent distro releases
 RUN apk add 7zip || true
-#RUN apk add 
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
@@ -15,6 +22,7 @@ RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fis
 ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
+COPY added/td.fish /etc/fish/functions/td.fish
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

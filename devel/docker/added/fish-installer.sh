@@ -17,6 +17,7 @@ set -eu
 # the official repo also offers nightlies:
 #   INSTALL_FISH=repo-nightly
 
+USER=${USER:-$(id -un)}
 
 main() {
 	installer_log="$HOME/fish_installer.log"
@@ -79,14 +80,13 @@ download() {
 	fi
 }
 
-if command -v sudo > /dev/null
+if [ "$USER" != "root" ] && command -v sudo > /dev/null
 then
 	sudo() {
 		command sudo "$@"
 	}
 else
-	echo "No sudo available - attempting to run package manager without"
-	echo "(this usually works if you are root or have similar superpowers)"
+	echo "Not using sudo, acting as '$USER'"
 	sudo() {
 		"$@"
 	}
@@ -271,6 +271,9 @@ run_installer() {
 				elif command -v pacman > /dev/null
 				then
 					sudo pacman -Sy --noconfirm xz wget
+				elif command -v zypper > /dev/null
+				then
+					sudo zypper --non-interactive install xz wget
 				else
 					echo "No suitable package manager found to install xz and wget, please install them manually and re-run" >&2
 					exit 1
