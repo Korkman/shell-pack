@@ -351,30 +351,39 @@ function onman -d \
 			if test $result_from_cache = yes
 				echo -n (set_color --bold brwhite)', CACHED'(set_color normal)
 			end
-			echo -n '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
-			echo
-			echo
+			echo '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
 			if test "$url_mode" = roff
 				# lower-level commands when available on Linux and BSD
 				set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
-				if command -q groff
-					groff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
-				else if command -q nroff
-					nroff -Tutf8 -man -rLL={$cols}n $tmpfile 2>/dev/null
+				if command -q man
+					# pass the man page to the native man -l command
+					# advantage: macro packages are best-effort automatically
+					# NOTE: man may fail in containers when host apparmor interferes (opensuse tumbleweed)
+					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' man -l'
+					MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man -l $tmpfile
 				else if command -q mandoc
+					# prefer mandoc, which is default in BSD but can be present on Linux where it is faster than groff
+					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' mandoc'
 					mandoc -T utf8 $tmpfile 2>/dev/null
+				else if command -q groff
+					# virtually all Linux uses groff by default, but we assume -man and -mdoc macro packages are available
+					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' groff'
+					groff -Tutf8 -man -mdoc -rLL={$cols}n $tmpfile 2>/dev/null
 				else
-					# NOTE: man -l fails on opensuse tumbleweed; the above low-level commands work
-					MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat man -l $tmpfile
+					echo (set_color --bold red)'No roff renderer available. Consider passing --txt or --html for other formats.'(set_color normal)
+					cat $tmpfile
 				end
 			else if test "$url_mode" = ihtml
 				# inline html mode (only formatting and some escapes, from manned.org/txt/)
+				echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' sed'
 				set -l esc (printf '\033')
 				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc"[3m/g; s/<\/i>/"$esc"[23m/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile
 			else if test "$url_mode" = html
 				# full html mode, render with lynx or w3m?
+				echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' __sp_html2text'
 				__sp_html2text $tmpfile
 			else
+				echo (set_color --bold brwhite)'No more processing applied'(set_color normal)
 				cat $tmpfile
 			end
 			echo
