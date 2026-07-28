@@ -15,8 +15,38 @@ function td -d \
 			td-user $argv[2..-1]
 		case ggit
 			td-ggit $argv[2..-1]
+		case no-man
+			td-no-man $argv[2..-1]
 		case '*'
-			printf 'Usage: td [user|ggit]\n' >&2
+			printf 'Usage: td [user|ggit|no-man]\n' >&2
+	end
+end
+
+function td-no-man -d \
+	"Uninstall manpages with any available package manager"
+	argparse 'h/help' -- $argv
+	if test $status -ne 0
+		return 2
+	end
+
+	if set -q _flag_help
+		printf 'Usage: td no-man\n'
+		return 0
+	end
+
+	if command -q apk
+		apk del --purge man-pages mdocml mandoc man-db 2>/dev/null
+	else if command -q zypper
+		zypper --non-interactive remove man man-pages man-pages-posix 2>/dev/null
+	else if command -q dnf
+		dnf -y remove man-db man-pages 2>/dev/null
+	else if command -q pacman
+		pacman -Rns --noconfirm man-db man-pages 2>/dev/null
+	else if command -q apt
+		apt-get -y remove man-db manpages 2>/dev/null
+	else
+		echo "No supported package manager found" >&2
+		return 1
 	end
 end
 
@@ -117,14 +147,18 @@ function td-user -d \
 			cp -a ~/Downloads/dool.d ~shpuser/.local/share/shell-pack/bin/
 		end
 		
-		# patch .profile to launch with LC_NERDLEVEL=3
+		# patch profile to launch with LC_NERDLEVEL=3 and correct locale
 		if ! test -e ~shpuser/.profile || ! string match nerdlevel.sh < ~shpuser/.profile
 			echo 'export LC_NERDLEVEL=3' >> ~shpuser/.profile
+			echo "export LC_ALL=$LC_ALL" >> ~shpuser/.profile
+			echo "export LANG=$LANG" >> ~shpuser/.profile
 			echo '. "$HOME/.local/share/shell-pack/config/nerdlevel.sh"' >> ~shpuser/.profile
 		end
-		# bashrc may, if present, override .profile
+		# .bashrc too, as it overrides .profile if present
 		if test -e ~shpuser/.bashrc && ! string match nerdlevel.sh < ~shpuser/.bashrc
 			echo 'export LC_NERDLEVEL=3' >> ~shpuser/.bashrc
+			echo "export LC_ALL=$LC_ALL" >> ~shpuser/.bashrc
+			echo "export LANG=$LANG" >> ~shpuser/.bashrc
 			echo '. "$HOME/.local/share/shell-pack/config/nerdlevel.sh"' >> ~shpuser/.bashrc
 		end
 		
