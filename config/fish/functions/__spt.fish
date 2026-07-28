@@ -372,7 +372,7 @@ function __spt_init -d \
 
 	
 	if ! set -q __cap_colors
-		set -gx __cap_colors (tput colors) || set -gx __cap_colors 8
+		set -gx __cap_colors (type -q tput && tput colors || echo 8)
 	end
 
 	set -g fish_prompt_pwd_dir_length 0
