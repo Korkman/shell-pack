@@ -101,8 +101,6 @@ main() {
 	t set-window-option -g window-status-current-style bg=brightwhite,fg=blue
 	t set -g message-style fg=colour16,bg=colour226,bold
 
-	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
-	
 	# Intuitive window splitting
 	t bind '|' split-window -h -c "#{pane_current_path}" # left/right, default: %
 	t bind '-' split-window -v -c "#{pane_current_path}" # top/bottom, default: "
@@ -155,7 +153,7 @@ main() {
 	# - try "screen" if "tmux" is not in infocmp
 	# - add -256color if terminal supports it
 	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
-	TPUT_COLORS=$(tput colors)
+	TPUT_COLORS=$(command -v tput 2>/dev/null && tput colors || echo 8)
 	if [ "$TPUT_COLORS" -lt 256 ]; then
 		if infocmp tmux > /dev/null 2>&1; then
 			t set -g default-terminal tmux
@@ -203,7 +201,7 @@ main() {
 	
 	# Allow shell to rename window
 	t set -g allow-rename on
-
+	
 	# make ctrl-arrow work in mc
 	# make shift-arrow work in mc
 	t set-window-option -g xterm-keys on
@@ -410,6 +408,10 @@ main() {
 	t bind-key -T prefix z resize-pane -Z
 	t bind-key -T prefix x confirm-before -p "kill-pane #P? (y/n)" kill-pane
 	# end restored defaults
+	
+	# set-environment seems to trigger creation of the first window
+	# therefore, put this rather at the end than the start of main()
+	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
 	
 	t_end
 }
