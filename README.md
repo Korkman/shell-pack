@@ -29,6 +29,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `cclip`: copy to client clipboard (via OSC-52)
  * `qssh`: a frontend to ssh with enhanced fingerprint dialogue, multi connect and more (requires ssh)
  * `rrg` (`alt-g`): an easy to use ripgrep file content search with preview
+ * `onman`: online man page fetcher with smart `man` alias offering to use it when a page is unavailable locally
  * `ggit`: quickly review changes, add files to the commit and push
  * `venv`: activate / deactivate Python virtual env corresponding to current directory
  * `eenv`: load variables from .env file with POSIX shell support
