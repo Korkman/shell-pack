@@ -319,12 +319,13 @@ TMUX AS CONFIGURED BY SHELL-PACK
 # THE STATUS BAR
  
 left side:
-  mode indicator:
+  mode indicator (hidden when tight):
     NORM: normal input
     COPY: copy-mode active (scrolled, selected text)
     PRFX: prefix active (ctrl-a was pressed)
     SYNC: input is mirrored to all panes (ctrl-a shift-b)
-  hostname, '/', session name
+  user@hostname
+  session name
  
 center: window tabs
   1:tab = the first tab (ctrl-a 1)
@@ -335,8 +336,9 @@ center: window tabs
   tab~ = silence monitor triggered (ctrl-a _)
   
 right side:
-  load average
-  clock, date
+  load average (hidden when tight)
+  clock
+  date (hidden when tight)
  
 # THE KEYBOARD
  
@@ -389,14 +391,14 @@ ctrl-a, lift keys, then
 - selection is copied to tmux clipboard and terminal host if supported
 - selection does not exit copy-mode to accomodate copying multiple strings
 - (alt-)right-click context menus are available from tmux
-- hold left button on left status for user/host/session expansion
-- double-click on left status shows session tree chooser
+- click left status to toggle expansion
+- double-click left status shows session tree chooser
 - prefix + wheelup/-down on left status moves status bar to top / bottom
 - double-click on tab creates new window next to it
 - button 2 on tab closes window with confirm
 - prefix + button 2 on tab closes window without confirm
-- hold left button on right status for precise time
-- double-click on right status to run dool + htop in new windows
+- click right status to toggle expansion
+- double-click right status to run dool + htop in new windows
 - double-click in empty area to create new window at end
 - wheelup/-down on status switches through tabs
  

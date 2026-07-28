@@ -2,36 +2,75 @@
 {
 
 # custom .tmux.conf.sh
-
 # supported minimum tmux version: 2.8 (Debian Buster)
 
-TMUX_CONF_SH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+# derive .tmux.conf.sh directory, real path and escaped real path
+TMUX_CONF_SH_DIR="$(cd "$(dirname "$0")" && pwd)"
+TMUX_CONF_SH="$TMUX_CONF_SH_DIR/$(basename "$0")"
 TMUX_CONF_SH_ESC="$(printf '%s\n' "$TMUX_CONF_SH" | sed 's/ /\\ /g')"
-TMUX_STATUS_STYLE=${TMUX_STATUS_STYLE:-bg=colour26,fg=brightwhite}
-TMUX_ATTENTION_COLOR=${TMUX_ATTENTION_COLOR:-bg=colour226 fg=colour16}
 
 # version variable
 # the following sets the variable __sp_tmux_ver by running
 # - a shell that tells tmux to set __sp_tmux_ver
 # - to a math expansion
 # - executing a nested shell that creates a formula (major * 100 + minor) from tmux -V
-# result examples:
-# 3.0a -> 300
-# 3.5  -> 305
-# 3.10 -> 310
+# result examples: 3.0a -> 300    3.5 -> 305    3.10 -> 310
 __sp_tmux_ver=${__sp_tmux_ver:-$(( $(tmux -V | sed -e 's/[^0-9.]//g' -e 's/\./*100+/') ))}
 
-# batching support: collect tmux commands with t(), then send them all
-# together as a single tmux invocation (joined by tmux's ';' command
-# separator) with t_end(), to minimize process spawns.
-# args are joined with a control-char delimiter (unlikely to ever appear in
-# a tmux argument) and later re-split into positional params with IFS +
-# set --, so no per-argument subshell/sed/eval quoting is needed at all.
-TMUX_CONF_BUFFER=
-TMUX_CONF_BUFFER_FILLED=0
-TMUX_CONF_BUFFER_ARGC=0
-TMUX_CONF_BUFFER_D=$(printf '\1')
+custom_colors() { return; }
+custom_styles() { return; }
+custom_main() { return; }
+if [ -e "$HOME/.config/tmux.conf.local.sh" ]; then
+. "$HOME/.config/tmux.conf.local.sh"
+fi
 
+# colors
+COLOR_STATUS_BG="colour26"
+COLOR_STATUS_FG="brightwhite"
+COLOR_STATUS_L_BG="colour236"
+COLOR_STATUS_L_FG="colour15"
+COLOR_STATUS_R_BG="colour236"
+COLOR_STATUS_R_FG="colour15"
+COLOR_HIGHLIGHT_BG="colour226"
+COLOR_HIGHLIGHT_FG="colour16"
+COLOR_HIGHLIGHT2_BG="colour13"
+COLOR_HIGHLIGHT2_FG="colour16"
+COLOR_MODE_PREFIX_BG="colour093"
+COLOR_MODE_PREFIX_FG="colour15"
+COLOR_MODE_COPY_BG="colour226"
+COLOR_MODE_COPY_FG="colour16"
+COLOR_MODE_SYNC_BG="colour48"
+COLOR_MODE_SYNC_FG="colour16"
+COLOR_PANE_BORDER_FG="colour236"
+COLOR_PANE_ACTIVE_BORDER_FG="colour48"
+COLOR_WIN_STATUS_CURRENT_BG="brightwhite"
+COLOR_WIN_STATUS_CURRENT_FG="black"
+custom_colors
+
+# styles and symbols
+STYLE_STATUS_L="bg=$COLOR_STATUS_L_BG fg=$COLOR_STATUS_L_FG"
+STYLE_STATUS_R="bg=$COLOR_STATUS_R_BG fg=$COLOR_STATUS_R_FG"
+STYLE_HIGHLIGHT="bg=$COLOR_HIGHLIGHT_BG fg=$COLOR_HIGHLIGHT_FG"
+if [ "${LC_NERDLEVEL:-0}" -gt 2 ]; then
+	S_STATUS_L_END=" #[fg=$COLOR_STATUS_BG]"
+	S_STATUS_R_BEGIN="#[fg=$COLOR_STATUS_BG bg=$COLOR_STATUS_R_BG]#[$STYLE_STATUS_R] "
+	S_STATUS_DIV_L="  "
+	S_STATUS_DIV_R="  "
+else
+	S_STATUS_L_END=" "
+	S_STATUS_R_BEGIN=" "
+	S_STATUS_DIV_L=" | "
+	S_STATUS_DIV_R=" | "
+fi
+custom_styles
+
+# batching support: collect tmux commands with 't', then send them all
+# together as a single tmux invocation (joined by tmux's ';' command
+# separator) with 't_end', to minimize process spawns. 't_end' is called
+# automatically on exit.
+# args are joined with a control-char delimiter TMUX_CONF_BUFFER_D (unlikely
+# to ever appear in a tmux argument) and later re-split into positional params
+# with IFS + set --, so no per-argument subshell/sed/eval quoting is needed at all.
 t() {
 	# buffer limits
 	# - in tmux 3.7a, a limit of 1000 args was introduced:
@@ -84,6 +123,13 @@ t_end() {
 	fi
 }
 
+# initialize empty buffer
+TMUX_CONF_BUFFER=
+TMUX_CONF_BUFFER_FILLED=0
+TMUX_CONF_BUFFER_ARGC=0
+TMUX_CONF_BUFFER_D=$(printf '\1')
+
+# flush remaining buffer on exit
 trap "t_end" EXIT
 
 main() {
@@ -97,9 +143,9 @@ main() {
 	
 	# Status line colors
 	t set -g status on
-	t set -g status-style "$TMUX_STATUS_STYLE"
-	t set-window-option -g window-status-current-style bg=brightwhite,fg=blue
-	t set -g message-style fg=colour16,bg=colour226,bold
+	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
+	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
+	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG,bold
 
 	# Intuitive window splitting
 	t bind '|' split-window -h -c "#{pane_current_path}" # left/right, default: %
@@ -217,15 +263,15 @@ main() {
 	# @clock_details: set to 1 to ease shortening rules
 	t set -g '@host_details' 0
 	t set -g status-left-length 60
-	t set -g status-left "#{?#{==:#{client_key_table},prefix},#[$TMUX_ATTENTION_COLOR]PRFX ,#{?#{==:#{pane_mode},copy-mode},#[$TMUX_ATTENTION_COLOR]COPY ,#{?#{pane_synchronized},#[$TMUX_ATTENTION_COLOR]SYNC ,#[default]NORM }}}|#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\") "
-	t set -g mode-style "$TMUX_ATTENTION_COLOR"
+	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\")"
+	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
 	# @clock_details: set to 1 to include the year in the clock; click the right status bar corner to toggle
 	# loadavg and clock are both computed by the right_status subcommand
 	t set -g '@clock_details' 0
 	t set -g status-right-length 60
-	t set -g status-right " #($TMUX_CONF_SH_ESC right_status #{@clock_details})"
+	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\")"
 
 	# Refresh interval for the status, default: 15
 	t set -Fg @status_interval 15
@@ -238,8 +284,8 @@ main() {
 	# vibrant copy-mode colors and
 	# change the cursor style in copy-mode so selected text becomes clearly visible
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
-		t set -g copy-mode-current-match-style bg=colour13,fg=colour16
-		t set -g copy-mode-match-style bg=colour226,fg=colour16
+		t set -g copy-mode-current-match-style bg=$COLOR_HIGHLIGHT2_BG,fg=$COLOR_HIGHLIGHT2_FG
+		t set -g copy-mode-match-style bg=$COLOR_HIGHLIGHT_BG,fg=$COLOR_HIGHLIGHT_FG
 		
 		# resetting to default doesn't do the right thing at least in konsole
 		# therefore we define "blinking-block" as the new default
@@ -327,22 +373,22 @@ main() {
 	t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
 
 	# various mouse events (also documented in cheat --tmux):
-	# left status bar corner: left mouse down to expand ellipsis
+	# left status bar corner: click toggles expansion
 	# left status bar corner: double-click to show session tree chooser
 	# left status bar corner: prefix + wheelup/-down move status bar up / down
 	# window name: double-click to create new neighbor window
 	# window name: middle-click to close with confirm
 	# window name: prefix + middle-click to close without confirm, stay prefixed
-	# right status bar corner: hold left mouse button down for precise time
+	# right status bar corner: click toggles expansion
 	# right status bar corner: double-click to create dool + htop windows
 	# empty status bar area: double-click to create new window
 	# whole status bar area: wheelup/-down on scroll through windows just like window names
 	# prefix + many middle-click events keep prefix active to forgive misclicks
-	if [ $__sp_tmux_ver -ge 209 ]; then
+	if [ "$__sp_tmux_ver" -ge 209 ]; then
 		t bind -n DoubleClick1StatusLeft if-shell -F '#{==:#{pane_mode},tree-mode}' 'send-keys Escape' 'choose-tree -Zw'
 		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' new-window -a -c "#{pane_current_path}"
-		t bind -n MouseDown1StatusLeft set -g '@host_details' 1 '\;' refresh-client -S
-		t bind -n MouseUp1StatusLeft set -g '@host_details' 0 '\;' refresh-client -S
+		t unbind -n MouseDown1StatusLeft
+		t bind -n MouseUp1StatusLeft run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
 		t bind -n DoubleClick1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
 		t bind -T prefix WheelUpStatusLeft set -s status-position top '\;' set -s status-justify left
 		t bind -T prefix WheelDownStatusLeft set -s status-position bottom '\;' set -sF status-justify centre
@@ -353,13 +399,13 @@ main() {
 		t bind -n WheelDownStatusLeft next-window
 		t bind -n WheelUpStatusRight previous-window
 		t bind -n WheelDownStatusRight next-window
-		t bind -n MouseDown1StatusRight set -g '@clock_details' 1 '\;' set -Fg status-interval 1 '\;' refresh-client -S
-		t bind -n MouseUp1StatusRight set -g '@clock_details' 0 '\;' set -Fg status-interval "#{@status_interval}" '\;' refresh-client -S
+		t unbind -n MouseDown1StatusRight
+		t bind -n MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
 		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
 	fi
 	
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
-	if [ $__sp_tmux_ver -ge 303 ]; then
+	if [ "$__sp_tmux_ver" -ge 303 ]; then
 		t bind -T prefix MouseDown2Status kill-window -t "{mouse}" '\;' switch-client -T prefix
 		t bind -T prefix MouseUp2Status '\;' switch-client -T prefix
 		t bind -T prefix DoubleClick2Status '\;' switch-client -T prefix
@@ -383,14 +429,14 @@ main() {
 	# enable focus reporting
 	# restricted to higher tmux versions as mcedit failed to render when opening files in Debian Bookworm
 	# (approximate, no associated bug report found in a quick search)
-	if [ $__sp_tmux_ver -ge 305 ]; then
+	if [ "$__sp_tmux_ver" -ge 305 ]; then
 		t set -g focus-events on
 	else
 		t set -g focus-events off
 	fi
 	
 	# move window to another session, create it if necessary, and switch to it
-	if [ $__sp_tmux_ver -ge 303 ]; then
+	if [ "$__sp_tmux_ver" -ge 303 ]; then
 		t bind M-w command-prompt -p "Move window to (new) session:" \
 		"set-environment TMUX_PROMPT_ANSWER \"%%%\"; set-environment -F TMUX_WINDOW_ID \"#{window_id}\"; run-shell \"$TMUX_CONF_SH_ESC move_window_to_session\"; set-environment -u TMUX_PROMPT_ANSWER; set-environment -u TMUX_WINDOW_ID" \
 		;
@@ -413,7 +459,9 @@ main() {
 	# therefore, put this rather at the end than the start of main()
 	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
 	
-	t_end
+	t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
+	t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	custom_main
 }
 
 tmux_show_err() {
@@ -472,19 +520,18 @@ case "$SUBCOMMAND" in
 		t display-message "synchronize-panes is now $1"
 		if [ "$1" = "on" ]; then
 			t setw pane-border-status top
-			t setw pane-border-style bg=colour226,fg=colour16
-			t setw pane-active-border-style bg=colour226,fg=colour16
+			t setw pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+			t setw pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
 		else
 			t setw pane-border-status off
-			t setw pane-border-style none
-			t setw pane-active-border-style fg=colour16,fg=colour2
+			t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
+			t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
 		fi
 		
-		if [ $__sp_tmux_ver -ge 305 ]; then
-			t setw pane-border-style "#{?pane_synchronized,bg=colour226#,fg=colour16,none}"
-			t setw pane-active-border-style "#{?pane_synchronized,bg=colour226#,fg=colour16,fg=colour2}"
+		if [ "$__sp_tmux_ver" -ge 305 ]; then
+			t setw pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
+			t setw pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
 		fi
-		t_end
 	;;
 	select_win_0)
 		if tmux list-windows -F '#{window_index}' | grep -q -x 0; then
@@ -536,27 +583,64 @@ case "$SUBCOMMAND" in
 		TMUX_HOST="$2"
 		TMUX_USER="$3"
 		TMUX_SESSION="$4"
+		COLUMNS="$5"
 		if [ "$1" = "0" ]; then
-			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
+			if [ "$COLUMNS" -ge 120 ]; then
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
+			else
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
+			fi
 			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
 			TMUX_SESSION=$(nice_ellipsis "$TMUX_SESSION" 5)
 		fi
-		echo " $TMUX_USER@$TMUX_HOST/$TMUX_SESSION |#[default]"
+		if [ "$COLUMNS" -ge 80 ]; then
+			printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
+		else
+			printf "%s" "#[$STYLE_STATUS_L]"
+		fi
+		echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$TMUX_SESSION$S_STATUS_L_END"
 	;;
 	right_status)
-		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
-		if [ "${1:-0}" = "1" ]; then
-			# long format
-			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
+		CLOCK_DETAILS="$1"
+		COLUMNS="$2"
+		if [ "$COLUMNS" -ge 100 ]; then
+			LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
+			if [ "$CLOCK_DETAILS" = "1" ]; then
+				# long format
+				CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
+			else
+				# short format
+				CLOCK=$(date '+%H:%M %m-%d')
+				if [ "$COLUMNS" -lt 120 ]; then
+					LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
+				fi
+			fi
+			echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
 		else
-			# short format
-			CLOCK=$(date '+%H:%M %m-%d')
-			LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
+			CLOCK=$(date '+%H:%M')
+			echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
 		fi
-		# #[reverse] is kept here rather than in status-right itself, since it sits
-		# between the two dynamic values; tmux re-parses #() output for #[...]
-		# style directives, same as other status-line generator scripts rely on.
-		echo "| $LOADAVG | $CLOCK"
+	;;
+	toggle_host_details)
+		HOST_DETAILS="$1"
+		if [ "$HOST_DETAILS" = "1" ]; then
+			t set -g '@host_details' 0
+		else
+			t set -g '@host_details' 1
+		fi
+		t refresh-client -S
+	;;
+	toggle_clock_details)
+		CLOCK_DETAILS="$1"
+		if [ "$CLOCK_DETAILS" = "1" ]; then
+			t set -g '@clock_details' 0
+			t set -Fg status-interval "#{@status_interval}"
+			t refresh-client -S
+		else
+			t set -g '@clock_details' 1
+			t set -g status-interval 1
+		fi
+		t refresh-client -S
 	;;
 esac
 
