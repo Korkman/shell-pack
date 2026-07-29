@@ -162,6 +162,7 @@ function __spt -d \
 			return
 		case fish_command_color
 			echo -n "00ff87"
+			return
 		case unavailable_option
 			$scolor --dim --strikethrough
 			return
@@ -332,7 +333,7 @@ function __spt -d \
 			# a space, but only if nf symbols are used
 			echo ' '
 			return
-		case *
+		case '*'
 			echo "Unknown component: $component" >&2
 			return 1
 	end
