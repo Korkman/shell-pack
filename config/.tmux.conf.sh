@@ -256,6 +256,11 @@ main() {
 	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
 	t set -g terminal-overrides 'xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@,*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
 
+	# derive socket name from $TMUX (format: "socket_path,pid,session_id"),
+	# e.g. "/tmp/tmux-1000/pb,730888,1" -> "pb"
+	socket_name=$(basename "$(echo "$TMUX" | cut -d, -f1)")
+	t set -g '@socket_name' "$socket_name"
+
 	# show host, session on the left
 	# the mode indicator (PRFX/COPY/SYNC/NORM) stays inline as a native tmux
 	# conditional so it keeps updating instantly on every redraw; only the
@@ -263,7 +268,7 @@ main() {
 	# @clock_details: set to 1 to ease shortening rules
 	t set -g '@host_details' 0
 	t set -g status-left-length 60
-	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\")"
+	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\")"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
@@ -584,21 +589,41 @@ case "$SUBCOMMAND" in
 		TMUX_USER="$3"
 		TMUX_SESSION="$4"
 		COLUMNS="$5"
+		TMUX_SOCKET_NAME="$6"
+		if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
+			DISPLAY_SESSION="$TMUX_SESSION"
+		else
+			DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
+		fi
+		# apply ellipsis
 		if [ "$1" = "0" ]; then
 			if [ "$COLUMNS" -ge 120 ]; then
 				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
-			else
+			elif [ "$COLUMNS" -ge 60 ]; then
 				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
+			else
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 3)
 			fi
-			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
-			TMUX_SESSION=$(nice_ellipsis "$TMUX_SESSION" 5)
+			if [ "$COLUMNS" -ge 180 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 20)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 30)
+			elif [ "$COLUMNS" -ge 132 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 10)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 15)
+			elif [ "$COLUMNS" -ge 60 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+			else
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 3)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+			fi
 		fi
 		if [ "$COLUMNS" -ge 80 ]; then
 			printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
 		else
 			printf "%s" "#[$STYLE_STATUS_L]"
 		fi
-		echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$TMUX_SESSION$S_STATUS_L_END"
+		echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$DISPLAY_SESSION$S_STATUS_L_END"
 	;;
 	right_status)
 		CLOCK_DETAILS="$1"

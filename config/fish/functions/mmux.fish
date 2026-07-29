@@ -1,12 +1,13 @@
 function mmux
 	test "$argv" != ""
-	and argparse -n mmux --exclusive 'f,s' --max-args 1 'e/exclusive' 'f/force' 's/share' 'n/nag' 'x-screen' 'g/grab-hooks' 'h/help' -- $argv
+	and argparse -n mmux --exclusive 'f,s' --max-args 2 'e/exclusive' 'f/force' 's/share' 'n/nag' 'x-screen' 'g/grab-hooks' 'h/help' -- $argv
 	and not set -q _flag_help
 	or begin
 		echo "\
-Usage: mmux SESSION [ --exclusive | --force | --share | --nag | --help ]
+Usage: mmux SOCKET_NAME [SESSION] [ --exclusive | --force | --share | --nag | --help ]
 
-Attach to or create a screen / tmux session SESSION.
+Attach to or create a screen / tmux session SESSION (default: SOCKET_NAME)
+using socket SOCKET_NAME.
 
    -e/--exclusive     Limits session to one client and enables related messages.
                       If occupied, sends a message asking for access.
@@ -94,7 +95,7 @@ Attach to or create a screen / tmux session SESSION.
 			if set -q __multiplexer_names
 				for shortuser in $__multiplexer_names
 					if functions -q $shortuser
-						echo "Warning: \$__multiplexer_names conflicts with function $shortuser"
+						__sp_error "Warning: \$__multiplexer_names conflicts with function $shortuser"
 						continue
 					end
 					alias $shortuser "mmux $shortuser"
@@ -111,7 +112,17 @@ Attach to or create a screen / tmux session SESSION.
 	if set -q _flag_force || set -q _flag_share || set -q _flag_nag
 		set _flag_exclusive ""
 	end
-	set shortuser $argv[1]
+	set socket_name $argv[1]
+	if set -q argv[2]
+		set shortuser $argv[2]
+	else
+		set shortuser $socket_name
+	end
+	
+	# backwards-compatibility: search for present sessions with the default socket name
+	if test $socket_name != "default" && tmux -L default has-session -t $shortuser &> /dev/null
+		set socket_name default
+	end
 	
 	set have_screen (command -sq screen && echo true || echo false)
 	set have_tmux (command -sq tmux && echo true || echo false)
@@ -127,26 +138,26 @@ Attach to or create a screen / tmux session SESSION.
 			set have_tmux false
 		end
 		if $have_tmux
-			if tmux has-session -t $shortuser &> /dev/null
-				if [ (tmux list-clients -t $shortuser | wc -l) -gt 0 ]
+			if tmux -L $socket_name has-session -t $shortuser &> /dev/null
+				if [ (tmux -L $socket_name list-clients -t $shortuser | wc -l) -gt 0 ]
 					if set -q _flag_force
-						tmux detach-client -P -s $shortuser
+						tmux -L $socket_name detach-client -P -s $shortuser
 						__mmux_tmux_attach
 					else if set -q _flag_share
-						for client in (tmux list-clients -t $shortuser | cut -d ':' -f 1)
-							tmux display-message -c $client 'Someone attached to your session!'
+						for client in (tmux -L $socket_name list-clients -t $shortuser | cut -d ':' -f 1)
+							tmux -L $socket_name display-message -c $client 'Someone attached to your session!'
 						end
 						__mmux_tmux_attach
 					else # no flag or nag
 						while true
-							for client in (tmux list-clients -t $shortuser | cut -d ':' -f 1)
-								tmux display-message -c $client 'Another user wants to attach to this session!'
+							for client in (tmux -L $socket_name list-clients -t $shortuser | cut -d ':' -f 1)
+								tmux -L $socket_name display-message -c $client 'Another user wants to attach to this session!'
 							end
 							if not set -q _flag_nag
 								break
 							else
 								sleep 1
-								if [ (tmux list-clients -t $shortuser | wc -l) -eq 0 ]
+								if [ (tmux -L $socket_name list-clients -t $shortuser | wc -l) -eq 0 ]
 									__mmux_tmux_attach
 									break
 								end
@@ -205,7 +216,7 @@ Attach to or create a screen / tmux session SESSION.
 			# smooth transition from old screen to new tmux: connect to screen if running
 			screen -x $shortuser
 		else if $have_tmux
-			if tmux has-session -t $shortuser &> /dev/null
+			if tmux -L $socket_name has-session -t $shortuser &> /dev/null
 				__mmux_tmux_attach
 			else
 				__mmux_tmux_attach new
@@ -231,15 +242,17 @@ function __mmux_tmux_attach --no-scope-shadowing -d \
 	set -l v
 	for v in $__mmux_imported_environment
 		if set -q $v
-			set tmux_update_environment $tmux_update_environment setenv $v $$v \;
+			set -a tmux_update_environment set-environment $v $$v \;
+			set -a tmux_update_environment set-environment -g $v $$v \;
 		else
-			set tmux_update_environment $tmux_update_environment setenv -r $v \;
+			set -a tmux_update_environment set-environment -r $v \;
+			set -a tmux_update_environment set-environment -g -r $v \;
 		end
 	end
 	
-	# attach, auto-reload tmux.conf, update env
-	tmux $tmuxverb \; \
-		source-file ~/.tmux.conf \; \
-		$tmux_update_environment
+	# attach, update env, auto-reload tmux.conf
+	tmux -L $socket_name $tmuxverb \; \
+		$tmux_update_environment \
+		source-file ~/.tmux.conf
 end
 

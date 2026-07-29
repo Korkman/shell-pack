@@ -361,9 +361,9 @@ function __sp_tweak_keybinds \
 	alias d cdtagdir
 	
 	# screen / tmux shortcuts
-	alias one "mmux one --exclusive \$argv"
-	alias shareone "mmux one --exclusive --share \$argv"
-	alias forceone "mmux one --exclusive --force \$argv"
+	alias one "mmux one --exclusive"
+	alias shareone "mmux one --exclusive --share"
+	alias forceone "mmux one --exclusive --force"
 
 	# set --universal __multiplexer_names to a list of tmux / screen session names
 	set -q __multiplexer_names || set --universal __multiplexer_names pb rbeck
