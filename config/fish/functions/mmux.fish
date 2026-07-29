@@ -41,9 +41,23 @@ using socket SOCKET_NAME.
 				if set -q TMUX
 					# inside TMUX, grab environment update with extra variables not imported
 					set -l accept_env $__mmux_imported_environment __sp_tmux_ver 
+					
+					# skip variables that were locally modified outside of this routine,
+					# so a manual local change is not silently overwritten again
+					for masked in $__mmux_masked_environment
+						set -l idx (contains -i -- $masked $accept_env)
+						if set -q idx[1]
+							set -e accept_env[$idx]
+						end
+					end
+					
 					set -l tmux_env (tmux show-environment 2> /dev/null)
 					if test $status -eq 0
 						# tmux commands fail when env variable is set but not writable (su)
+						
+						# guard so __mmux_watch_* handlers can tell this update apart
+						# from a local modification made by the user
+						set -g __mmux_env_updating 1
 						
 						# update environment
 						for v in $tmux_env
@@ -78,12 +92,34 @@ using socket SOCKET_NAME.
 							end # if
 						end # for
 						
+						set -e __mmux_env_updating
+						
 					end # if
 				end # if
 			end # function
 			
 			# execute once right after execution so variable __sp_tmux_ver is immediately available
 			__mmux_tmux_update_shell_env
+			
+			# watch imported environment variables for local modifications: if a
+			# variable changes outside of __mmux_tmux_update_shell_env, assume the
+			# user (or some other code) deliberately changed it locally and mask
+			# it from future tmux-driven updates
+			for v in $__mmux_imported_environment
+				# except LC_NERDLEVEL, which synchronizes across all tmux windows on purpose
+				if test "$v" = "LC_NERDLEVEL"
+					continue
+				end
+				if not functions -q __mmux_watch_$v
+					function __mmux_watch_$v --on-variable $v -V v
+						if not set -q __mmux_env_updating
+							if not contains -- $v $__mmux_masked_environment
+								set -ga __mmux_masked_environment $v
+							end
+						end
+					end
+				end
+			end
 		end # if
 		
 		function __update_multiplexer_names --on-variable __multiplexer_names
@@ -207,7 +243,7 @@ using socket SOCKET_NAME.
 				end # screen was occupied
 			end # no flag
 		else
-			echo "No terminal multiplexer installed."
+			__sp_error "No terminal multiplexer installed."
 			return 1
 		end
 	else
@@ -224,7 +260,7 @@ using socket SOCKET_NAME.
 		else if $have_screen
 			screen -x $shortuser || screen -S $shortuser
 		else
-			echo "No terminal multiplexer installed."
+			__sp_error "No terminal multiplexer installed."
 			return 1
 		end
 	end
