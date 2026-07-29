@@ -12,7 +12,7 @@ function nerdlevel -d "Adjust font symbols or leave FISH shell"
 	end >&2
 	
 	set -g LC_NERDLEVEL $argv[1]
-	if set -q TMUX
+	if __sp_tmux_writable
 		# new concept: broadcast new nerdlevel to all tmux
 		echo "tmux note: new and existing windows will inherit new LC_NERDLEVEL"
 		tmux set-environment LC_NERDLEVEL $argv[1]
@@ -21,7 +21,7 @@ function nerdlevel -d "Adjust font symbols or leave FISH shell"
 	end
 	if [ "$LC_NERDLEVEL" = "0" ]
 		set -g SHELL $OLDSHELL
-		if set -q TMUX
+		if __sp_tmux_writable
 			echo "tmux note: new windows will start at LC_NERDLEVEL 0, existing will downgrade to 1"
 			tmux set-environment LC_NERDLEVEL 0
 			tmux set-environment -g LC_NERDLEVEL 0

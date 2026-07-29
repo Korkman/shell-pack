@@ -384,7 +384,7 @@ function __sp_tweak_live_patches -d \
 	# 2026-04-13
 	if status --is-interactive
 		# tmux lacks default mouse keybinds unbound by previous config? reset and reload.
-		if set -q TMUX && ! set -q __sp_tweak_live_patch_tmux_keys_done
+		if ! set -q __sp_tweak_live_patch_tmux_keys_done && __sp_tmux_writable
 			# attempt only once
 			set -g __sp_tweak_live_patch_tmux_keys_done 1
 			if ! tmux list-keys | string match -q --regex 'bind-key.*-T root.*MouseDrag1Pane.*'
