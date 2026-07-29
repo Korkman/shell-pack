@@ -37,7 +37,7 @@ using socket SOCKET_NAME.
 		
 		if ! set -q MC_SID
 			# do not update environment inside mc
-			function __mmux_tmux_update_shell_env --on-event fish_preexec --on-event fish_focus_in
+			function __mmux_tmux_update_shell_env --on-event fish_prompt --on-event fish_focus_in
 				if set -q TMUX
 					# inside TMUX, grab environment update with extra variables not imported
 					set -l accept_env $__mmux_imported_environment __sp_tmux_ver 
@@ -52,49 +52,47 @@ using socket SOCKET_NAME.
 					end
 					
 					set -l tmux_env (tmux show-environment 2> /dev/null)
-					if test $status -eq 0
-						# tmux commands fail when env variable is set but not writable (su)
-						
-						# guard so __mmux_watch_* handlers can tell this update apart
-						# from a local modification made by the user
-						set -g __mmux_env_updating 1
-						
-						# update environment
-						for v in $tmux_env
-							if [ (string sub --start 1 --length 1 -- $v) = "-" ]
-								# erase variables prefixed with minus which are currently set
-								set -l vminus (string sub --start 2 -- $v)
-								if contains -- $vminus $accept_env && set -q $vminus
-									#echo "tmux: unset $vminus"
-									set -ge $vminus
-								end
-							else
-								# update changed variables
-								set -l vsplit (string split --max 1 "=" -- $v)
-								set -l vname "$vsplit[1]"
-								set -l vval "$vsplit[2]"
-								if contains -- $vname $accept_env
-									# variable is on whitelist
-									if ! set -q $vname
-										# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
+					or return # tmux commands fail when env variable is set but not writable (su)
+					
+					# guard so __mmux_watch_* handlers can tell this update apart
+					# from a local modification made by the user
+					set -g __mmux_env_updating 1
+					
+					# update environment
+					for v in $tmux_env
+						if [ (string sub --start 1 --length 1 -- $v) = "-" ]
+							# erase variables prefixed with minus which are currently set
+							set -l vminus (string sub --start 2 -- $v)
+							if contains -- $vminus $accept_env && set -q $vminus
+								#echo "tmux: unset $vminus"
+								set -ge $vminus
+							end
+						else
+							# update changed variables
+							set -l vsplit (string split --max 1 "=" -- $v)
+							set -l vname "$vsplit[1]"
+							set -l vval "$vsplit[2]"
+							if contains -- $vname $accept_env
+								# variable is on whitelist
+								if ! set -q $vname
+									# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
+									set -gx $vname $vval
+								else if [ "$$vname" != "$vval" ]
+									# value does not match, overwrite the global variable with the export flag kept as-is
+									#echo "tmux: set $vname=$vval"
+									if set --show "$vname" | string match --quiet --regex '.*: set in global scope, unexported.*'
+										set -g $vname $vval
+									else
 										set -gx $vname $vval
-									else if [ "$$vname" != "$vval" ]
-										# value does not match, overwrite the global variable with the export flag kept as-is
-										#echo "tmux: set $vname=$vval"
-										if set --show "$vname" | string match --quiet --regex '.*: set in global scope, unexported.*'
-											set -g $vname $vval
-										else
-											set -gx $vname $vval
-										end
-									end # if
+									end
 								end # if
-								
 							end # if
-						end # for
-						
-						set -e __mmux_env_updating
-						
-					end # if
+							
+						end # if
+					end # for
+					
+					set -e __mmux_env_updating
+					
 				end # if
 			end # function
 			
