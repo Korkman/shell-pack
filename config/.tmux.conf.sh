@@ -108,6 +108,27 @@ t() {
 	TMUX_CONF_BUFFER_FILLED=1
 }
 
+# in failsafe mode, tmux commands are passed as-is without buffering
+if [ "$TMUX_FAILSAFE" = "1" ]; then
+	# manually set TMUX_FAILSAFE_DEBUG=1 to get an adhoc error log
+	if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
+		if [ "$#" -gt 0 ]; then
+			ERRLOG="/tmp/tmux-subcommand-$1-errors.last"
+		else
+			ERRLOG="/tmp/tmux-errors.last"
+		fi
+		
+		echo "tmux.conf.sh error output" > "$ERRLOG"
+		t() {
+			tmux "$@" >> "$ERRLOG" 2>&1
+		}
+	else
+		t() {
+			tmux "$@" > /dev/null 2>&1
+		}
+	fi
+fi
+
 t_end() {
 	#echo "flushing:$TMUX_CONF_BUFFER_ARGC args (${#TMUX_CONF_BUFFER} bytes)"
 	if [ "$TMUX_CONF_BUFFER_FILLED" -eq 1 ]; then
@@ -137,8 +158,16 @@ TMUX_CONF_BUFFER_D=$(printf '\1')
 trap "t_end" EXIT
 
 main() {
+	if [ "$TMUX_FAILSAFE" = "1" ]; then
+		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
+			tmux display "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
+		else
+			tmux display "Warning: Errors occured running tmux.conf.sh. You might want to investigate."
+		fi
+	fi
 	# c-a r: quick config reload early for failsave operation
 	tmux bind r source-file ~/.tmux.conf '\;' display "Config reloaded…"
+	tmux display "DEBUG: config loaded."
 
 	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
 	# NOTE: this must happen before set-environment
@@ -292,7 +321,7 @@ main() {
 	# loadavg and clock are both computed by the right_status subcommand
 	t set -g '@clock_details' 0
 	t set -g status-right-length 60
-	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\")"
+	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\" \"#{client_flags}\" \"#{client_termfeatures}\")"
 
 	# Refresh interval for the status left / right items
 	t set -g status-interval "$D_STATUS_INTERVAL"
@@ -651,6 +680,13 @@ left_status() {
 right_status() {
 	CLOCK_DETAILS="$1"
 	COLUMNS="$2"
+	CLIENT_FLAGS="$3"
+	CLIENT_FEATURES="$4"
+	echo "#{@right_status}"
+	# if the client terminal supports focus reporting and is currently absent, stop updating the status
+	if echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
+		return
+	fi
 	if [ "$COLUMNS" -ge 100 ]; then
 		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
 		if [ "$CLOCK_DETAILS" = "1" ]; then
@@ -663,10 +699,10 @@ right_status() {
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
 		fi
-		echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
+		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
 	else
 		CLOCK=$(date '+%H:%M')
-		echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
 	fi
 }
 
