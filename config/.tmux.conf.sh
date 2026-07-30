@@ -574,17 +574,17 @@ move_window_to_session() {
 	TMUX_WINDOW_ID="${TMUX_WINDOW_ID:-$1}"
 	TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER:-$2}"
 	
-	if tmux has-session -t "$TMUX_PROMPT_ANSWER"; then
-		t switch-client -t "$TMUX_PROMPT_ANSWER"
-		t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
+	if tmux has-session -t "=$TMUX_PROMPT_ANSWER"; then
+		t switch-client -t "=$TMUX_PROMPT_ANSWER"
+		t move-window -s "$TMUX_WINDOW_ID" -t "=$TMUX_PROMPT_ANSWER:"
 	else
 		# create a new session with only a sleep command and move that to end of list
 		t new-session -d -s "$TMUX_PROMPT_ANSWER" -n "" "sleep 10"
-		t move-window -s "$TMUX_PROMPT_ANSWER:1" -t "$TMUX_PROMPT_ANSWER:99"
-		t switch-client -t "$TMUX_PROMPT_ANSWER"
-		t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
+		t move-window -s "$TMUX_PROMPT_ANSWER:1" -t "=$TMUX_PROMPT_ANSWER:99"
+		t switch-client -t "=$TMUX_PROMPT_ANSWER"
+		t move-window -s "$TMUX_WINDOW_ID" -t "=$TMUX_PROMPT_ANSWER:"
 		# kill the placeholder
-		t kill-window -t "$TMUX_PROMPT_ANSWER:99"
+		t kill-window -t "=$TMUX_PROMPT_ANSWER:99"
 	fi
 }
 
