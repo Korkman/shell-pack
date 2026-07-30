@@ -264,6 +264,18 @@ main() {
 	socket_name=$(basename "$(echo "$TMUX" | cut -d, -f1)")
 	t set -g '@socket_name' "$socket_name"
 
+	# when the last shell of a session exits, tmux destroys that session; a
+	# client attached to it would then normally be detached (detach-on-destroy
+	# default: on). for any socket other than "default", switch to another
+	# session on the same socket instead of disconnecting the client, if one
+	# exists (detach-on-destroy off falls back to detaching automatically
+	# when no other session is left).
+	if [ "$socket_name" != "default" ]; then
+		t set -g detach-on-destroy off
+	else
+		t set -g detach-on-destroy on
+	fi
+
 	# show host, session on the left
 	# the mode indicator (PRFX/COPY/SYNC/NORM) stays inline as a native tmux
 	# conditional so it keeps updating instantly on every redraw; only the
