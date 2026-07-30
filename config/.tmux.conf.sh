@@ -3,7 +3,7 @@
 {
 
 # shell-pack .tmux.conf.sh
-# supported minimum tmux version: 2.8 (Debian Buster)
+# supported minimum tmux version: 2.3 (Debian Stretch) [features degrade gracefully]
 
 # derive .tmux.conf.sh directory, real path and escaped real path
 TMUX_CONF_SH_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -284,7 +284,7 @@ main() {
 	# @clock_details: set to 1 to ease shortening rules
 	t set -g '@host_details' 0
 	t set -g status-left-length 60
-	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\")"
+	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\" \"#{client_key_table}\")"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
@@ -429,19 +429,6 @@ main() {
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
 		t bind -T prefix MouseDown2Status kill-window -t "{mouse}" '\;' switch-client -T prefix
-		t bind -T prefix MouseUp2Status '\;' switch-client -T prefix
-		t bind -T prefix DoubleClick2Status '\;' switch-client -T prefix
-		t bind -T prefix TripleClick2Status '\;' switch-client -T prefix
-		t bind -T prefix MouseDrag2Status '\;' switch-client -T prefix
-		t bind -T prefix MouseDragEnd2Status '\;' switch-client -T prefix
-		t bind -T prefix MouseUp2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix MouseDown2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix DoubleClick2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix TripleClick2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix MouseDrag2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix MouseDragEnd2StatusDefault '\;' switch-client -T prefix
-		t bind -T prefix SecondClick2Status '\;' switch-client -T prefix
-		t bind -T prefix SecondClick2StatusDefault '\;' switch-client -T prefix
 	fi
 	
 	# show cheat --tmux
@@ -463,9 +450,9 @@ main() {
 		"set-environment TMUX_PROMPT_ANSWER \"%%%\"; set-environment -F TMUX_WINDOW_ID \"#{window_id}\"; run-shell \"$TMUX_CONF_SH_ESC move_window_to_session\"; set-environment -u TMUX_PROMPT_ANSWER; set-environment -u TMUX_WINDOW_ID" \
 		;
 	else
-		# old tmux does not support -F
+		# old tmux does not support -F, even older doesn't support %%%
 		t bind M-w command-prompt -p "Move window to (new) session:" \
-		"run-shell \"$TMUX_CONF_SH_ESC move_window_to_session #{window_id} \\\"%%%\\\"\"" \
+		"run-shell \"$TMUX_CONF_SH_ESC move_window_to_session #{window_id} \\\"%%\\\"\"" \
 		;
 	fi
 	
@@ -476,6 +463,13 @@ main() {
 		# move window to another session with a session picker
 		t bind W display "Move window to session ..." '\;' choose-tree -s "move-window -t '%1' ; switch-client -t '%1'"
 	fi
+	
+	if [ "$__sp_tmux_ver" -lt 206 ]; then
+		# change window chooser bind to also show sessions on older tmux
+		t bind w choose-tree -u
+	fi
+	
+	
 	
 	# restored defaults (2026-05-16)
 	t bind-key -T prefix z resize-pane -Z
@@ -642,7 +636,8 @@ left_status() {
 			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
 		fi
 	fi
-	if [ "$COLUMNS" -ge 80 ]; then
+	# mode indicator only if it fits and tmux is recent enough
+	if [ "$COLUMNS" -ge 80 ] && [ "$__sp_tmux_ver" -ge 208 ]; then
 		printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
 	else
 		printf "%s" "#[$STYLE_STATUS_L]"
