@@ -61,6 +61,7 @@ if [ "$AUTOSTART" = "yes" ]; then
 	fi
 	
 	# for distros that have no .profile in skel
+	echo 'PAGER=ppage' >> ~/.profile
 	echo '. "$HOME/.local/share/shell-pack/config/nerdlevel.sh"' >> ~/.profile
 	
 	echo "------------------------------------------------------------"

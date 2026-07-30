@@ -444,25 +444,19 @@ main() {
 		t set -g focus-events off
 	fi
 	
+	move_cmd="run-shell \"$TMUX_CONF_SH_ESC move_window_to_session '#{window_id}' '%%'\""
 	# move window to another session, create it if necessary, and switch to it
-	if [ "$__sp_tmux_ver" -ge 303 ]; then
-		t bind M-w command-prompt -p "Move window to (new) session:" \
-		"set-environment TMUX_PROMPT_ANSWER \"%%%\"; set-environment -F TMUX_WINDOW_ID \"#{window_id}\"; run-shell \"$TMUX_CONF_SH_ESC move_window_to_session\"; set-environment -u TMUX_PROMPT_ANSWER; set-environment -u TMUX_WINDOW_ID" \
-		;
-	else
-		# old tmux does not support -F, even older doesn't support %%%
-		t bind M-w command-prompt -p "Move window to (new) session:" \
-		"run-shell \"$TMUX_CONF_SH_ESC move_window_to_session #{window_id} \\\"%%\\\"\"" \
-		;
-	fi
-	
+	t bind M-w command-prompt -p "Move window to (new) session:" "$move_cmd"
+	# move window to another session with a session choose-tree picker
 	if [ "$__sp_tmux_ver" -ge 208 ]; then
-		# move window to another session with a session picker
-		t bind W display "Move window to session ..." '\;' choose-tree -ZNs "move-window -t '%1' ; switch-client -t '%1'"
+		tree_opts="-ZNs"
+	elif [ "$__sp_tmux_ver" -ge 206 ]; then
+		# NOTE: in 2.6 the format of %% changes to include window: 'dst' becomes '=dst:' or '=dst:1.' or '=dst:1.%1'
+		tree_opts="-Ns"
 	else
-		# move window to another session with a session picker
-		t bind W display "Move window to session ..." '\;' choose-tree -s "move-window -t '%1' ; switch-client -t '%1'"
+		tree_opts="-s -b"
 	fi
+	t bind W display "Move window to session ..." '\;' choose-tree $tree_opts "$move_cmd"
 	
 	if [ "$__sp_tmux_ver" -lt 206 ]; then
 		# change window chooser bind to also show sessions on older tmux
@@ -584,21 +578,30 @@ open_monitoring_windows() {
 }
 
 move_window_to_session() {
-	TMUX_WINDOW_ID="${TMUX_WINDOW_ID:-$1}"
-	TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER:-$2}"
+	TMUX_WINDOW_ID="$1"
+	TMUX_PROMPT_ANSWER="$2"
+	
+	# remove leading "=" and suffix ":" from TMUX_PROMPT_ANSWER to normalize tmux versions >= 2.6
+	# when selecting from choose-tree
+	TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER#=}"
+	TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER%%:*}"
+	#tmux display "moving $TMUX_WINDOW_ID to $TMUX_PROMPT_ANSWER"
 	
 	if tmux has-session -t "=$TMUX_PROMPT_ANSWER"; then
-		t switch-client -t "=$TMUX_PROMPT_ANSWER"
 		t move-window -s "$TMUX_WINDOW_ID" -t "=$TMUX_PROMPT_ANSWER:"
+		t switch-client -t "=$TMUX_PROMPT_ANSWER"
 	else
 		# create a new session with only a sleep command and move that to end of list
 		t new-session -d -s "$TMUX_PROMPT_ANSWER" -n "" "sleep 10"
 		t move-window -s "$TMUX_PROMPT_ANSWER:1" -t "=$TMUX_PROMPT_ANSWER:99"
-		t switch-client -t "=$TMUX_PROMPT_ANSWER"
 		t move-window -s "$TMUX_WINDOW_ID" -t "=$TMUX_PROMPT_ANSWER:"
+		t switch-client -t "=$TMUX_PROMPT_ANSWER"
 		# kill the placeholder
 		t kill-window -t "=$TMUX_PROMPT_ANSWER:99"
 	fi
+	# for old tmux (2.4) to update the statusline
+	t_end
+	t refresh-client -S
 }
 
 left_status() {
