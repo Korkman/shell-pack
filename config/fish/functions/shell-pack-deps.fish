@@ -158,6 +158,11 @@ function shell-pack-deps-install-ripgrep
 end
 
 function shell-pack-deps-install-dool
+	if ! command -q python3 || ! __sp_test_product_version "python3" "3.6.0" "python3 --version"
+		echo "Python3 missing or < 3.6, skipping dool"
+		return
+	end
+	
 	echo "Project website: https://github.com/scottchiefbaker/dool"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""

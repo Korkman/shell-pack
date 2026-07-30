@@ -30,50 +30,14 @@ function shell-pack-check-deps -d \
 	end
 	
 	set __shp_outdated_deps ""
-	
-	function test_version_min
-		set -l product $argv[1]
-		set -l minver $argv[2]
-		set -l vercall (string split -- ' ' $argv[3])
-		set -l product_url $argv[4]
 		
-		if command -q "$vercall[1]"
-			if ! set version_in_there (eval $vercall)
-				set version_in_there "0.0.1"
-			end
-		else
-			set version_in_there "0.0.0"
-		end
-		
-		if set version_found (string match --regex -- '([0-9]+(\.[0-9]+){1,3})' "$version_in_there")
-			set version_found "$version_found[1]"
-		else
-			set version_found "0.0.2"
-		end
-		
-		if test (__sp_vercmp "$version_found" "$minver") -lt 0
-			set __shp_outdated_deps "$__shp_outdated_deps $product"
-			set -l product_url (string replace '$minver' "$minver" -- "$product_url")
-			echo "NOTE: $product is outdated - $version_found < $minver"
-			if status --is-interactive && string match -qr '^Run: ' -- "$product_url"
-				read -P "$product_url ? (Y/n)" answer || set answer n
-				if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
-					return
-				end
-				eval (string replace -r '^Run: ' '' -- "$product_url")
-			else
-				echo "$product_url"
-			end
-		end
+	__sp_test_product_version "ripgrep" "15.1.0" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
+	__sp_test_product_version "fzf"     "0.70.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
+	__sp_test_product_version "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
+	# skip dool if python3 is not present or outdated
+	if command -q python3 && __sp_test_product_version "python3" "3.6.0" "python3 --version"
+		__sp_test_product_version "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	end
-	
-	test_version_min "ripgrep" "15.1.0" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
-	test_version_min "fzf"     "0.70.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
-	test_version_min "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
-	if command -q python3
-		test_version_min "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
-	end
-	functions -e test_version_min
 	
 	if test "$__shp_outdated_deps" != ""
 		echo "outdated: $__shp_outdated_deps"
