@@ -14,7 +14,7 @@ RUN zypper --non-interactive install \
 RUN zypper --non-interactive install \
 	htop tmux mc screen curl \
 	sudo vim git gettext \
-	less man-pages zip zstd lz4 p7zip netcat-openbsd
+	less man man-pages man-pages-posix zip zstd lz4 p7zip netcat-openbsd
 
 # NOTE: use cache to run more zypper lines during development, then
 #       move them to the combined line above.

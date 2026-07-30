@@ -1,25 +1,35 @@
 ARG BUILD_FROM=alpine:latest
 FROM $BUILD_FROM
 
+# update sources
+RUN apk update
+
 # minimum packages for installer and basic functionality
 RUN apk add coreutils \
     procps wget xz gzip tar \
     findutils
 
 # extended packages - comment out for a "survival mode" container
-RUN apk add mc htop curl netcat-openbsd openssh-server bash ncurses \
-    openssh-client tmux screen python3 zstd zip gzip bzip2 tar \
-    git shadow
+RUN apk add mc htop curl netcat-openbsd bash ncurses \
+    openssh-client tmux screen zip gzip bzip2 tar \
+    git
 
-# optional packages available only in more recent distro releases
+# individual packages so we can test ancient versions, too
+RUN apk add python3 || true
+RUN apk add openssh-server || true
 RUN apk add 7zip || true
+RUN apk add zstd || true
+RUN apk add shadow || true
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
 RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1))
 
-# nerdlevel 3 by default
+# nerdlevel 3 by default, shell-pack pager
 ENV LC_NERDLEVEL=3
+ENV PAGER=ppage
+# preset to C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 COPY added/guest-startup.sh /guest-startup.sh
 COPY added/td.fish /etc/fish/functions/td.fish
