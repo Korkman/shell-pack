@@ -318,79 +318,81 @@ main() {
 	# c-a 0: select window 10 if no window 0 exists
 	t bind 0 run-shell "$TMUX_CONF_SH_ESC select_win_0"
 	
-	# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
-	# for older tmux versions we search for a utf8 whitespace character
-	if [ "$__sp_tmux_ver" -ge 304 ]; then
-		PREV_PROMPT_MACRO='send-keys -X previous-prompt'
-		NEXT_PROMPT_MACRO='send-keys -X next-prompt'
-	else
-		PREV_PROMPT_MACRO='send-keys -X start-of-line \\; send-keys -X search-backward " " \\; send-keys -X start-of-line'
-		NEXT_PROMPT_MACRO='send-keys -X end-of-line \\; send-keys -X search-forward " " \\; send-keys -X start-of-line'
-	fi
-	t bind -T copy-mode-vi y $PREV_PROMPT_MACRO
-	t bind -T copy-mode-vi z $PREV_PROMPT_MACRO
-	t bind -T copy-mode-vi x $NEXT_PROMPT_MACRO
-	t bind -T copy-mode-vi M-Up $PREV_PROMPT_MACRO
-	t bind -T copy-mode-vi M-Down $NEXT_PROMPT_MACRO
-	t bind -T copy-mode-vi C-Up $PREV_PROMPT_MACRO
-	t bind -T copy-mode-vi C-Down $NEXT_PROMPT_MACRO
-	t bind -T copy-mode y $PREV_PROMPT_MACRO
-	t bind -T copy-mode z $PREV_PROMPT_MACRO
-	t bind -T copy-mode x $NEXT_PROMPT_MACRO
-	t bind -T copy-mode M-Up $PREV_PROMPT_MACRO
-	t bind -T copy-mode M-Down $NEXT_PROMPT_MACRO
-	t bind -T copy-mode C-Up $PREV_PROMPT_MACRO
-	t bind -T copy-mode C-Down $NEXT_PROMPT_MACRO
-	t bind M-Up copy-mode \\\; $PREV_PROMPT_MACRO
-	t bind M-Down copy-mode \\\; $NEXT_PROMPT_MACRO
-	# NOTE: about the legacy tmux support: all attempts to search for zero-width utf8 chars ended in tmux locking up at 100% cpu.
-	# so instead we use a part of the prompt we have anyways, which isn't great but not terrible either.
+	if [ "$__sp_tmux_ver" -ge 208 ]; then
+		# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
+		# for older tmux versions we search for a utf8 whitespace character
+		if [ "$__sp_tmux_ver" -ge 304 ]; then
+			PREV_PROMPT_MACRO='send-keys -X previous-prompt'
+			NEXT_PROMPT_MACRO='send-keys -X next-prompt'
+		else
+			PREV_PROMPT_MACRO='send-keys -X start-of-line \\; send-keys -X search-backward " " \\; send-keys -X start-of-line'
+			NEXT_PROMPT_MACRO='send-keys -X end-of-line \\; send-keys -X search-forward " " \\; send-keys -X start-of-line'
+		fi
+		t bind -T copy-mode-vi y $PREV_PROMPT_MACRO
+		t bind -T copy-mode-vi z $PREV_PROMPT_MACRO
+		t bind -T copy-mode-vi x $NEXT_PROMPT_MACRO
+		t bind -T copy-mode-vi M-Up $PREV_PROMPT_MACRO
+		t bind -T copy-mode-vi M-Down $NEXT_PROMPT_MACRO
+		t bind -T copy-mode-vi C-Up $PREV_PROMPT_MACRO
+		t bind -T copy-mode-vi C-Down $NEXT_PROMPT_MACRO
+		t bind -T copy-mode y $PREV_PROMPT_MACRO
+		t bind -T copy-mode z $PREV_PROMPT_MACRO
+		t bind -T copy-mode x $NEXT_PROMPT_MACRO
+		t bind -T copy-mode M-Up $PREV_PROMPT_MACRO
+		t bind -T copy-mode M-Down $NEXT_PROMPT_MACRO
+		t bind -T copy-mode C-Up $PREV_PROMPT_MACROsend-keys -X
+		t bind -T copy-mode C-Down $NEXT_PROMPT_MACRO
+		t bind M-Up copy-mode \\\; $PREV_PROMPT_MACRO
+		t bind M-Down copy-mode \\\; $NEXT_PROMPT_MACRO
+		# NOTE: about the legacy tmux support: all attempts to search for zero-width utf8 chars ended in tmux locking up at 100% cpu.
+		# so instead we use a part of the prompt we have anyways, which isn't great but not terrible either.
+		
+		# have ctrl-d, f10 and esc exit copy mode
+		t bind -T copy-mode-vi C-d send-keys -X cancel
+		t bind -T copy-mode C-d send-keys -X cancel
+		t bind -T copy-mode-vi f10 send-keys -X cancel
+		t bind -T copy-mode f10 send-keys -X cancel
+		t bind -T copy-mode-vi escape send-keys -X cancel
+		t bind -T copy-mode escape send-keys -X cancel
+		
+		# scroll to top / end of buffer with alt-pgup/-pgdn
+		t bind M-PageUp copy-mode '\;' send-keys -X history-top
+		t bind M-PageDown copy-mode '\;' send-keys -X history-bottom
+		t bind -T copy-mode M-PageUp send-keys -X history-top
+		t bind -T copy-mode M-PageDown send-keys -X history-bottom
+		t bind -T copy-mode-vi M-PageUp send-keys -X history-top
+		t bind -T copy-mode-vi M-PageDown send-keys -X history-bottom
+		t bind -T copy-mode MouseDown1Pane select-pane '\;' send-keys -X clear-selection
+		t bind -T copy-mode-vi MouseDown1Pane select-pane '\;' send-keys -X clear-selection
+		
+		# do not exit copy-mode when selecting with mouse
+		# user often scrolls way up to a specific position and may want to copy multiple strings
+		# without having to scroll again. also, keep the selection if possible to mark what was copied.
+		if [ "$__sp_tmux_ver" -ge 300 ]; then
+			COPY_SELECTION_NO_CLEAR="copy-selection-no-clear"
+		else
+			COPY_SELECTION_NO_CLEAR="copy-selection"
+		fi
+		
+		t bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode MouseDragEnd1Pane send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode DoubleClick1Pane select-pane \\\; send-keys -X select-word \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode-vi DoubleClick1Pane select-pane \\\; send-keys -X select-word \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode-vi TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
+		t bind -T copy-mode c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
+		t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
 
-	# have ctrl-d, f10 and esc exit copy mode
-	t bind -T copy-mode-vi C-d send-keys -X cancel
-	t bind -T copy-mode C-d send-keys -X cancel
-	t bind -T copy-mode-vi f10 send-keys -X cancel
-	t bind -T copy-mode f10 send-keys -X cancel
-	t bind -T copy-mode-vi escape send-keys -X cancel
-	t bind -T copy-mode escape send-keys -X cancel
-
-	# one-time activity monitoring
-	t set -g activity-action any
-	t set-hook -g alert-activity "display \"Activity detected on window #{window_index}, monitor disabled\" ; set -w monitor-activity off"
-	t bind M set -w monitor-activity on '\;' display "Monitoring window for activity ONCE"
-	
-	# one-time silence monitoring
-	t set -g silence-action any
-	t set-hook -g alert-silence "display \"Silence detected on window #{window_index}, monitor disabled\" ; set -w monitor-silence 0"
-	t bind _ set -w monitor-silence 30 '\;' display "Monitoring window for silence ONCE"
-	
-	# scroll to top / end of buffer with alt-pgup/-pgdn
-	t bind M-PageUp copy-mode '\;' send-keys -X history-top
-	t bind M-PageDown copy-mode '\;' send-keys -X history-bottom
-	t bind -T copy-mode M-PageUp send-keys -X history-top
-	t bind -T copy-mode M-PageDown send-keys -X history-bottom
-	t bind -T copy-mode-vi M-PageUp send-keys -X history-top
-	t bind -T copy-mode-vi M-PageDown send-keys -X history-bottom
-	t bind -T copy-mode MouseDown1Pane select-pane '\;' send-keys -X clear-selection
-	t bind -T copy-mode-vi MouseDown1Pane select-pane '\;' send-keys -X clear-selection
-	
-	# do not exit copy-mode when selecting with mouse
-	# user often scrolls way up to a specific position and may want to copy multiple strings
-	# without having to scroll again. also, keep the selection if possible to mark what was copied.
-	if [ $__sp_tmux_ver -ge 300 ]; then
-		COPY_SELECTION_NO_CLEAR="copy-selection-no-clear"
-	else
-		COPY_SELECTION_NO_CLEAR="copy-selection"
+		# one-time activity monitoring
+		t set -g activity-action any
+		t set-hook -g alert-activity "display \"Activity detected on window #{window_index}, monitor disabled\" ; set -w monitor-activity off"
+		t bind M set -w monitor-activity on '\;' display "Monitoring window for activity ONCE"
+		
+		# one-time silence monitoring
+		t set -g silence-action any
+		t set-hook -g alert-silence "display \"Silence detected on window #{window_index}, monitor disabled\" ; set -w monitor-silence 0"
+		t bind _ set -w monitor-silence 30 '\;' display "Monitoring window for silence ONCE"
 	fi
-	
-	t bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode MouseDragEnd1Pane send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode DoubleClick1Pane select-pane \\\; send-keys -X select-word \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode-vi DoubleClick1Pane select-pane \\\; send-keys -X select-word \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode-vi TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
-	t bind -T copy-mode c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
-	t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
 
 	# various mouse events (also documented in cheat --tmux):
 	# left status bar corner: click toggles expansion
@@ -467,8 +469,13 @@ main() {
 		;
 	fi
 	
-	# move window to another session with a session picker
-	t bind W display "Move window to session ..." '\;' choose-tree -ZNs "move-window -t '%1' ; switch-client -t '%1'"
+	if [ "$__sp_tmux_ver" -ge 208 ]; then
+		# move window to another session with a session picker
+		t bind W display "Move window to session ..." '\;' choose-tree -ZNs "move-window -t '%1' ; switch-client -t '%1'"
+	else
+		# move window to another session with a session picker
+		t bind W display "Move window to session ..." '\;' choose-tree -s "move-window -t '%1' ; switch-client -t '%1'"
+	fi
 	
 	# restored defaults (2026-05-16)
 	t bind-key -T prefix z resize-pane -Z
