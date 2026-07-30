@@ -585,7 +585,8 @@ case "$SUBCOMMAND" in
 		fi
 	;;
 	left_status)
-		TMUX_HOST="$2"
+		# cut hostname at first dot
+		TMUX_HOST="${2%%.*}"
 		TMUX_USER="$3"
 		TMUX_SESSION="$4"
 		COLUMNS="$5"
