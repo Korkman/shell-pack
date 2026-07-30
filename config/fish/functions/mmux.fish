@@ -1,6 +1,6 @@
 function mmux
 	test "$argv" != ""
-	and argparse -n mmux --exclusive 'f,s' --max-args 2 'e/exclusive' 'f/force' 's/share' 'n/nag' 'x-screen' 'g/grab-hooks' 'h/help' -- $argv
+	and argparse -n mmux --exclusive 'f,s' --max-args 2 'e/exclusive' 'f/force' 's/share' 'n/nag' 'screen' 'grab-hooks' 'aliases' 'h/help' -- $argv
 	and not set -q _flag_help
 	or begin
 		echo "\
@@ -15,9 +15,10 @@ using socket SOCKET_NAME.
    -s/--share         Attach to an otherwise exclusive SESSION, sending a message.
    -n/--nag           Nag the exclusive SESSION attached clients indefinitely.
    --screen           Force usage of screen instead of tmux
-   --help             Show this help
+   -h/--help          Show this help
+   --grab-hooks       (internal) Setup hooks for ENV synchronization
+   --aliases          (internal) Setup user aliases
 "
-		# --grab-hooks is used internally
 		if set -q _flag_help
 			return 0
 		else
@@ -120,12 +121,18 @@ using socket SOCKET_NAME.
 			end
 		end # if
 		
+		return 0
+	end
+	
+	if set -q _flag_aliases
 		function __update_multiplexer_names --on-variable __multiplexer_names
+			# on refresh, erase all functions we created
 			if set -q __defined_multiplexer_names
 				for shortuser in $__defined_multiplexer_names
 					functions -e $shortuser
 				end
 			end
+			# if set, walk __multiplexer_names and create an mmux alias for each
 			if set -q __multiplexer_names
 				for shortuser in $__multiplexer_names
 					if functions -q $shortuser
@@ -138,7 +145,6 @@ using socket SOCKET_NAME.
 			set -g __defined_multiplexer_names $__multiplexer_names
 		end
 		__update_multiplexer_names
-		
 		return 0
 	end
 	

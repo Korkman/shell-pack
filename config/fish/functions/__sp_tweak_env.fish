@@ -74,6 +74,9 @@ function __sp_tweak_env -d \
 	
 	# misc tweaks
 	__sp_tweak_user_defaults
+
+	# aliases also when non-interactive so fishcall has them available
+	__sp_tweak_aliases
 	
 	if status --is-interactive
 		# init enhanced prompt status
@@ -167,6 +170,18 @@ function __sp_tweak_user_defaults -d \
 				set -x -g RIPGREP_CONFIG_PATH $__sp_config_fish_dir"/../ripgrep.conf"
 		end
 	end
+end
+
+function __sp_tweak_aliases
+	# use d-tab to quickly navigate in tagged dirs
+	alias d cdtagdir
+	
+	# screen / tmux shortcuts
+	alias one "mmux one --exclusive"
+	alias shareone "mmux one --exclusive --share"
+	alias forceone "mmux one --exclusive --force"
+
+	mmux --aliases
 end
 
 function __sp_tweak_polyfills -d \
@@ -356,14 +371,6 @@ function __sp_tweak_keybinds \
 		bind -k f11 'fiddle --instant'
 		bind -k f5 'echo; policeline "Reload: F5 key, environment reset"; reload'
 	end
-	
-	# use d-tab to quickly navigate in tagged dirs
-	alias d cdtagdir
-	
-	# screen / tmux shortcuts
-	alias one "mmux one --exclusive"
-	alias shareone "mmux one --exclusive --share"
-	alias forceone "mmux one --exclusive --force"
 
 	# set --universal __multiplexer_names to a list of tmux / screen session names
 	set -q __multiplexer_names || set --universal __multiplexer_names pb rbeck
