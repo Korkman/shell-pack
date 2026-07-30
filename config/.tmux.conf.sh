@@ -65,6 +65,7 @@ else
 	S_STATUS_DIV_L=" | "
 	S_STATUS_DIV_R=" | "
 fi
+D_STATUS_INTERVAL=15
 custom_styles
 
 # batching support: collect tmux commands with 't', then send them all
@@ -202,7 +203,7 @@ main() {
 	# - try "screen" if "tmux" is not in infocmp
 	# - add -256color if terminal supports it
 	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
-	TPUT_COLORS=$(command -v tput 2>/dev/null && tput colors || echo 8)
+	TPUT_COLORS=$(command -v tput 2>&1 >/dev/null && tput colors || echo 8)
 	if [ "$TPUT_COLORS" -lt 256 ]; then
 		if infocmp tmux > /dev/null 2>&1; then
 			t set -g default-terminal tmux
@@ -293,9 +294,8 @@ main() {
 	t set -g status-right-length 60
 	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\")"
 
-	# Refresh interval for the status, default: 15
-	t set -Fg @status_interval 15
-	t set -Fg status-interval "#{@status_interval}"
+	# Refresh interval for the status left / right items
+	t set -g status-interval "$D_STATUS_INTERVAL"
 
 	# center window list
 	# NOTE: absolute-centre quickly cuts away information
@@ -679,10 +679,11 @@ toggle_clock_details() {
 	CLOCK_DETAILS="$1"
 	if [ "$CLOCK_DETAILS" = "1" ]; then
 		t set -g '@clock_details' 0
-		t set -Fg status-interval "#{@status_interval}"
+		t set -g status-interval "$D_STATUS_INTERVAL"
 		t refresh-client -S
 	else
 		t set -g '@clock_details' 1
+		# when showing details, switch to refresh each second
 		t set -g status-interval 1
 	fi
 	t refresh-client -S
