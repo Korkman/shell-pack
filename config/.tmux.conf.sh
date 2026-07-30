@@ -1,7 +1,8 @@
 #! /bin/sh
+# shellcheck disable=SC2329  # many functions are invoked via a variable
 {
 
-# custom .tmux.conf.sh
+# shell-pack .tmux.conf.sh
 # supported minimum tmux version: 2.8 (Debian Buster)
 
 # derive .tmux.conf.sh directory, real path and escaped real path
@@ -17,9 +18,11 @@ TMUX_CONF_SH_ESC="$(printf '%s\n' "$TMUX_CONF_SH" | sed 's/ /\\ /g')"
 # result examples: 3.0a -> 300    3.5 -> 305    3.10 -> 310
 __sp_tmux_ver=${__sp_tmux_ver:-$(( $(tmux -V | sed -e 's/[^0-9.]//g' -e 's/\./*100+/') ))}
 
+# placeholders which can be overridden in a local sh
 custom_colors() { return; }
 custom_styles() { return; }
 custom_main() { return; }
+custom_functions() { return; }
 if [ -e "$HOME/.config/tmux.conf.local.sh" ]; then
 . "$HOME/.config/tmux.conf.local.sh"
 fi
@@ -510,165 +513,173 @@ nice_ellipsis() {
 	printf '%s…\n' "$__truncated"
 }
 
+# when no verb is passed, call main and we're done
 if [ "${1:-}" = "" ]; then
 	main
 	exit
 fi
 
+set_broadcast() {
+	t setw pane-border-format "#{pane_index} #T"
+	t set-window-option synchronize-panes "$1"
+	t display-message "synchronize-panes is now $1"
+	if [ "$1" = "on" ]; then
+		t setw pane-border-status top
+		t setw pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+		t setw pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+	else
+		t setw pane-border-status off
+		t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
+		t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	fi
+	
+	if [ "$__sp_tmux_ver" -ge 305 ]; then
+		t setw pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
+		t setw pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
+	fi
+}
+
+select_win_0() {
+	if tmux list-windows -F '#{window_index}' | grep -q -x 0; then
+		tmux select-window -t 0
+	else
+		tmux_show_err select-window -t 10
+	fi
+}
+
+open_monitoring_windows() {
+	if command -v dool > /dev/null; then
+		if command -v fishcall > /dev/null; then
+			DOOL_MACRO="fishcall ddool"
+		else
+			DOOL_MACRO="dool"
+		fi
+		if ! tmux list-windows -F '#{window_name}' | grep -qx 'ddool'; then
+			t new-window -a -t '{end}' -n ddool "$DOOL_MACRO"
+			t split-window "$DOOL_MACRO 60"
+		fi
+	fi
+	if command -v htop > /dev/null; then
+		HTOP_MACRO="htop"
+	else
+		HTOP_MACRO="top"
+	fi
+	if ! tmux list-windows -F '#{window_name}' | grep -qx 'htop'; then
+		t new-window -a -t '{end}' -n htop "$HTOP_MACRO"
+		t select-window -t "htop"
+	fi
+}
+
+move_window_to_session() {
+	TMUX_WINDOW_ID="${TMUX_WINDOW_ID:-$1}"
+	TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER:-$2}"
+	
+	if tmux has-session -t "$TMUX_PROMPT_ANSWER"; then
+		t switch-client -t "$TMUX_PROMPT_ANSWER"
+		t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
+	else
+		# create a new session with only a sleep command and move that to end of list
+		t new-session -d -s "$TMUX_PROMPT_ANSWER" -n "" "sleep 10"
+		t move-window -s "$TMUX_PROMPT_ANSWER:1" -t "$TMUX_PROMPT_ANSWER:99"
+		t switch-client -t "$TMUX_PROMPT_ANSWER"
+		t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
+		# kill the placeholder
+		t kill-window -t "$TMUX_PROMPT_ANSWER:99"
+	fi
+}
+
+left_status() {
+	# cut hostname at first dot
+	TMUX_HOST="${2%%.*}"
+	TMUX_USER="$3"
+	TMUX_SESSION="$4"
+	COLUMNS="$5"
+	TMUX_SOCKET_NAME="$6"
+	if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
+		DISPLAY_SESSION="$TMUX_SESSION"
+	else
+		DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
+	fi
+	# apply ellipsis
+	if [ "$1" = "0" ]; then
+		if [ "$COLUMNS" -ge 120 ]; then
+			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
+		elif [ "$COLUMNS" -ge 60 ]; then
+			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
+		else
+			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 3)
+		fi
+		if [ "$COLUMNS" -ge 180 ]; then
+			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 20)
+			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 30)
+		elif [ "$COLUMNS" -ge 132 ]; then
+			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 10)
+			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 15)
+		elif [ "$COLUMNS" -ge 60 ]; then
+			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
+			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+		else
+			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 3)
+			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+		fi
+	fi
+	if [ "$COLUMNS" -ge 80 ]; then
+		printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
+	else
+		printf "%s" "#[$STYLE_STATUS_L]"
+	fi
+	echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$DISPLAY_SESSION$S_STATUS_L_END"
+}
+
+right_status() {
+	CLOCK_DETAILS="$1"
+	COLUMNS="$2"
+	if [ "$COLUMNS" -ge 100 ]; then
+		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
+		if [ "$CLOCK_DETAILS" = "1" ]; then
+			# long format
+			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
+		else
+			# short format
+			CLOCK=$(date '+%H:%M %m-%d')
+			if [ "$COLUMNS" -lt 120 ]; then
+				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
+			fi
+		fi
+		echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
+	else
+		CLOCK=$(date '+%H:%M')
+		echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+	fi
+}
+
+toggle_host_details() {
+	HOST_DETAILS="$1"
+	if [ "$HOST_DETAILS" = "1" ]; then
+		t set -g '@host_details' 0
+	else
+		t set -g '@host_details' 1
+	fi
+	t refresh-client -S
+}
+
+toggle_clock_details() {
+	CLOCK_DETAILS="$1"
+	if [ "$CLOCK_DETAILS" = "1" ]; then
+		t set -g '@clock_details' 0
+		t set -Fg status-interval "#{@status_interval}"
+		t refresh-client -S
+	else
+		t set -g '@clock_details' 1
+		t set -g status-interval 1
+	fi
+	t refresh-client -S
+}
+custom_functions
+
 SUBCOMMAND="$1"
 shift
-
-case "$SUBCOMMAND" in
-	set_broadcast)
-		t setw pane-border-format "#{pane_index} #T"
-		t set-window-option synchronize-panes "$1"
-		t display-message "synchronize-panes is now $1"
-		if [ "$1" = "on" ]; then
-			t setw pane-border-status top
-			t setw pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
-			t setw pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
-		else
-			t setw pane-border-status off
-			t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
-			t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
-		fi
-		
-		if [ "$__sp_tmux_ver" -ge 305 ]; then
-			t setw pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
-			t setw pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
-		fi
-	;;
-	select_win_0)
-		if tmux list-windows -F '#{window_index}' | grep -q -x 0; then
-			tmux select-window -t 0
-		else
-			tmux_show_err select-window -t 10
-		fi
-	;;
-	open_monitoring_windows)
-		if command -v dool > /dev/null; then
-			if command -v fishcall > /dev/null; then
-				DOOL_MACRO="fishcall ddool"
-			else
-				DOOL_MACRO="dool"
-			fi
-			if ! tmux list-windows -F '#{window_name}' | grep -qx 'ddool'; then
-				t new-window -a -t '{end}' -n ddool "$DOOL_MACRO"
-				t split-window "$DOOL_MACRO 60"
-			fi
-		fi
-		if command -v htop > /dev/null; then
-			HTOP_MACRO="htop"
-		else
-			HTOP_MACRO="top"
-		fi
-		if ! tmux list-windows -F '#{window_name}' | grep -qx 'htop'; then
-			t new-window -a -t '{end}' -n htop "$HTOP_MACRO"
-			t select-window -t "htop"
-		fi
-	;;
-	move_window_to_session)
-		TMUX_WINDOW_ID="${TMUX_WINDOW_ID:-$1}"
-		TMUX_PROMPT_ANSWER="${TMUX_PROMPT_ANSWER:-$2}"
-		
-		if tmux has-session -t "$TMUX_PROMPT_ANSWER"; then
-			t switch-client -t "$TMUX_PROMPT_ANSWER"
-			t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
-		else
-			# create a new session with only a sleep command and move that to end of list
-			t new-session -d -s "$TMUX_PROMPT_ANSWER" -n "" "sleep 10"
-			t move-window -s "$TMUX_PROMPT_ANSWER:1" -t "$TMUX_PROMPT_ANSWER:99"
-			t switch-client -t "$TMUX_PROMPT_ANSWER"
-			t move-window -s "$TMUX_WINDOW_ID" -t "$TMUX_PROMPT_ANSWER:"
-			# kill the placeholder
-			t kill-window -t "$TMUX_PROMPT_ANSWER:99"
-		fi
-	;;
-	left_status)
-		# cut hostname at first dot
-		TMUX_HOST="${2%%.*}"
-		TMUX_USER="$3"
-		TMUX_SESSION="$4"
-		COLUMNS="$5"
-		TMUX_SOCKET_NAME="$6"
-		if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
-			DISPLAY_SESSION="$TMUX_SESSION"
-		else
-			DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
-		fi
-		# apply ellipsis
-		if [ "$1" = "0" ]; then
-			if [ "$COLUMNS" -ge 120 ]; then
-				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
-			elif [ "$COLUMNS" -ge 60 ]; then
-				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
-			else
-				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 3)
-			fi
-			if [ "$COLUMNS" -ge 180 ]; then
-				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 20)
-				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 30)
-			elif [ "$COLUMNS" -ge 132 ]; then
-				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 10)
-				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 15)
-			elif [ "$COLUMNS" -ge 60 ]; then
-				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
-				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
-			else
-				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 3)
-				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
-			fi
-		fi
-		if [ "$COLUMNS" -ge 80 ]; then
-			printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
-		else
-			printf "%s" "#[$STYLE_STATUS_L]"
-		fi
-		echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$DISPLAY_SESSION$S_STATUS_L_END"
-	;;
-	right_status)
-		CLOCK_DETAILS="$1"
-		COLUMNS="$2"
-		if [ "$COLUMNS" -ge 100 ]; then
-			LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
-			if [ "$CLOCK_DETAILS" = "1" ]; then
-				# long format
-				CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
-			else
-				# short format
-				CLOCK=$(date '+%H:%M %m-%d')
-				if [ "$COLUMNS" -lt 120 ]; then
-					LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
-				fi
-			fi
-			echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
-		else
-			CLOCK=$(date '+%H:%M')
-			echo "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
-		fi
-	;;
-	toggle_host_details)
-		HOST_DETAILS="$1"
-		if [ "$HOST_DETAILS" = "1" ]; then
-			t set -g '@host_details' 0
-		else
-			t set -g '@host_details' 1
-		fi
-		t refresh-client -S
-	;;
-	toggle_clock_details)
-		CLOCK_DETAILS="$1"
-		if [ "$CLOCK_DETAILS" = "1" ]; then
-			t set -g '@clock_details' 0
-			t set -Fg status-interval "#{@status_interval}"
-			t refresh-client -S
-		else
-			t set -g '@clock_details' 1
-			t set -g status-interval 1
-		fi
-		t refresh-client -S
-	;;
-esac
+"$SUBCOMMAND" "$@"
 
 exit
 }
