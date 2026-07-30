@@ -167,7 +167,6 @@ main() {
 	fi
 	# c-a r: quick config reload early for failsave operation
 	tmux bind r source-file ~/.tmux.conf '\;' display "Config reloaded…"
-	tmux display "DEBUG: config loaded."
 
 	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
 	# NOTE: this must happen before set-environment
