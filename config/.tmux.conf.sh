@@ -284,7 +284,7 @@ main() {
 	# @clock_details: set to 1 to ease shortening rules
 	t set -g '@host_details' 0
 	t set -g status-left-length 60
-	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\" \"#{client_key_table}\")"
+	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\")"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
@@ -340,7 +340,7 @@ main() {
 		t bind -T copy-mode x $NEXT_PROMPT_MACRO
 		t bind -T copy-mode M-Up $PREV_PROMPT_MACRO
 		t bind -T copy-mode M-Down $NEXT_PROMPT_MACRO
-		t bind -T copy-mode C-Up $PREV_PROMPT_MACROsend-keys -X
+		t bind -T copy-mode C-Up $PREV_PROMPT_MACRO
 		t bind -T copy-mode C-Down $NEXT_PROMPT_MACRO
 		t bind M-Up copy-mode \\\; $PREV_PROMPT_MACRO
 		t bind M-Down copy-mode \\\; $NEXT_PROMPT_MACRO
@@ -636,8 +636,8 @@ left_status() {
 			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
 		fi
 	fi
-	# mode indicator only if it fits and tmux is recent enough
-	if [ "$COLUMNS" -ge 80 ] && [ "$__sp_tmux_ver" -ge 208 ]; then
+	# mode indicator only if it fits and tmux is recent enough for comparison operator and pane_mode
+	if [ "$COLUMNS" -ge 80 ] && [ "$__sp_tmux_ver" -ge 206 ]; then
 		printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
 	else
 		printf "%s" "#[$STYLE_STATUS_L]"
