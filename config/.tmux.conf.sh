@@ -10,6 +10,12 @@ TMUX_CONF_SH_DIR="$(cd "$(dirname "$0")" && pwd)"
 TMUX_CONF_SH="$TMUX_CONF_SH_DIR/$(basename "$0")"
 TMUX_CONF_SH_ESC="$(printf '%s\n' "$TMUX_CONF_SH" | sed 's/ /\\ /g')"
 
+# parse and strip a leading --reload=X argument, passed in by .tmux.conf via
+# #{@is-reload}; this tells us whether this is the initial run or a
+# subsequent `source-file` reload, so main() can preserve toggle state
+# across reloads instead of resetting it every time.
+TMUX_CONF_SH_IS_RELOAD=${TMUX_CONF_SH_IS_RELOAD:-0}
+
 # version variable
 # the following sets the variable __sp_tmux_ver by running
 # - a shell that tells tmux to set __sp_tmux_ver
@@ -59,11 +65,15 @@ if [ "${LC_NERDLEVEL:-0}" -gt 2 ]; then
 	S_STATUS_R_BEGIN="#[fg=$COLOR_STATUS_BG bg=$COLOR_STATUS_R_BG]#[$STYLE_STATUS_R] "
 	S_STATUS_DIV_L="  "
 	S_STATUS_DIV_R="  "
+	S_COLLAPSED_L="  "
+	S_COLLAPSED_R="  "
 else
 	S_STATUS_L_END=" "
 	S_STATUS_R_BEGIN=" "
 	S_STATUS_DIV_L=" | "
 	S_STATUS_DIV_R=" | "
+	S_COLLAPSED_L=" < "
+	S_COLLAPSED_R=" > "
 fi
 D_STATUS_INTERVAL=15
 custom_styles
@@ -121,10 +131,12 @@ if [ "$TMUX_FAILSAFE" = "1" ]; then
 		echo "tmux.conf.sh error output" > "$ERRLOG"
 		t() {
 			tmux "$@" >> "$ERRLOG" 2>&1
+			return 0
 		}
 	else
 		t() {
 			tmux "$@" > /dev/null 2>&1
+			return 0
 		}
 	fi
 fi
@@ -162,7 +174,7 @@ main() {
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
 			tmux display "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
 		else
-			tmux display "Warning: Errors occured running tmux.conf.sh. You might want to investigate."
+			tmux display "Warning: Errors occured running tmux.conf.sh - you might want to investigate $TMUX_CONF_SH"
 		fi
 	fi
 	# c-a r: quick config reload early for failsave operation
@@ -309,25 +321,27 @@ main() {
 	# the mode indicator (PRFX/COPY/SYNC/NORM) stays inline as a native tmux
 	# conditional so it keeps updating instantly on every redraw; only the
 	# user@host|session part is delegated to the left_status subcommand.
-	# @clock_details: set to 1 to ease shortening rules
-	t set -g '@host_details' 0
-	t set -g status-left-length 60
-	t set -g status-left "#($TMUX_CONF_SH_ESC left_status \"#{@host_details}\" \"#{host}\" \"#{USER}\" \"#S\" \"#{client_width}\" \"#{@socket_name}\")"
+	t set -g status-left-length 120
+	t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{pane_mode}' '#{pane_synchronized}')"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
-	# @clock_details: set to 1 to include the year in the clock; click the right status bar corner to toggle
 	# loadavg and clock are both computed by the right_status subcommand
-	t set -g '@clock_details' 0
-	t set -g status-right-length 60
+	t set -g status-right-length 120
 	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\" \"#{client_flags}\" \"#{client_termfeatures}\")"
 
-	# Refresh interval for the status left / right items
-	t set -g status-interval "$D_STATUS_INTERVAL"
+	# only initialize these on the first run, not on a `source-file` reload,
+	# so toggle state set via toggle_host_details/toggle_clock_details survives
+	if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
+		t set -g '@host_details' 0
+		t set -g '@clock_details' 0
+		t set -g status-interval "$D_STATUS_INTERVAL"
 
-	# center window list
-	# NOTE: absolute-centre quickly cuts away information
-	t set -g status-justify centre
+		# center window list
+		# NOTE: absolute-centre quickly cuts away information
+		t set -g status-justify centre
+	fi
+	t set -g '@is-reload' 1
 	
 	# vibrant copy-mode colors and
 	# change the cursor style in copy-mode so selected text becomes clearly visible
@@ -440,8 +454,8 @@ main() {
 		t unbind -n MouseDown1StatusLeft
 		t bind -n MouseUp1StatusLeft run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
 		t bind -n DoubleClick1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
-		t bind -T prefix WheelUpStatusLeft set -s status-position top '\;' set -s status-justify left
-		t bind -T prefix WheelDownStatusLeft set -s status-position bottom '\;' set -sF status-justify centre
+		t bind -T prefix WheelUpStatusLeft set -g status-position top '\;' set -g status-justify left
+		t bind -T prefix WheelDownStatusLeft set -g status-position bottom '\;' set -g status-justify centre
 		t bind -n DoubleClick1StatusDefault new-window -c "#{pane_current_path}"
 		t bind -n WheelUpStatusDefault previous-window
 		t bind -n WheelDownStatusDefault next-window
@@ -453,6 +467,11 @@ main() {
 		t bind -n MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
 		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
 	fi
+	# binds for toggling status modes w/o mouse
+	t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
+	t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
+	t bind M-t set -g status-position top '\;' set -g status-justify left
+	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
 	
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
@@ -627,8 +646,7 @@ move_window_to_session() {
 		# kill the placeholder
 		t kill-window -t "=$TMUX_PROMPT_ANSWER:99"
 	fi
-	# for old tmux (2.4) to update the statusline
-	t_end
+	t_end # flush buffer so refresh-client works for e.g. tmux 2.8
 	t refresh-client -S
 }
 
@@ -639,6 +657,29 @@ left_status() {
 	TMUX_SESSION="$4"
 	COLUMNS="$5"
 	TMUX_SOCKET_NAME="$6"
+	CLIENT_KEY_TABLE="$7"
+	PANE_MODE="$8"
+	PANE_SYNC="$9"
+	# always have the mode indicator color
+	if [ "$CLIENT_KEY_TABLE" = "prefix" ]; then
+		MODE_STYLE="#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]"
+		MODE_WORD="PRFX"
+	elif [ "$PANE_MODE" = "copy-mode" ]; then
+		MODE_STYLE="#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]"
+		MODE_WORD="COPY"
+	elif [ "$PANE_SYNC" = "1" ]; then
+		MODE_STYLE="#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]"
+		MODE_WORD="SYNC"
+	else
+		MODE_STYLE="#[$STYLE_STATUS_L]"
+		MODE_WORD="NORM"
+	fi
+	# collapsed style
+	printf "%s" "$MODE_STYLE"
+	if [ "$1" = "2" ]; then
+		echo "$S_COLLAPSED_L$S_STATUS_L_END"
+		return
+	fi
 	if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
 		DISPLAY_SESSION="$TMUX_SESSION"
 	else
@@ -667,9 +708,9 @@ left_status() {
 			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
 		fi
 	fi
-	# mode indicator only if it fits and tmux is recent enough for comparison operator and pane_mode
-	if [ "$COLUMNS" -ge 80 ] && [ "$__sp_tmux_ver" -ge 206 ]; then
-		printf "%s" "#{?#{==:#{client_key_table},prefix},#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]PRFX,#{?#{==:#{pane_mode},copy-mode},#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]COPY,#{?#{pane_synchronized},#[bg=$COLOR_MODE_SYNC_BG fg=$COLOR_MODE_SYNC_FG]SYNC,#[$STYLE_STATUS_L]NORM}}}$S_STATUS_DIV_L"
+	# mode text only if it fits
+	if [ "$COLUMNS" -ge 80 ]; then
+		printf "%s" "$MODE_WORD$S_STATUS_DIV_L"
 	else
 		printf "%s" "#[$STYLE_STATUS_L]"
 	fi
@@ -681,7 +722,13 @@ right_status() {
 	COLUMNS="$2"
 	CLIENT_FLAGS="$3"
 	CLIENT_FEATURES="$4"
+	# always output the format variable
 	echo "#{@right_status}"
+	# collapsed mode
+	if [ "$1" = "2" ]; then
+		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$S_COLLAPSED_R"
+		return
+	fi
 	# if the client terminal supports focus reporting and is currently absent, stop updating the status
 	if echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
 		return
@@ -707,26 +754,37 @@ right_status() {
 
 toggle_host_details() {
 	HOST_DETAILS="$1"
-	if [ "$HOST_DETAILS" = "1" ]; then
+	if [ "$HOST_DETAILS" = "2" ]; then
 		t set -g '@host_details' 0
+	elif [ "$HOST_DETAILS" = "1" ]; then
+		t set -g '@host_details' 2
 	else
 		t set -g '@host_details' 1
 	fi
+	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
+	t_end
 	t refresh-client -S
 }
 
 toggle_clock_details() {
 	CLOCK_DETAILS="$1"
-	if [ "$CLOCK_DETAILS" = "1" ]; then
+	if [ "$CLOCK_DETAILS" = "2" ]; then
 		t set -g '@clock_details' 0
+		t refresh-client -S
 		t set -g status-interval "$D_STATUS_INTERVAL"
 		t refresh-client -S
+	elif [ "$CLOCK_DETAILS" = "1" ]; then
+		t set -g '@clock_details' 2
+		t set -g status-interval "$D_STATUS_INTERVAL"
 	else
 		t set -g '@clock_details' 1
 		# when showing details, switch to refresh each second
 		t set -g status-interval 1
 	fi
-	t refresh-client -S
+	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
+	t_end
+	tmux refresh-client -S
+	tmux refresh-client -S
 }
 custom_functions
 

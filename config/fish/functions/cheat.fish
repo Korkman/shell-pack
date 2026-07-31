@@ -376,7 +376,7 @@ ctrl-a, lift keys, then
   k: kill pane (if confirmed)
   m: mark pane
   s: swap pane with marked
-  shift-b: toggle broadcast mode, sending keystrokes to all panes
+  shift-b: toggle broadcast mode, sending keystrokes to all panes in window
   w: show sessions and their windows
   shift-w: move window to other session with picker
   alt-w: move window to (new) other session
@@ -384,6 +384,10 @@ ctrl-a, lift keys, then
     alias: !
   shift-k: kill all windows and exit (if confirmed)
     alias: \
+  alt-l: toggle through left status styles
+  alt-r: toggle through right status styles
+  alt-t: move status to top
+  alt-b: move status to bottom
  
 # THE MOUSE
  
@@ -391,13 +395,13 @@ ctrl-a, lift keys, then
 - selection is copied to tmux clipboard and terminal host if supported
 - selection does not exit copy-mode to accomodate copying multiple strings
 - (alt-)right-click context menus are available from tmux
-- click left status to toggle expansion
+- click left status to toggle left status styles
 - double-click left status shows session tree chooser
 - prefix + wheelup/-down on left status moves status bar to top / bottom
 - double-click on tab creates new window next to it
 - button 2 on tab closes window with confirm
 - prefix + button 2 on tab closes window without confirm
-- click right status to toggle expansion
+- click right status to toggle right status styles
 - double-click right status to run dool + htop in new windows
 - double-click in empty area to create new window at end
 - wheelup/-down on status switches through tabs
