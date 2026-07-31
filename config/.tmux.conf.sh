@@ -236,7 +236,11 @@ main() {
 	t bind Right swap-window $swap_window_new_default -t +1
 	
 	# c-a B: toggle broadcast input to all panes ("SYNC")
-	t bind B run-shell "$TMUX_CONF_SH_ESC set_broadcast '#{?pane_synchronized,off,on}'"
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		t bind B run-shell "$TMUX_CONF_SH_ESC toggle_broadcast '#{pane_synchronized}'"
+	else
+		t bind B run-shell "$TMUX_CONF_SH_ESC toggle_broadcast"
+	fi
 	
 	# set very low escape time (ms)
 	# feels responsive, should not cause problems in our networks
@@ -326,7 +330,7 @@ main() {
 	# user@host|session part is delegated to the left_status subcommand.
 	t set -g status-left-length 120
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
-		t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{pane_mode}' '#{pane_synchronized}')"
+		t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{scroll_position}' '#{pane_synchronized}')"
 	else
 		t set -g status-left "#($TMUX_CONF_SH_ESC left_status)"
 	fi
@@ -591,24 +595,35 @@ if [ "${1:-}" = "" ]; then
 	exit
 fi
 
-set_broadcast() {
-	t setw pane-border-format "#{pane_index} #T"
-	t set-window-option synchronize-panes "$1"
-	t display-message "synchronize-panes is now $1"
-	if [ "$1" = "on" ]; then
-		t setw pane-border-status top
-		t setw pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
-		t setw pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+toggle_broadcast() {
+	if [ "${1:-}" = "" ]; then
+		SYNC="$(tmux display -p "#{pane_synchronized}")"
 	else
-		t setw pane-border-status off
-		t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
-		t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+		SYNC="$1"
+	fi
+	if [ "$SYNC" = "0" ]; then
+		SYNC="on"
+	else
+		SYNC="off"
+	fi
+	[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-format "#{pane_index} #T"
+	t set-window-option synchronize-panes "$SYNC"
+	t display-message "synchronize-panes is now $SYNC"
+	if [ "$SYNC" = "on" ]; then
+		[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-status top
+		t set-window-option pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+		t set-window-option pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+	else
+		[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-status off
+		t set-window-option pane-border-style fg=$COLOR_PANE_BORDER_FG
+		t set-window-option pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
 	fi
 	
 	if [ "$__sp_tmux_ver" -ge 305 ]; then
-		t setw pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
-		t setw pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
+		t set-window-option pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
+		t set-window-option pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
 	fi
+	t refresh-client -S
 }
 
 select_win_0() {
@@ -678,9 +693,9 @@ left_status() {
 		TMUX_SESSION="$(tmux display -p '#S')"
 		COLUMNS="$(tmux display -p '#{client_width}')"
 		TMUX_SOCKET_NAME="$(tmux show -gqv @socket_name)"
-		CLIENT_KEY_TABLE="tmux display -p '#{client_key_table}'"
-		PANE_MODE="tmux display -p '#{pane_mode}'"
-		PANE_SYNC="tmux display -p '#{pane_synchronized}'"
+		CLIENT_KEY_TABLE="$(tmux display -p '#{client_key_table}')"
+		SCROLL_POSITION="$(tmux display -p '#{scroll_position}')"
+		PANE_SYNC="$(tmux display -p '#{pane_synchronized}')"
 	else
 		STYLE="$1"
 		TMUX_HOST="${2%%.*}"
@@ -689,14 +704,14 @@ left_status() {
 		COLUMNS="$5"
 		TMUX_SOCKET_NAME="$6"
 		CLIENT_KEY_TABLE="$7"
-		PANE_MODE="$8"
+		SCROLL_POSITION="$8"
 		PANE_SYNC="$9"
 	fi
 	# always have the mode indicator color
 	if [ "$CLIENT_KEY_TABLE" = "prefix" ]; then
 		MODE_STYLE="#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]"
 		MODE_WORD="PRFX"
-	elif [ "$PANE_MODE" = "copy-mode" ]; then
+	elif [ "$SCROLL_POSITION" != "" ]; then
 		MODE_STYLE="#[bg=$COLOR_MODE_COPY_BG fg=$COLOR_MODE_COPY_FG]"
 		MODE_WORD="COPY"
 	elif [ "$PANE_SYNC" = "1" ]; then
