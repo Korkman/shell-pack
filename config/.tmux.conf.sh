@@ -35,7 +35,7 @@ fi
 
 # colors
 COLOR_STATUS_BG="colour26"
-COLOR_STATUS_FG="brightwhite"
+COLOR_STATUS_FG="colour255"
 COLOR_STATUS_L_BG="colour236"
 COLOR_STATUS_L_FG="colour15"
 COLOR_STATUS_R_BG="colour236"
@@ -52,7 +52,7 @@ COLOR_MODE_SYNC_BG="colour48"
 COLOR_MODE_SYNC_FG="colour16"
 COLOR_PANE_BORDER_FG="colour236"
 COLOR_PANE_ACTIVE_BORDER_FG="colour48"
-COLOR_WIN_STATUS_CURRENT_BG="brightwhite"
+COLOR_WIN_STATUS_CURRENT_BG="colour255"
 COLOR_WIN_STATUS_CURRENT_FG="black"
 custom_colors
 
@@ -152,7 +152,7 @@ t_end() {
 		set +f
 		IFS="$__sp_tmux_old_ifs"
 		shift # drop the leading empty field from the batch's leading delimiter
-		tmux "$@"
+		tmux "$@" >/dev/null # mute stdout for tmux 1.9
 		
 		TMUX_CONF_BUFFER=
 		TMUX_CONF_BUFFER_FILLED=0
@@ -322,14 +322,21 @@ main() {
 	# conditional so it keeps updating instantly on every redraw; only the
 	# user@host|session part is delegated to the left_status subcommand.
 	t set -g status-left-length 120
-	t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{pane_mode}' '#{pane_synchronized}')"
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{pane_mode}' '#{pane_synchronized}')"
+	else
+		t set -g status-left "#($TMUX_CONF_SH_ESC left_status)"
+	fi
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 
 	# show load, status indicator, better clock on the right
 	# loadavg and clock are both computed by the right_status subcommand
 	t set -g status-right-length 120
-	t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\" \"#{client_flags}\" \"#{client_termfeatures}\")"
-
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\" \"#{client_flags}\" \"#{client_termfeatures}\")"
+	else
+		t set -g status-right "#($TMUX_CONF_SH_ESC right_status)"
+	fi
 	# only initialize these on the first run, not on a `source-file` reload,
 	# so toggle state set via toggle_host_details/toggle_clock_details survives
 	if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
@@ -468,8 +475,13 @@ main() {
 		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
 	fi
 	# binds for toggling status modes w/o mouse
-	t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
-	t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
+		t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
+	else
+		t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details"
+		t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details"
+	fi
 	t bind M-t set -g status-position top '\;' set -g status-justify left
 	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
 	
@@ -652,14 +664,28 @@ move_window_to_session() {
 
 left_status() {
 	# cut hostname at first dot
-	TMUX_HOST="${2%%.*}"
-	TMUX_USER="$3"
-	TMUX_SESSION="$4"
-	COLUMNS="$5"
-	TMUX_SOCKET_NAME="$6"
-	CLIENT_KEY_TABLE="$7"
-	PANE_MODE="$8"
-	PANE_SYNC="$9"
+	if [ "${1:-}" = "" ]; then
+		STYLE="$(tmux show -gqv @host_details)"
+		TMUX_HOST=$(tmux display -p '#{host}')
+		TMUX_HOST="${TMUX_HOST%%.*}"
+		TMUX_USER="${USER:-$(id -un)}"
+		TMUX_SESSION="$(tmux display -p '#S')"
+		COLUMNS="$(tmux display -p '#{client_width}')"
+		TMUX_SOCKET_NAME="$(tmux show -gqv @socket_name)"
+		CLIENT_KEY_TABLE="tmux display -p '#{client_key_table}'"
+		PANE_MODE="tmux display -p '#{pane_mode}'"
+		PANE_SYNC="tmux display -p '#{pane_synchronized}'"
+	else
+		STYLE="$1"
+		TMUX_HOST="${2%%.*}"
+		TMUX_USER="$3"
+		TMUX_SESSION="$4"
+		COLUMNS="$5"
+		TMUX_SOCKET_NAME="$6"
+		CLIENT_KEY_TABLE="$7"
+		PANE_MODE="$8"
+		PANE_SYNC="$9"
+	fi
 	# always have the mode indicator color
 	if [ "$CLIENT_KEY_TABLE" = "prefix" ]; then
 		MODE_STYLE="#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]"
@@ -676,7 +702,7 @@ left_status() {
 	fi
 	# collapsed style
 	printf "%s" "$MODE_STYLE"
-	if [ "$1" = "2" ]; then
+	if [ "$STYLE" = "2" ]; then
 		echo "$S_COLLAPSED_L$S_STATUS_L_END"
 		return
 	fi
@@ -686,7 +712,7 @@ left_status() {
 		DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
 	fi
 	# apply ellipsis
-	if [ "$1" = "0" ]; then
+	if [ "$STYLE" = "0" ]; then
 		if [ "$COLUMNS" -ge 120 ]; then
 			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
 		elif [ "$COLUMNS" -ge 60 ]; then
@@ -718,22 +744,25 @@ left_status() {
 }
 
 right_status() {
-	CLOCK_DETAILS="$1"
-	COLUMNS="$2"
-	CLIENT_FLAGS="$3"
-	CLIENT_FEATURES="$4"
-	# always output the format variable
-	echo "#{@right_status}"
-	# collapsed mode
-	if [ "$1" = "2" ]; then
+	if [ "${1:-}" = "" ]; then
+		CLOCK_DETAILS="$(tmux show -gqv @clock_details)"
+		COLUMNS="$(tmux display -p '#{client_width}')"
+		CLIENT_FLAGS="$(tmux display -p '#{client_flags}')"
+		CLIENT_FEATURES="$(tmux display -p '#{client_termfeatures}')"
+	else
+		CLOCK_DETAILS="$1"
+		COLUMNS="$2"
+		CLIENT_FLAGS="$3"
+		CLIENT_FEATURES="$4"
+	fi
+	if [ "$CLOCK_DETAILS" = "2" ]; then
+		# collapsed mode
 		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$S_COLLAPSED_R"
-		return
-	fi
-	# if the client terminal supports focus reporting and is currently absent, stop updating the status
-	if echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
-		return
-	fi
-	if [ "$COLUMNS" -ge 100 ]; then
+	elif echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
+		# if the client terminal supports focus reporting and is currently absent, stop updating the status
+		:
+	elif [ "$COLUMNS" -ge 100 ]; then
+		# wide terminal
 		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
 		if [ "$CLOCK_DETAILS" = "1" ]; then
 			# long format
@@ -747,13 +776,26 @@ right_status() {
 		fi
 		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
 	else
+		# narrow terminal: no details
 		CLOCK=$(date '+%H:%M')
 		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+	fi
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		# always output the format variable
+		echo "#{@right_status}"
+	else
+		t_end
+		format="$(tmux show -gqv @right_status)"
+		echo "$format"
 	fi
 }
 
 toggle_host_details() {
-	HOST_DETAILS="$1"
+	if [ "${1:-}" = "" ]; then
+		HOST_DETAILS="$(tmux show -gqv @host_details)"
+	else
+		HOST_DETAILS="$1"
+	fi
 	if [ "$HOST_DETAILS" = "2" ]; then
 		t set -g '@host_details' 0
 	elif [ "$HOST_DETAILS" = "1" ]; then
@@ -767,7 +809,11 @@ toggle_host_details() {
 }
 
 toggle_clock_details() {
-	CLOCK_DETAILS="$1"
+	if [ "${1:-}" = "" ]; then
+		CLOCK_DETAILS="$(tmux show -gqv @clock_details)"
+	else
+		CLOCK_DETAILS="$1"
+	fi
 	if [ "$CLOCK_DETAILS" = "2" ]; then
 		t set -g '@clock_details' 0
 		t refresh-client -S
