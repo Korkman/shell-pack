@@ -489,7 +489,7 @@ main() {
 	t bind M-t set -g status-position top '\;' set -g status-justify left
 	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
 	# quick "zen mode"
-	t bind M-z set -qg '@host_details' 2 '\;' set -qg '@clock_details' 2 '\;' refresh-client -S
+	t bind M-z run-shell "$TMUX_CONF_SH_ESC toggle_zen_mode"
 	
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
@@ -840,6 +840,22 @@ toggle_clock_details() {
 	tmux refresh-client -S
 	tmux refresh-client -S
 }
+
+toggle_zen_mode() {
+	if [ "$(tmux show -gqv @clock_details)" != "2" ] || [ "$(tmux show -gqv @host_details)" != "2" ]; then
+		t set -g '@clock_details' 2
+		t set -g '@host_details' 2
+	else
+		t set -g '@clock_details' 0
+		t set -g '@host_details' 0
+		t set -g status-interval "$D_STATUS_INTERVAL"
+	fi
+	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
+	t_end
+	tmux refresh-client -S
+	tmux refresh-client -S
+}
+
 custom_functions
 
 SUBCOMMAND="$1"
