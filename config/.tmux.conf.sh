@@ -68,6 +68,8 @@ if [ "${LC_NERDLEVEL:-0}" -gt 2 ]; then
 	S_STATUS_DIV_R="  "
 	S_COLLAPSED_L="  "
 	S_COLLAPSED_R="  "
+	S_MESSAGE_BEGIN=" 󰗖 "
+	S_MESSAGE_END=" 󰗖 "
 else
 	S_STATUS_L_END=" "
 	S_STATUS_R_BEGIN=" "
@@ -75,8 +77,16 @@ else
 	S_STATUS_DIV_R=" | "
 	S_COLLAPSED_L=" < "
 	S_COLLAPSED_R=" > "
+	S_MESSAGE_BEGIN=" ! "
+	S_MESSAGE_END=" ! "
 fi
 D_STATUS_INTERVAL=15
+style_msg() {
+	MSG="$S_MESSAGE_BEGIN$1"
+	if [ "$__sp_tmux_ver" -ge 307 ]; then
+		MSG="#[align=centre]$MSG$S_MESSAGE_END"
+	fi
+}
 custom_styles
 
 # batching support: collect tmux commands with 't', then send them all
@@ -173,13 +183,16 @@ trap "t_end" EXIT
 main() {
 	if [ "$TMUX_FAILSAFE" = "1" ]; then
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
-			tmux display "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
+			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
+			tmux display "$MSG"
 		else
-			tmux display "Warning: Errors occured running tmux.conf.sh - you might want to investigate $TMUX_CONF_SH"
+			style_msg "Warning: Errors occured running tmux.conf.sh - you might want to investigate $TMUX_CONF_SH"
+			tmux display "$MSG"
 		fi
 	fi
 	# c-a r: quick config reload early for failsave operation
-	tmux bind r source-file ~/.tmux.conf '\;' display "Config reloaded…"
+	style_msg "Config reloaded…"
+	tmux bind r source-file ~/.tmux.conf '\;' display "$MSG"
 
 	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
 	# NOTE: this must happen before set-environment
@@ -191,6 +204,15 @@ main() {
 	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
 	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
 	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG,bold
+	if [ "$__sp_tmux_ver" -ge 307 ]; then
+		t set -ag message-style fill=$COLOR_HIGHLIGHT_BG
+		#t set -ag message-style align=centre
+		#t set -ag message-command-style align=left
+		# NOTE: message-format looks promising, but unfortunately we cannot format
+		# input prompts (e.g. prefix+:) different than "display msg" (#{command_prompt} is no help)
+		# look out for v3.8 where prompt_input may be merged.
+		#t set -g message-format '…'
+	fi
 
 	# Intuitive window splitting
 	t bind '|' split-window -h -c "#{pane_current_path}" # left/right, default: %
@@ -216,12 +238,16 @@ main() {
 	# copy and paste
 
 	# vi keys are best (most intuitive) for copy and paste
+	# TODO: have a second look at emacs mode with custom keybinds, selection ends at cursor - 1
 	t set -g mode-keys vi
+	# we need no command_prompt, it's perfectly fine to exit prompts with escape
+	t set -g status-keys emacs
 
 	# enter copy mode, tmux default: [
-	t bind PageUp copy-mode '\;' display-message 'Entered copy-mode, use PgUp/PgDn to scroll, press q or enter to leave'
-	t bind up copy-mode '\;' display-message 'Entered copy-mode, use PgUp/PgDn to scroll, press q or enter to leave'
-	t bind Escape copy-mode '\;' display-message 'Entered copy-mode, use PgUp/PgDn to scroll, press q or enter to leave'
+	style_msg 'Entered copy-mode, use PgUp/PgDn to scroll, press q or enter to leave'
+	t bind PageUp copy-mode '\;' display-message "$MSG"
+	t bind up copy-mode '\;' display-message "$MSG"
+	t bind Escape copy-mode '\;' display-message "$MSG"
 	# add C-a v for paste (unmodified)
 	t bind v paste-buffer -r
 
@@ -287,7 +313,8 @@ main() {
 	t bind K confirm-before -p "Kill all windows and exit? (y/N)" kill-session
 	t bind "\\" confirm-before -p "Kill all windows and exit? (y/N)" kill-session
 	# show window number and name
-	t bind N display-message "This is window #I (#W). C-a . changes index, C-a A changes name."
+	style_msg "This is window #I (#W). C-a . changes index, C-a A changes name."
+	t bind N display-message "$MSG"
 	# rename window, tmux default: ,
 	# added: disable renaming to make new name permanent
 	t bind A command-prompt -I "#W" "rename-window '%%'" '\;' set-window-option allow-rename off
@@ -436,18 +463,23 @@ main() {
 		t bind -T copy-mode TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
 		t bind -T copy-mode-vi DoubleClick1Pane select-pane \\\; send-keys -X select-word \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
 		t bind -T copy-mode-vi TripleClick1Pane select-pane \\\; send-keys -X select-line \\\; send-keys -X $COPY_SELECTION_NO_CLEAR
-		t bind -T copy-mode c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
-		t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "Selection copied"
+		style_msg "Selection copied"
+		t bind -T copy-mode c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "$MSG"
+		t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "$MSG"
 
 		# one-time activity monitoring
 		t set -g activity-action any
-		t set-hook -g alert-activity "display \"Activity detected on window #{window_index}, monitor disabled\" ; set -w monitor-activity off"
-		t bind M set -w monitor-activity on '\;' display "Monitoring window for activity ONCE"
+		style_msg "Activity detected on window #{window_index}, monitor disabled"
+		t set-hook -g alert-activity "display \"$MSG\" ; set -w monitor-activity off"
+		style_msg "Monitoring window for activity ONCE"
+		t bind M set -w monitor-activity on '\;' display "$MSG"
 		
 		# one-time silence monitoring
 		t set -g silence-action any
-		t set-hook -g alert-silence "display \"Silence detected on window #{window_index}, monitor disabled\" ; set -w monitor-silence 0"
-		t bind _ set -w monitor-silence 30 '\;' display "Monitoring window for silence ONCE"
+		style_msg "Silence detected on window #{window_index}, monitor disabled"
+		t set-hook -g alert-silence "display \"$MSG\" ; set -w monitor-silence 0"
+		style_msg "Monitoring window for silence ONCE"
+		t bind _ set -w monitor-silence 30 '\;' display "$MSG"
 	fi
 
 	# various mouse events (also documented in cheat --tmux):
@@ -525,7 +557,8 @@ main() {
 	else
 		tree_opts="-s -b"
 	fi
-	t bind W display "Move window to session ..." '\;' choose-tree $tree_opts "$move_cmd"
+	style_msg "Move window to session ..."
+	t bind W display "$MSG" '\;' choose-tree $tree_opts "$move_cmd"
 	
 	if [ "$__sp_tmux_ver" -lt 206 ]; then
 		# change window chooser bind to also show sessions on older tmux
@@ -608,7 +641,8 @@ toggle_broadcast() {
 	fi
 	[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-format "#{pane_index} #T"
 	t set-window-option synchronize-panes "$SYNC"
-	t display-message "synchronize-panes is now $SYNC"
+	style_msg "Synchronize-panes is now $SYNC"
+	t display-message "$MSG"
 	if [ "$SYNC" = "on" ]; then
 		[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-status top
 		t set-window-option pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
