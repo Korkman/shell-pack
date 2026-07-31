@@ -3,7 +3,8 @@
 {
 
 # shell-pack .tmux.conf.sh
-# supported minimum tmux version: 2.3 (Debian Stretch) [features degrade gracefully]
+# supported minimum tmux version: 1.9 (Debian Jessie)
+# features degrade gracefully, all being enabled at 3.5
 
 # derive .tmux.conf.sh directory, real path and escaped real path
 TMUX_CONF_SH_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -201,8 +202,10 @@ main() {
 	# Large history
 	t set -g history-limit 50000
 
-	# Mouse support (tmux >= 2.1)
-	t set -g mouse on
+	if [ "$__sp_tmux_ver" -ge 201 ]; then
+		# Mouse support (tmux >= 2.1)
+		t set -g mouse on
+	fi
 
 	# do pass clipboard OSC-52 codes so the client clipboard is updated
 	t set -g set-clipboard on
@@ -474,6 +477,7 @@ main() {
 		t bind -n MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
 		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
 	fi
+	
 	# binds for toggling status modes w/o mouse
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
@@ -484,6 +488,8 @@ main() {
 	fi
 	t bind M-t set -g status-position top '\;' set -g status-justify left
 	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
+	# quick "zen mode"
+	t bind M-z set -qg '@host_details' 2 '\;' set -qg '@clock_details' 2 '\;' refresh-client -S
 	
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
@@ -525,8 +531,8 @@ main() {
 	
 	
 	# restored defaults (2026-05-16)
-	t bind-key -T prefix z resize-pane -Z
-	t bind-key -T prefix x confirm-before -p "kill-pane #P? (y/n)" kill-pane
+	t bind-key z resize-pane -Z
+	t bind-key x confirm-before -p "kill-pane #P? (y/n)" kill-pane
 	# end restored defaults
 	
 	# set-environment seems to trigger creation of the first window
@@ -757,7 +763,9 @@ right_status() {
 	fi
 	if [ "$CLOCK_DETAILS" = "2" ]; then
 		# collapsed mode
-		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$S_COLLAPSED_R"
+		SILENT_STATUS="#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$S_COLLAPSED_R"
+		echo "$SILENT_STATUS"
+		return
 	elif echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
 		# if the client terminal supports focus reporting and is currently absent, stop updating the status
 		:
