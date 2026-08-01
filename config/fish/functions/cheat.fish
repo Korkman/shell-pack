@@ -399,14 +399,14 @@ ctrl-a, lift keys, then
 - selection does not exit copy-mode to accomodate copying multiple strings
 - (alt-)right-click context menus are available from tmux
 - click left status to toggle left status styles
-- double-click left status shows session tree chooser
+- alt-click left status shows session tree chooser
 - prefix + wheelup/-down on left status moves status bar to top / bottom
 - double-click on tab renames window
 - alt-double-click on tab creates new window next to it
 - button 2 on tab closes window with confirm
 - prefix + button 2 on tab closes window without confirm
 - click right status to toggle right status styles
-- double-click right status to run dool + htop in new windows
+- alt-click right status to run dool + htop in new windows
 - double-click in empty area to create new window at end
 - wheelup/-down on status switches through tabs
  

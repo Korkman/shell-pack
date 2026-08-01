@@ -550,24 +550,24 @@ main() {
 
 	# various mouse events (also documented in cheat --tmux):
 	# left status bar corner: click toggles expansion
-	# left status bar corner: double-click to show session tree chooser
+	# left status bar corner: alt-click to show session tree chooser
 	# left status bar corner: prefix + wheelup/-down move status bar up / down
 	# window name: double-click to rename
 	# window name: alt-double-click to create new neighbor window
 	# window name: middle-click to close with confirm
 	# window name: prefix + middle-click to close without confirm, stay prefixed
 	# right status bar corner: click toggles expansion
-	# right status bar corner: double-click to create dool + htop windows
+	# right status bar corner: alt-click to create dool + htop windows
 	# empty status bar area: double-click to create new window
 	# whole status bar area: wheelup/-down on scroll through windows just like window names
 	# prefix + many middle-click events keep prefix active to forgive misclicks
 	if [ "$__sp_tmux_ver" -ge 209 ]; then
-		t bind -n DoubleClick1StatusLeft if-shell -F '#{==:#{pane_mode},tree-mode}' 'send-keys Escape' 'choose-tree -Zw'
+		t bind -n M-MouseUp1StatusLeft if-shell -F '#{==:#{pane_mode},tree-mode}' 'send-keys Escape' 'choose-tree -Zw'
 		t bind -n M-DoubleClick1Status select-window -t "{mouse}" '\;' new-window -a -c "#{pane_current_path}"
 		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
 		t unbind -n MouseDown1StatusLeft
 		t bind -n MouseUp1StatusLeft run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
-		t bind -n DoubleClick1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
+		t bind -n M-MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
 		t bind -T prefix WheelUpStatusLeft set -g status-position top '\;' set -g status-justify left
 		t bind -T prefix WheelDownStatusLeft set -g status-position bottom '\;' set -g status-justify centre
 		t bind -n DoubleClick1StatusDefault new-window -c "#{pane_current_path}"
@@ -579,7 +579,7 @@ main() {
 		t bind -n WheelDownStatusRight next-window
 		t unbind -n MouseDown1StatusRight
 		t bind -n MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
-		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
+		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window #W? (y/n)" "kill-window"
 	fi
 	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
