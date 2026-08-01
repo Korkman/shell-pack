@@ -237,9 +237,10 @@ main() {
 
 	# copy and paste
 
-	# vi keys are best (most intuitive) for copy and paste
-	# TODO: have a second look at emacs mode with custom keybinds, selection ends at cursor - 1
-	t set -g mode-keys vi
+	# only in emacs mode the selection ends before the cursor, the more commonly encountered method
+	# the most important vi keys are merged into the emacs copy mode, mostly conflict-free
+	t set -g mode-keys emacs
+	
 	# we need no command_prompt, it's perfectly fine to exit prompts with escape
 	t set -g status-keys emacs
 
@@ -317,7 +318,8 @@ main() {
 	t bind N display-message "$MSG"
 	# rename window, tmux default: ,
 	# added: disable renaming to make new name permanent
-	t bind A command-prompt -I "#W" "rename-window '%%'" '\;' set-window-option allow-rename off
+	t bind A command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
+	t bind , command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
 
 	# Pass thru window title set by shell
 	t set -g set-titles on
@@ -401,7 +403,7 @@ main() {
 	# c-a 0: select window 10 if no window 0 exists
 	t bind 0 run-shell "$TMUX_CONF_SH_ESC select_win_0"
 	
-	if [ "$__sp_tmux_ver" -ge 208 ]; then
+	if [ "$__sp_tmux_ver" -ge 204 ]; then
 		# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
 		# for older tmux versions we search for a utf8 whitespace character
 		if [ "$__sp_tmux_ver" -ge 304 ]; then
@@ -430,6 +432,24 @@ main() {
 		# NOTE: about the legacy tmux support: all attempts to search for zero-width utf8 chars ended in tmux locking up at 100% cpu.
 		# so instead we use a part of the prompt we have anyways, which isn't great but not terrible either.
 		
+		# copying over some vital, mostly conflict-free vi key bindings over to emacs mode
+		t bind -T copy-mode Enter send-keys -X copy-selection-and-cancel
+		t bind -T copy-mode Space send-keys -X begin-selection
+		t bind -T copy-mode / command-prompt -p "search down" "send -X search-forward \"%%%\""
+		t bind -T copy-mode g send-keys -X history-top
+		t bind -T copy-mode G send-keys -X history-bottom
+		t bind -T copy-mode M-l command-prompt -p "goto line" "send -X goto-line \"%%%\""
+		t bind -T copy-mode '?' command-prompt -p "search up" "send -X search-backward \"%%%\""
+		t bind -T copy-mode v send-keys -X rectangle-toggle
+		t bind -T copy-mode h send-keys -X cursor-left
+		t bind -T copy-mode j send-keys -X cursor-down
+		t bind -T copy-mode k send-keys -X cursor-up
+		t bind -T copy-mode l send-keys -X cursor-right
+		
+		# rectangle-toggle on r
+		t bind -T copy-mode r send-keys -X rectangle-toggle
+		t bind -T copy-mode-vi r send-keys -X rectangle-toggle
+		
 		# have ctrl-d, f10 and esc exit copy mode
 		t bind -T copy-mode-vi C-d send-keys -X cancel
 		t bind -T copy-mode C-d send-keys -X cancel
@@ -445,8 +465,13 @@ main() {
 		t bind -T copy-mode M-PageDown send-keys -X history-bottom
 		t bind -T copy-mode-vi M-PageUp send-keys -X history-top
 		t bind -T copy-mode-vi M-PageDown send-keys -X history-bottom
+		
+		# clear selection when mouse clicks
 		t bind -T copy-mode MouseDown1Pane select-pane '\;' send-keys -X clear-selection
 		t bind -T copy-mode-vi MouseDown1Pane select-pane '\;' send-keys -X clear-selection
+		# clear selection with shift-C
+		t bind -T copy-mode C send-keys -X clear-selection
+		t bind -T copy-mode-vi C send-keys -X clear-selection
 		
 		# do not exit copy-mode when selecting with mouse
 		# user often scrolls way up to a specific position and may want to copy multiple strings
@@ -466,27 +491,69 @@ main() {
 		style_msg "Selection copied"
 		t bind -T copy-mode c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "$MSG"
 		t bind -T copy-mode-vi c send-keys -X $COPY_SELECTION_NO_CLEAR\\\; display "$MSG"
-
-		# one-time activity monitoring
-		t set -g activity-action any
-		style_msg "Activity detected on window #{window_index}, monitor disabled"
-		t set-hook -g alert-activity "display \"$MSG\" ; set -w monitor-activity off"
-		style_msg "Monitoring window for activity ONCE"
-		t bind M set -w monitor-activity on '\;' display "$MSG"
 		
-		# one-time silence monitoring
-		t set -g silence-action any
-		style_msg "Silence detected on window #{window_index}, monitor disabled"
-		t set-hook -g alert-silence "display \"$MSG\" ; set -w monitor-silence 0"
-		style_msg "Monitoring window for silence ONCE"
-		t bind _ set -w monitor-silence 30 '\;' display "$MSG"
+		if [ "$__sp_tmux_ver" -ge 208 ]; then
+			# one-time activity monitoring
+			t set -g activity-action any
+			style_msg "Activity detected on window #{window_index}, monitor disabled"
+			t set-hook -g alert-activity "display \"$MSG\" ; set -w monitor-activity off"
+			style_msg "Monitoring window for activity ONCE"
+			t bind M set -w monitor-activity on '\;' display "$MSG"
+			
+			# one-time silence monitoring
+			t set -g silence-action any
+			style_msg "Silence detected on window #{window_index}, monitor disabled"
+			t set-hook -g alert-silence "display \"$MSG\" ; set -w monitor-silence 0"
+			style_msg "Monitoring window for silence ONCE"
+			t bind _ set -w monitor-silence 30 '\;' display "$MSG"
+		fi
+	else
+		# copying over some vital, mostly conflict-free vi key bindings over to emacs mode
+		t bind -t emacs-copy Enter copy-selection
+		t bind -t emacs-copy Space begin-selection
+		t bind -t emacs-copy / search-forward
+		t bind -t emacs-copy g history-top
+		t bind -t emacs-copy G history-bottom
+		t bind -t emacs-copy M-l goto-line
+		t bind -t emacs-copy '?' search-backward
+		t bind -t emacs-copy v rectangle-toggle
+		t bind -t emacs-copy h cursor-left
+		t bind -t emacs-copy j cursor-down
+		t bind -t emacs-copy k cursor-up
+		t bind -t emacs-copy l cursor-right
+		
+		# rectangle-toggle on r
+		t bind -t emacs-copy r rectangle-toggle
+		t bind -t vi-copy r rectangle-toggle
+		
+		# have ctrl-d, f10 and esc exit copy mode
+		t bind -t vi-copy C-d cancel
+		t bind -t vi-copy f10 cancel
+		t bind -t vi-copy escape cancel
+		t bind -t emacs-copy C-d cancel
+		t bind -t emacs-copy f10 cancel
+		t bind -t emacs-copy escape cancel
+		
+		# scroll to top / end of buffer with alt-pgup/-pgdn
+		t bind M-PageUp copy-mode
+		t bind M-PageDown copy-mode
+		t bind -t emacs-copy M-PageUp history-top
+		t bind -t emacs-copy M-PageDown history-bottom
+		t bind -t vi-copy M-PageUp history-top
+		t bind -t vi-copy M-PageDown history-bottom
+		
+		# clear selection when mouse clicks
+		# clear selection with shift-C
+		# clear-selection N/A
+		
 	fi
 
 	# various mouse events (also documented in cheat --tmux):
 	# left status bar corner: click toggles expansion
 	# left status bar corner: double-click to show session tree chooser
 	# left status bar corner: prefix + wheelup/-down move status bar up / down
-	# window name: double-click to create new neighbor window
+	# window name: double-click to rename
+	# window name: alt-double-click to create new neighbor window
 	# window name: middle-click to close with confirm
 	# window name: prefix + middle-click to close without confirm, stay prefixed
 	# right status bar corner: click toggles expansion
@@ -496,7 +563,8 @@ main() {
 	# prefix + many middle-click events keep prefix active to forgive misclicks
 	if [ "$__sp_tmux_ver" -ge 209 ]; then
 		t bind -n DoubleClick1StatusLeft if-shell -F '#{==:#{pane_mode},tree-mode}' 'send-keys Escape' 'choose-tree -Zw'
-		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' new-window -a -c "#{pane_current_path}"
+		t bind -n M-DoubleClick1Status select-window -t "{mouse}" '\;' new-window -a -c "#{pane_current_path}"
+		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
 		t unbind -n MouseDown1StatusLeft
 		t bind -n MouseUp1StatusLeft run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
 		t bind -n DoubleClick1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
@@ -513,6 +581,10 @@ main() {
 		t bind -n MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC toggle_clock_details \"#{@clock_details}\""
 		t bind -n MouseDown2Status select-window -t "{mouse}" '\;' confirm-before -p "kill-window \#W? (y/n)" "kill-window"
 	fi
+	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
+	if [ "$__sp_tmux_ver" -ge 303 ]; then
+		t bind -T prefix MouseDown2Status kill-window -t "{mouse}" '\;' switch-client -T prefix
+	fi
 	
 	# binds for toggling status modes w/o mouse
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
@@ -522,15 +594,11 @@ main() {
 		t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details"
 		t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details"
 	fi
+	# top statusbar w/o mouse
 	t bind M-t set -g status-position top '\;' set -g status-justify left
 	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
 	# quick "zen mode"
 	t bind M-z run-shell "$TMUX_CONF_SH_ESC toggle_zen_mode"
-	
-	# moving this to minimum 303 as closing the last tab crashed in podman test-drive debian bullseye
-	if [ "$__sp_tmux_ver" -ge 303 ]; then
-		t bind -T prefix MouseDown2Status kill-window -t "{mouse}" '\;' switch-client -T prefix
-	fi
 	
 	# show cheat --tmux
 	t bind f1 run-shell 'fish --interactive -c "cheat --tmux"'
@@ -847,6 +915,16 @@ right_status() {
 	fi
 }
 
+legacy_force_status_update() {
+	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
+	if [ "$__sp_tmux_ver" -lt 301 ]; then
+		t_end
+		tmux refresh-client -S
+		tmux refresh-client -S
+		(sleep 1; tmux refresh-client -S) &
+	fi
+}
+
 toggle_host_details() {
 	if [ "${1:-}" = "" ]; then
 		HOST_DETAILS="$(tmux show -gqv @host_details)"
@@ -860,9 +938,7 @@ toggle_host_details() {
 	else
 		t set -g '@host_details' 1
 	fi
-	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
-	t_end
-	t refresh-client -S
+	legacy_force_status_update
 }
 
 toggle_clock_details() {
@@ -884,10 +960,7 @@ toggle_clock_details() {
 		# when showing details, switch to refresh each second
 		t set -g status-interval 1
 	fi
-	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
-	t_end
-	tmux refresh-client -S
-	tmux refresh-client -S
+	legacy_force_status_update
 }
 
 toggle_zen_mode() {
@@ -899,10 +972,7 @@ toggle_zen_mode() {
 		t set -g '@host_details' 0
 		t set -g status-interval "$D_STATUS_INTERVAL"
 	fi
-	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
-	t_end
-	tmux refresh-client -S
-	tmux refresh-client -S
+	legacy_force_status_update
 }
 
 custom_functions

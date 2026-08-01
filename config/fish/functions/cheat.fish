@@ -353,8 +353,8 @@ ctrl-a, lift keys, then
   backspace, space: jump to previous, next window
   ctrl-a: jump to most recent window
   arrow-left, arrow-right: move window left / right on status bar (may renumber)
-  shift-a: rename window
-  shift-n: show window number and name
+  shift-A: rename window
+  shift-N: show window number and name
   shift-M: monitor window for activity (once)
   _: monitor window for silence (once)
   esc: enter copy-mode (scroll up to 50000 lines in history)
@@ -363,29 +363,32 @@ ctrl-a, lift keys, then
     alias: alt-pgup, scroll to start of history
     in copy-mode:
       mouse: supports drag, double- and tripleclick to copy
-      space / enter: start, copy selection, exit copy-mode
-      c: copy selection but stay in copy-mode
+      space: start
+      enter: copy & leave copy-mode
+      c: copy selection, stay in copy-mode
+      C: clear selection, stay in copy-mode
       y / x / alt-up / alt-down: scroll to previous / next prompt
       alt-pgup / alt-pgdn: scroll to start / end of history
   v: paste previously copied text
   |: split window into panes left and right
   -: split window into panes top and bottom
-     alias: shift-s
+     alias: shift-S
   tab: jump to next pane
   ctrl-arrows: resize current pane
   k: kill pane (if confirmed)
   m: mark pane
   s: swap pane with marked
-  shift-b: toggle broadcast mode, sending keystrokes to all panes in window
+  shift-B: toggle broadcast mode, sending keystrokes to all panes in window
   w: show sessions and their windows
-  shift-w: move window to other session with picker
+  shift-W: move window to other session with picker
   alt-w: move window to (new) other session
-  shift-q: break out a pane into a dedicated window
+  shift-Q: break out a pane into a dedicated window
     alias: !
-  shift-k: kill all windows and exit (if confirmed)
+  shift-K: kill all windows and exit (if confirmed)
     alias: \
-  alt-l: toggle through left status styles
-  alt-r: toggle through right status styles
+  alt-l: cycle through left status styles
+  alt-r: cycle through right status styles
+  alt-z: collapse both left and right status
   alt-t: move status to top
   alt-b: move status to bottom
  
@@ -398,7 +401,8 @@ ctrl-a, lift keys, then
 - click left status to toggle left status styles
 - double-click left status shows session tree chooser
 - prefix + wheelup/-down on left status moves status bar to top / bottom
-- double-click on tab creates new window next to it
+- double-click on tab renames window
+- alt-double-click on tab creates new window next to it
 - button 2 on tab closes window with confirm
 - prefix + button 2 on tab closes window without confirm
 - click right status to toggle right status styles
