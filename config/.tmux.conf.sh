@@ -55,6 +55,7 @@ COLOR_PANE_BORDER_FG="colour236"
 COLOR_PANE_ACTIVE_BORDER_FG="colour48"
 COLOR_WIN_STATUS_CURRENT_BG="colour255"
 COLOR_WIN_STATUS_CURRENT_FG="black"
+# apply custom overrides
 custom_colors
 
 # styles and symbols
@@ -73,8 +74,8 @@ if [ "${LC_NERDLEVEL:-0}" -gt 2 ]; then
 else
 	S_STATUS_L_END=" "
 	S_STATUS_R_BEGIN=" "
-	S_STATUS_DIV_L=" | "
-	S_STATUS_DIV_R=" | "
+	S_STATUS_DIV_L=" · "
+	S_STATUS_DIV_R=" · "
 	S_COLLAPSED_L=" < "
 	S_COLLAPSED_R=" > "
 	S_MESSAGE_BEGIN=" ! "
@@ -87,6 +88,7 @@ style_msg() {
 		MSG="#[align=centre]$MSG$S_MESSAGE_END"
 	fi
 }
+# apply custom overrides
 custom_styles
 
 # batching support: collect tmux commands with 't', then send them all
@@ -202,6 +204,7 @@ main() {
 	# Status line colors
 	t set -g status on
 	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
+	t set -g mode-style "$STYLE_HIGHLIGHT"
 	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
 	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG,bold
 	if [ "$__sp_tmux_ver" -ge 307 ]; then
@@ -293,8 +296,8 @@ main() {
 	fi
 	
 	# automatic rename of window name to active pane title
-	t set-window-option -g automatic-rename on
-	t set-window-option -g automatic-rename-format '#T'
+	t set -w -g automatic-rename on
+	t set -w -g automatic-rename-format '#T'
 
 	# gnu screen compatibility
 	t set -g prefix C-a           # ctrl-a command prefix: screen compat
@@ -318,8 +321,8 @@ main() {
 	t bind N display-message "$MSG"
 	# rename window, tmux default: ,
 	# added: disable renaming to make new name permanent
-	t bind A command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
-	t bind , command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
+	t bind A command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
+	t bind , command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
 
 	# Pass thru window title set by shell
 	t set -g set-titles on
@@ -330,7 +333,9 @@ main() {
 	
 	# make ctrl-arrow work in mc
 	# make shift-arrow work in mc
-	t set-window-option -g xterm-keys on
+	if [ "$__sp_tmux_ver" -lt 204 ]; then
+		t set -w -g xterm-keys on
+	fi
 
 	# make client-side scrollbuffers work
 	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
@@ -363,8 +368,6 @@ main() {
 	else
 		t set -g status-left "#($TMUX_CONF_SH_ESC left_status)"
 	fi
-	t set -g mode-style "$STYLE_HIGHLIGHT"
-
 	# show load, status indicator, better clock on the right
 	# loadavg and clock are both computed by the right_status subcommand
 	t set -g status-right-length 120
@@ -564,7 +567,7 @@ main() {
 	if [ "$__sp_tmux_ver" -ge 209 ]; then
 		t bind -n M-MouseUp1StatusLeft if-shell -F '#{==:#{pane_mode},tree-mode}' 'send-keys Escape' 'choose-tree -Zw'
 		t bind -n M-DoubleClick1Status select-window -t "{mouse}" '\;' new-window -a -c "#{pane_current_path}"
-		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' command-prompt -I "#W" "rename-window '%%'; set-window-option allow-rename off"
+		t bind -n DoubleClick1Status select-window -t "{mouse}" '\;' command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
 		t unbind -n MouseDown1StatusLeft
 		t bind -n MouseUp1StatusLeft run-shell "$TMUX_CONF_SH_ESC toggle_host_details \"#{@host_details}\""
 		t bind -n M-MouseUp1StatusRight run-shell "$TMUX_CONF_SH_ESC open_monitoring_windows"
@@ -696,6 +699,17 @@ if [ "${1:-}" = "" ]; then
 	exit
 fi
 
+legacy_force_status_update() {
+	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
+	if [ "$__sp_tmux_ver" -lt 301 ]; then
+		t_end
+		# older tmux need a bit of extra tickeling to reliably update the status
+		tmux set -qg @left_status "$(tmux show -gqv @left_status)"
+		tmux set -qg @right_status "$(tmux show -gqv @right_status)"
+		tmux refresh-client -S
+	fi
+}
+
 toggle_broadcast() {
 	if [ "${1:-}" = "" ]; then
 		SYNC="$(tmux display -p "#{pane_synchronized}")"
@@ -707,23 +721,23 @@ toggle_broadcast() {
 	else
 		SYNC="off"
 	fi
-	[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-format "#{pane_index} #T"
-	t set-window-option synchronize-panes "$SYNC"
+	[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-format "#{pane_index} #T"
+	t set -w synchronize-panes "$SYNC"
 	style_msg "Synchronize-panes is now $SYNC"
 	t display-message "$MSG"
 	if [ "$SYNC" = "on" ]; then
-		[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-status top
-		t set-window-option pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
-		t set-window-option pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+		[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-status top
+		t set -w pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+		t set -w pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
 	else
-		[ "$__sp_tmux_ver" -lt 203 ] || t set-window-option pane-border-status off
-		t set-window-option pane-border-style fg=$COLOR_PANE_BORDER_FG
-		t set-window-option pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+		[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-status off
+		t set -w pane-border-style fg=$COLOR_PANE_BORDER_FG
+		t set -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
 	fi
 	
 	if [ "$__sp_tmux_ver" -ge 305 ]; then
-		t set-window-option pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
-		t set-window-option pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
+		t set -w pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
+		t set -w pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
 	fi
 	t refresh-client -S
 }
@@ -781,8 +795,7 @@ move_window_to_session() {
 		# kill the placeholder
 		t kill-window -t "=$TMUX_PROMPT_ANSWER:99"
 	fi
-	t_end # flush buffer so refresh-client works for e.g. tmux 2.8
-	t refresh-client -S
+	legacy_force_status_update
 }
 
 left_status() {
@@ -809,6 +822,9 @@ left_status() {
 		SCROLL_POSITION="$8"
 		PANE_SYNC="$9"
 	fi
+	if [ "$STYLE" = "0" ] && [ "$TMUX_USER" = "root" ] && [ "$COLUMNS" -lt 120 ]; then
+		TMUX_USER="√"
+	fi
 	# always have the mode indicator color
 	if [ "$CLIENT_KEY_TABLE" = "prefix" ]; then
 		MODE_STYLE="#[bg=$COLOR_MODE_PREFIX_BG fg=$COLOR_MODE_PREFIX_FG]"
@@ -823,47 +839,58 @@ left_status() {
 		MODE_STYLE="#[$STYLE_STATUS_L]"
 		MODE_WORD="NORM"
 	fi
+	
+	# start with colors
+	LEFT_STATUS="$MODE_STYLE"
+	
 	# collapsed style
-	printf "%s" "$MODE_STYLE"
 	if [ "$STYLE" = "2" ]; then
-		echo "$S_COLLAPSED_L$S_STATUS_L_END"
-		return
-	fi
-	if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
-		DISPLAY_SESSION="$TMUX_SESSION"
+		LEFT_STATUS="$LEFT_STATUS$S_COLLAPSED_L$S_STATUS_L_END"
 	else
-		DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
-	fi
-	# apply ellipsis
-	if [ "$STYLE" = "0" ]; then
-		if [ "$COLUMNS" -ge 120 ]; then
-			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
-		elif [ "$COLUMNS" -ge 60 ]; then
-			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
+		if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
+			DISPLAY_SESSION="$TMUX_SESSION"
 		else
-			TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 3)
+			DISPLAY_SESSION="$TMUX_SOCKET_NAME.$TMUX_SESSION"
 		fi
-		if [ "$COLUMNS" -ge 180 ]; then
-			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 20)
-			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 30)
-		elif [ "$COLUMNS" -ge 132 ]; then
-			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 10)
-			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 15)
-		elif [ "$COLUMNS" -ge 60 ]; then
-			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
-			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+		# apply ellipsis
+		if [ "$STYLE" = "0" ]; then
+			if [ "$COLUMNS" -ge 120 ]; then
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 20)
+			elif [ "$COLUMNS" -ge 60 ]; then
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 15)
+			else
+				TMUX_HOST=$(nice_ellipsis "$TMUX_HOST" 3)
+			fi
+			if [ "$COLUMNS" -ge 180 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 20)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 30)
+			elif [ "$COLUMNS" -ge 132 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 10)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 15)
+			elif [ "$COLUMNS" -ge 60 ]; then
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 5)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+			else
+				TMUX_USER=$(nice_ellipsis "$TMUX_USER" 3)
+				DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+			fi
+		fi
+		# mode text only if it fits
+		if [ "$COLUMNS" -ge 80 ]; then
+			LEFT_STATUS="$LEFT_STATUS$MODE_WORD$S_STATUS_DIV_L"
 		else
-			TMUX_USER=$(nice_ellipsis "$TMUX_USER" 3)
-			DISPLAY_SESSION=$(nice_ellipsis "$DISPLAY_SESSION" 5)
+			LEFT_STATUS="$LEFT_STATUS#[$STYLE_STATUS_L]"
 		fi
+		LEFT_STATUS="$LEFT_STATUS$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$DISPLAY_SESSION$S_STATUS_L_END"
 	fi
-	# mode text only if it fits
-	if [ "$COLUMNS" -ge 80 ]; then
-		printf "%s" "$MODE_WORD$S_STATUS_DIV_L"
+	if [ "$__sp_tmux_ver" -ge 203 ]; then
+		# always output the format variable
+		t set -qg '@left_status' "$LEFT_STATUS"
+		echo "#{@left_status}"
 	else
-		printf "%s" "#[$STYLE_STATUS_L]"
+		echo "$LEFT_STATUS"
 	fi
-	echo "$TMUX_USER@$TMUX_HOST$S_STATUS_DIV_L$DISPLAY_SESSION$S_STATUS_L_END"
+
 }
 
 right_status() {
@@ -899,11 +926,11 @@ right_status() {
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
 		fi
-		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
+		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
 	else
 		# narrow terminal: no details
 		CLOCK=$(date '+%H:%M')
-		t set -g @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
 	fi
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		# always output the format variable
@@ -912,16 +939,6 @@ right_status() {
 		t_end
 		format="$(tmux show -gqv @right_status)"
 		echo "$format"
-	fi
-}
-
-legacy_force_status_update() {
-	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
-	if [ "$__sp_tmux_ver" -lt 301 ]; then
-		t_end
-		tmux refresh-client -S
-		tmux refresh-client -S
-		(sleep 1; tmux refresh-client -S) &
 	fi
 }
 
@@ -975,6 +992,7 @@ toggle_zen_mode() {
 	legacy_force_status_update
 }
 
+# apply custom overrides
 custom_functions
 
 SUBCOMMAND="$1"
