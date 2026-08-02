@@ -364,7 +364,12 @@ main() {
 	# user@host|session part is delegated to the left_status subcommand.
 	t set -g status-left-length 120
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
-		t set -g status-left "#($TMUX_CONF_SH_ESC left_status '#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' '#{@socket_name}' '#{client_key_table}' '#{scroll_position}' '#{pane_synchronized}')"
+		t set -g status-left "#(\
+			$TMUX_CONF_SH_ESC left_status \
+			'#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' \
+			'#{@socket_name}' '#{client_key_table}' '#{scroll_position}' \
+			'#{pane_synchronized}' '#{client_flags}' '#{client_termfeatures}'\
+		)"
 	else
 		t set -g status-left "#($TMUX_CONF_SH_ESC left_status)"
 	fi
@@ -372,7 +377,11 @@ main() {
 	# loadavg and clock are both computed by the right_status subcommand
 	t set -g status-right-length 120
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
-		t set -g status-right "#($TMUX_CONF_SH_ESC right_status \"#{@clock_details}\" \"#{client_width}\" \"#{client_flags}\" \"#{client_termfeatures}\")"
+		t set -g status-right "#(\
+			$TMUX_CONF_SH_ESC right_status \
+			'#{@clock_details}' '#{client_width}' '#{client_flags}' \
+			'#{client_termfeatures}' \
+		)"
 	else
 		t set -g status-right "#($TMUX_CONF_SH_ESC right_status)"
 	fi
@@ -819,6 +828,8 @@ left_status() {
 		CLIENT_KEY_TABLE="$(tmux display -p '#{client_key_table}')"
 		SCROLL_POSITION="$(tmux display -p '#{scroll_position}')"
 		PANE_SYNC="$(tmux display -p '#{pane_synchronized}')"
+		CLIENT_FLAGS="$(tmux display -p '#{client_flags}')"
+		CLIENT_FEATURES="$(tmux display -p '#{client_termfeatures}')"
 	else
 		STYLE="$1"
 		TMUX_HOST="${2%%.*}"
@@ -829,6 +840,8 @@ left_status() {
 		CLIENT_KEY_TABLE="$7"
 		SCROLL_POSITION="$8"
 		PANE_SYNC="$9"
+		CLIENT_FLAGS="${10}"
+		CLIENT_FEATURES="${11}"
 	fi
 	if [ "$STYLE" = "0" ] && [ "$TMUX_USER" = "root" ] && [ "$COLUMNS" -lt 120 ]; then
 		TMUX_USER="√"
@@ -854,6 +867,8 @@ left_status() {
 	# collapsed style
 	if [ "$STYLE" = "2" ]; then
 		LEFT_STATUS="$LEFT_STATUS$S_COLLAPSED_L$S_STATUS_L_END"
+		echo "$LEFT_STATUS"
+		return
 	else
 		if [ "$TMUX_SESSION" = "$TMUX_SOCKET_NAME" ]; then
 			DISPLAY_SESSION="$TMUX_SESSION"
@@ -893,7 +908,12 @@ left_status() {
 	fi
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		# always output the format variable
-		t set -qg '@left_status' "$LEFT_STATUS"
+		if echo ",$CLIENT_FEATURES," | grep -q ",focus," && ! echo ",$CLIENT_FLAGS," | grep -q ",focused,"; then
+			# if the client terminal supports focus reporting and is currently absent, stop updating the status
+			:
+		else
+			t set -qg '@left_status' "$LEFT_STATUS"
+		fi
 		echo "#{@left_status}"
 	else
 		echo "$LEFT_STATUS"
