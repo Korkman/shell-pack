@@ -966,6 +966,91 @@ left_status() {
 
 }
 
+# print battery charge (e.g. "87%" or "87%+" while charging) if a battery
+# is present and not fully charged; prints nothing otherwise (no battery,
+# or battery at 100%)
+get_battery() {
+	for BAT in /sys/class/power_supply/BAT*; do
+		if [ -f "$BAT/capacity" ]; then
+			CAPACITY=$(cat "$BAT/capacity" 2>/dev/null)
+			if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
+				if [ "$(cat "$BAT/status" 2>/dev/null)" = "Charging" ]; then
+					if [ "$LC_NERDLEVEL" -ge 3 ]; then
+						if [ "$CAPACITY" -gt 99 ]; then
+							BATICON="󰂅"
+						elif [ "$CAPACITY" -gt 90 ]; then
+							BATICON="󰂋"
+						elif [ "$CAPACITY" -gt 80 ]; then
+							BATICON="󰂊"
+						elif [ "$CAPACITY" -gt 70 ]; then
+							BATICON="󰢞"
+						elif [ "$CAPACITY" -gt 60 ]; then
+							BATICON="󰂉"
+						elif [ "$CAPACITY" -gt 50 ]; then
+							BATICON="󰢝"
+						elif [ "$CAPACITY" -gt 40 ]; then
+							BATICON="󰂈"
+						elif [ "$CAPACITY" -gt 30 ]; then
+							BATICON="󰂇"
+						elif [ "$CAPACITY" -gt 20 ]; then
+							BATICON="󰂆"
+						elif [ "$CAPACITY" -gt 10 ]; then
+							BATICON="󰢜"
+						else
+							BATICON="󰢟"
+						fi
+						echo "$BATICON"
+					else
+						echo "${CAPACITY}%+"
+					fi
+				else
+					if [ "$LC_NERDLEVEL" -ge 3 ]; then
+						if [ "$CAPACITY" -gt 99 ]; then
+							BATICON="󰁹"
+						elif [ "$CAPACITY" -gt 90 ]; then
+							BATICON="󰂂"
+						elif [ "$CAPACITY" -gt 80 ]; then
+							BATICON="󰂁"
+						elif [ "$CAPACITY" -gt 70 ]; then
+							BATICON="󰂀"
+						elif [ "$CAPACITY" -gt 60 ]; then
+							BATICON="󰁿"
+						elif [ "$CAPACITY" -gt 50 ]; then
+							BATICON="󰁾"
+						elif [ "$CAPACITY" -gt 40 ]; then
+							BATICON="󰁽"
+						elif [ "$CAPACITY" -gt 30 ]; then
+							BATICON="󰁼"
+						elif [ "$CAPACITY" -gt 20 ]; then
+							BATICON="󰁻"
+						elif [ "$CAPACITY" -gt 10 ]; then
+							BATICON="󰁺"
+						else
+							BATICON="󱃍"
+						fi
+						echo "$BATICON"
+					else
+						echo "${CAPACITY}%"
+					fi
+				fi
+			fi
+			return
+		fi
+	done
+	# macOS fallback
+	if command -v pmset >/dev/null 2>&1; then
+		PMSET_OUT=$(pmset -g batt 2>/dev/null)
+		CAPACITY=$(echo "$PMSET_OUT" | sed -n 's/.*[^0-9]\([0-9]\{1,3\}\)%.*/\1/p' | head -n 1)
+		if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
+			if echo "$PMSET_OUT" | grep -q "AC Power"; then
+				echo "${CAPACITY}%+"
+			else
+				echo "${CAPACITY}%"
+			fi
+		fi
+	fi
+}
+
 right_status() {
 	if [ "${1:-}" = "" ]; then
 		CLOCK_DETAILS="$(tmux show -gqv @clock_details)"
@@ -989,6 +1074,12 @@ right_status() {
 	elif [ "$COLUMNS" -ge 100 ]; then
 		# wide terminal
 		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
+		BATTERY=$(get_battery)
+		if [ -n "$BATTERY" ]; then
+			BATTERY_PART="$BATTERY$S_STATUS_DIV_R"
+		else
+			BATTERY_PART=
+		fi
 		if [ "$CLOCK_DETAILS" = "1" ]; then
 			# long format
 			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
@@ -999,11 +1090,16 @@ right_status() {
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
 		fi
-		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$LOADAVG$S_STATUS_DIV_R$CLOCK"
+		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY_PART$LOADAVG$S_STATUS_DIV_R$CLOCK"
 	else
 		# narrow terminal: no details
 		CLOCK=$(date '+%H:%M')
-		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+		BATTERY=$(get_battery)
+		if [ -n "$BATTERY" ]; then
+			t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY$S_STATUS_DIV_R$CLOCK"
+		else
+			t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
+		fi
 	fi
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		# always output the format variable
