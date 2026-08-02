@@ -148,6 +148,11 @@ using socket SOCKET_NAME.
 		return 0
 	end
 	
+	if set -q TMUX
+		__sp_error "TMUX env var is already set. Nesting prevented."
+		return 1
+	end
+	
 	# autoset exclusive flag
 	if set -q _flag_force || set -q _flag_share || set -q _flag_nag
 		set _flag_exclusive ""
@@ -291,6 +296,8 @@ function __mmux_tmux_attach --no-scope-shadowing -d \
 	end
 	
 	# attach, update env, auto-reload tmux.conf
+	# TODO: remove source-file when no longer supporting debian jessie,
+	# since the client-attach hook deals with this now
 	tmux -L $socket_name $tmuxverb \; \
 		$tmux_update_environment \
 		source-file ~/.tmux.conf

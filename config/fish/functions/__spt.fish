@@ -354,15 +354,21 @@ function __spt_init -d \
 		
 		set -g theme_greeting_add ""
 		
+		# not a number? fix.
+		if ! string match -qr -- "[0-9]+" "$LC_NERDLEVEL"
+			set -g LC_NERDLEVEL 1
+			return
+		end
+		
 		# nerdlevel 2: powerline font installed
-		if test $LC_NERDLEVEL -gt 1
+		if test "$LC_NERDLEVEL" -gt 1
 			set -g theme_powerline_fonts yes
 		else
 			set -g theme_powerline_fonts no
 		end
 
 		# nerdlevel 3: nerdfont installed
-		if test $LC_NERDLEVEL -gt 2
+		if test "$LC_NERDLEVEL" -gt 2
 			set -g theme_nerd_fonts yes
 		else
 			set -g theme_nerd_fonts no
@@ -371,9 +377,8 @@ function __spt_init -d \
 
 	__update_nerdlevel
 
-	
 	if ! set -q __cap_colors
-		set -gx __cap_colors (type -q tput && tput colors || echo 8)
+		__spt_track_term
 	end
 
 	set -g fish_prompt_pwd_dir_length 0
@@ -382,4 +387,8 @@ function __spt_init -d \
 	set -g fish_color_command (__spt fish_command_color)
 	set -g fish_color_comment (__spt fish_comment_color)
 	set -g fish_color_autosuggestion (__spt fish_autosuggestion_color)
+end
+
+function __spt_track_term -v TERM
+	set -gx __cap_colors (type -q tput && tput colors || echo 8)
 end

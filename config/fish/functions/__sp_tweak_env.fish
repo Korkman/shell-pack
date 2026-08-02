@@ -96,6 +96,7 @@ function __sp_tweak_env -d \
 			SSH_AGENT_PID \
 			SSH_ASKPASS \
 			DBUS_SESSION_BUS_ADDRESS \
+			TERM TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM \
 		;
 		
 		mmux --grab-hooks

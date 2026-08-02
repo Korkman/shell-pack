@@ -25,6 +25,27 @@ TMUX_CONF_SH_IS_RELOAD=${TMUX_CONF_SH_IS_RELOAD:-0}
 # result examples: 3.0a -> 300    3.5 -> 305    3.10 -> 310
 __sp_tmux_ver=${__sp_tmux_ver:-$(( $(tmux -V | sed -e 's/[^0-9.]//g' -e 's/\./*100+/') ))}
 
+# let updated session LC_NERDLEVEL, TERM overwrite global
+# very early since this influences symbols
+# TODO: import larger chunks of tmux options with as few calls as possible?
+update_env_from_tmux() {
+	VARNAME="$1"
+	VAR_GLOBAL="$(tmux show-environment -g "$VARNAME" 2>/dev/null)"
+	VAR_GLOBAL="${VAR_GLOBAL#*=}"
+	VAR_LOCAL="$(tmux show-environment "$VARNAME" 2>/dev/null)"
+	VAR_LOCAL="${VAR_LOCAL#*=}"
+	# set the variable for the script invocation
+	eval "$VARNAME=\"$VAR_LOCAL\""
+	
+	if [ "$VAR_LOCAL" != "$VAR_GLOBAL" ]; then
+		tmux set-environment -g "$VARNAME" "$VAR_LOCAL"
+	fi
+}
+update_env_from_tmux TERM
+update_env_from_tmux LC_NERDLEVEL
+
+TPUT_COLORS=$([ "$TERM" != "" ] && command -v tput >/dev/null 2>&1 && tput colors 2>/dev/null || echo 8)
+
 # placeholders which can be overridden in a local sh
 custom_colors() { return; }
 custom_styles() { return; }
@@ -55,6 +76,14 @@ COLOR_PANE_BORDER_FG="colour236"
 COLOR_PANE_ACTIVE_BORDER_FG="colour48"
 COLOR_WIN_STATUS_CURRENT_BG="colour255"
 COLOR_WIN_STATUS_CURRENT_FG="black"
+
+if [ "$TPUT_COLORS" -lt 256 ]; then
+	# some colors don't automap well to 8-color terminal
+	COLOR_HIGHLIGHT_BG="colour3"
+	COLOR_HIGHLIGHT_FG="colour8"
+	COLOR_MODE_COPY_BG="colour3"
+	COLOR_MODE_COPY_FG="colour8"
+fi
 # apply custom overrides
 custom_colors
 
@@ -188,29 +217,40 @@ main() {
 			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
 			tmux display "$MSG"
 		else
-			style_msg "Warning: Errors occured running tmux.conf.sh - you might want to investigate $TMUX_CONF_SH"
+			style_msg "Warning: Config errors in $TMUX_CONF_SH"
 			tmux display "$MSG"
 		fi
 	fi
-	# c-a r: quick config reload early for failsave operation
+	
+	# c-a r: quick config reload
 	style_msg "Config reloaded…"
-	tmux bind r source-file ~/.tmux.conf '\;' display "$MSG"
-
+	t bind r source-file ~/.tmux.conf '\;' display "$MSG"
+	
+	# also reload on attach
+	if [ "$__sp_tmux_ver" -ge 202 ]; then
+		t set-hook client-attached "run-shell \"$TMUX_CONF_SH_ESC client_attached\""
+	fi
+	
 	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
 	# NOTE: this must happen before set-environment
 	t set -g base-index 1
-	t setw -g pane-base-index 1
+	t set -w -g pane-base-index 1
 	
 	# Status line colors
 	t set -g status on
 	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
-	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG,bold
+	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG
+	#if [ "$TPUT_COLORS" -ge 256 ]; then
+	#	t set -ag message-style bold
+	#fi
 	if [ "$__sp_tmux_ver" -ge 307 ]; then
-		t set -ag message-style fill=$COLOR_HIGHLIGHT_BG
-		#t set -ag message-style align=centre
-		#t set -ag message-command-style align=left
+		if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
+			t set -ag message-style fill=$COLOR_HIGHLIGHT_BG
+			#t set -ag message-style align=centre
+			#t set -ag message-command-style align=left
+		fi
 		# NOTE: message-format looks promising, but unfortunately we cannot format
 		# input prompts (e.g. prefix+:) different than "display msg" (#{command_prompt} is no help)
 		# look out for v3.8 where prompt_input may be merged.
@@ -280,7 +320,6 @@ main() {
 	# - try "screen" if "tmux" is not in infocmp
 	# - add -256color if terminal supports it
 	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
-	TPUT_COLORS=$(command -v tput 2>&1 >/dev/null && tput colors || echo 8)
 	if [ "$TPUT_COLORS" -lt 256 ]; then
 		if infocmp tmux > /dev/null 2>&1; then
 			t set -g default-terminal tmux
@@ -395,8 +434,10 @@ main() {
 		# center window list
 		# NOTE: absolute-centre quickly cuts away information
 		t set -g status-justify centre
+		
+		t set -ag update-environment LC_NERDLEVEL
+		t set -ag update-environment TERM
 	fi
-	t set -g '@is-reload' 1
 	
 	# vibrant copy-mode colors and
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
@@ -658,9 +699,13 @@ main() {
 	# therefore, put this rather at the end than the start of main()
 	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
 	
-	t setw pane-border-style fg=$COLOR_PANE_BORDER_FG
-	t setw pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	t set -w pane-border-style fg=$COLOR_PANE_BORDER_FG
+	t set -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	
 	custom_main
+	
+	# set at end so failsafe mode repeats everything
+	t set -g '@is-reload' 1
 }
 
 tmux_show_err() {
@@ -1018,6 +1063,11 @@ toggle_zen_mode() {
 		t set -g status-interval "$D_STATUS_INTERVAL"
 	fi
 	legacy_force_status_update
+}
+
+client_attached() {
+	# simply repeat execution of main on attach
+	main
 }
 
 # apply custom overrides
