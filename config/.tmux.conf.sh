@@ -390,17 +390,19 @@ main() {
 	t set -g '@is-reload' 1
 	
 	# vibrant copy-mode colors and
-	# change the cursor style in copy-mode so selected text becomes clearly visible
 	if [ "$__sp_tmux_ver" -ge 303 ]; then
 		t set -g copy-mode-current-match-style bg=$COLOR_HIGHLIGHT2_BG,fg=$COLOR_HIGHLIGHT2_FG
 		t set -g copy-mode-match-style bg=$COLOR_HIGHLIGHT_BG,fg=$COLOR_HIGHLIGHT_FG
 		
+		# change the cursor style in copy-mode so selected text becomes clearly visible
+		# NOTE: this is only necessary for copy-mode-vi, so it is commented out for now
+		
 		# resetting to default doesn't do the right thing at least in konsole
 		# therefore we define "blinking-block" as the new default
-		t set -g cursor-style blinking-block
+		#t set -g cursor-style blinking-block
 		
 		# have a hook change the cursor style
-		t set-hook -g pane-mode-changed 'if-shell -F "#{==:#{pane_mode},copy-mode}" "set -p cursor-style blinking-underline" "set -p cursor-style blinking-block"'
+		#t set-hook -g pane-mode-changed 'if-shell -F "#{==:#{pane_mode},copy-mode}" "set -p cursor-style blinking-underline" "set -p cursor-style blinking-block"'
 	fi
 	
 	# c-a 0: select window 10 if no window 0 exists
