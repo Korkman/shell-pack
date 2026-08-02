@@ -413,8 +413,8 @@ main() {
 			PREV_PROMPT_MACRO='send-keys -X previous-prompt'
 			NEXT_PROMPT_MACRO='send-keys -X next-prompt'
 		else
-			PREV_PROMPT_MACRO='send-keys -X start-of-line \\; send-keys -X search-backward " " \\; send-keys -X start-of-line'
-			NEXT_PROMPT_MACRO='send-keys -X end-of-line \\; send-keys -X search-forward " " \\; send-keys -X start-of-line'
+			PREV_PROMPT_MACRO="send-keys -X start-of-line \\; send-keys -X search-backward   \; send-keys -X start-of-line"
+			NEXT_PROMPT_MACRO="send-keys -X end-of-line \\; send-keys -X search-forward   \; send-keys -X start-of-line"
 		fi
 		t bind -T copy-mode-vi y $PREV_PROMPT_MACRO
 		t bind -T copy-mode-vi z $PREV_PROMPT_MACRO
@@ -430,8 +430,8 @@ main() {
 		t bind -T copy-mode M-Down $NEXT_PROMPT_MACRO
 		t bind -T copy-mode C-Up $PREV_PROMPT_MACRO
 		t bind -T copy-mode C-Down $NEXT_PROMPT_MACRO
-		t bind M-Up copy-mode \\\; $PREV_PROMPT_MACRO
-		t bind M-Down copy-mode \\\; $NEXT_PROMPT_MACRO
+		t bind M-Up copy-mode '\;' $PREV_PROMPT_MACRO
+		t bind M-Down copy-mode '\;' $NEXT_PROMPT_MACRO
 		# NOTE: about the legacy tmux support: all attempts to search for zero-width utf8 chars ended in tmux locking up at 100% cpu.
 		# so instead we use a part of the prompt we have anyways, which isn't great but not terrible either.
 		
@@ -707,6 +707,12 @@ legacy_force_status_update() {
 		tmux set -qg @left_status "$(tmux show -gqv @left_status)"
 		tmux set -qg @right_status "$(tmux show -gqv @right_status)"
 		tmux refresh-client -S
+		if [ "$__sp_tmux_ver" -lt 203 ]; then
+			# yeah, twice for v2.2
+			tmux set -qg @left_status "$(tmux show -gqv @left_status)"
+			tmux set -qg @right_status "$(tmux show -gqv @right_status)"
+			tmux refresh-client -S
+		fi
 	fi
 }
 
