@@ -2,7 +2,7 @@
 
 | tmux Version | Alpine Release(s) | Debian Release (codename) | Supported |
 |---|---|---|---|
-| 1.6 | — | 7 (wheezy) | ❌[^1] |
+| 1.6 | — | 7 (wheezy) | ❌ [^1] |
 | 1.9 | — | 8 (jessie) | ✔️ |
 | 2.2 | 3.4 | — | ✔️ |
 | 2.3 | 3.5 | 9 (stretch) | ✔️ |
@@ -22,6 +22,7 @@
 | 3.6 | 3.23 | — | ✔️ |
 | 3.7b | Edge | 14 (forky), Unstable (sid) | ✔️ |
 
-[^1] 1.6 does not support "@" prefixed user-defined variables
 
-[^2] 3.3a_git20230428 reports as "tmux next-3.4"
+[^1]: tmux 1.6 does not support "@" prefixed user-defined variables
+
+[^2]: tmux 3.3a_git20230428 reports as "tmux next-3.4"
