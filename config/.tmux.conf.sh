@@ -96,8 +96,8 @@ if [ "${LC_NERDLEVEL:-0}" -gt 2 ]; then
 	S_STATUS_R_BEGIN="#[fg=$COLOR_STATUS_BG bg=$COLOR_STATUS_R_BG]#[$STYLE_STATUS_R] "
 	S_STATUS_DIV_L="  "
 	S_STATUS_DIV_R="  "
-	S_COLLAPSED_L="  "
-	S_COLLAPSED_R="  "
+	S_COLLAPSED_L=" 🠴"
+	S_COLLAPSED_R="🠶 "
 	S_MESSAGE_BEGIN=" 󰗖 "
 	S_MESSAGE_END=" 󰗖 "
 else
@@ -105,8 +105,8 @@ else
 	S_STATUS_R_BEGIN=" "
 	S_STATUS_DIV_L=" · "
 	S_STATUS_DIV_R=" · "
-	S_COLLAPSED_L=" < "
-	S_COLLAPSED_R=" > "
+	S_COLLAPSED_L=" <<"
+	S_COLLAPSED_R=">> "
 	S_MESSAGE_BEGIN=" ! "
 	S_MESSAGE_END=" ! "
 fi
@@ -966,16 +966,18 @@ left_status() {
 
 }
 
-# print battery charge (e.g. "87%" or "87%+" while charging) if a battery
-# is present and not fully charged; prints nothing otherwise (no battery,
+# set BATTERY to charge (e.g. "87%" or "87%+" while charging) if a battery
+# is present and not fully charged; set to nothing otherwise (no battery,
 # or battery at 100%)
-get_battery() {
+assign_battery() {
+	BATTERY=
 	for BAT in /sys/class/power_supply/BAT*; do
 		if [ -f "$BAT/capacity" ]; then
 			CAPACITY=$(cat "$BAT/capacity" 2>/dev/null)
 			if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
 				if [ "$(cat "$BAT/status" 2>/dev/null)" = "Charging" ]; then
-					if [ "$LC_NERDLEVEL" -ge 3 ]; then
+					if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
+						# charging battery icons
 						if [ "$CAPACITY" -gt 99 ]; then
 							BATICON="󰂅"
 						elif [ "$CAPACITY" -gt 90 ]; then
@@ -999,12 +1001,14 @@ get_battery() {
 						else
 							BATICON="󰢟"
 						fi
-						echo "$BATICON"
+						BATTERY="$BATICON"
 					else
-						echo "${CAPACITY}%+"
+						# charging battery text
+						BATTERY="${CAPACITY}%+"
 					fi
 				else
-					if [ "$LC_NERDLEVEL" -ge 3 ]; then
+					if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
+						# discharging battery icons
 						if [ "$CAPACITY" -gt 99 ]; then
 							BATICON="󰁹"
 						elif [ "$CAPACITY" -gt 90 ]; then
@@ -1028,9 +1032,10 @@ get_battery() {
 						else
 							BATICON="󱃍"
 						fi
-						echo "$BATICON"
+						BATTERY="$BATICON"
 					else
-						echo "${CAPACITY}%"
+						# discharging battery text
+						BATTERY="${CAPACITY}%"
 					fi
 				fi
 			fi
@@ -1043,9 +1048,9 @@ get_battery() {
 		CAPACITY=$(echo "$PMSET_OUT" | sed -n 's/.*[^0-9]\([0-9]\{1,3\}\)%.*/\1/p' | head -n 1)
 		if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
 			if echo "$PMSET_OUT" | grep -q "AC Power"; then
-				echo "${CAPACITY}%+"
+				BATTERY="${CAPACITY}%+"
 			else
-				echo "${CAPACITY}%"
+				BATTERY="${CAPACITY}%"
 			fi
 		fi
 	fi
@@ -1074,32 +1079,25 @@ right_status() {
 	elif [ "$COLUMNS" -ge 100 ]; then
 		# wide terminal
 		LOADAVG=$( ([ -f /proc/loadavg ] && cut -d " " -f -3 /proc/loadavg) || sysctl vm.loadavg 2>/dev/null | sed "s/.*{ //;s/ }.*//" )
-		BATTERY=$(get_battery)
-		if [ -n "$BATTERY" ]; then
-			BATTERY_PART="$BATTERY$S_STATUS_DIV_R"
-		else
-			BATTERY_PART=
-		fi
+		assign_battery
+		[ "$BATTERY" = "" ] || BATTERY="$BATTERY$S_STATUS_DIV_R"
 		if [ "$CLOCK_DETAILS" = "1" ]; then
 			# long format
 			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
 		else
 			# short format
-			CLOCK=$(date '+%H:%M %m-%d')
+			CLOCK="$(date '+%H:%M')$S_STATUS_DIV_R$(date '+%m-%d')"
 			if [ "$COLUMNS" -lt 120 ]; then
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
 		fi
-		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY_PART$LOADAVG$S_STATUS_DIV_R$CLOCK"
+		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY$LOADAVG$S_STATUS_DIV_R$CLOCK"
 	else
 		# narrow terminal: no details
 		CLOCK=$(date '+%H:%M')
-		BATTERY=$(get_battery)
-		if [ -n "$BATTERY" ]; then
-			t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY$S_STATUS_DIV_R$CLOCK"
-		else
-			t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$CLOCK"
-		fi
+		assign_battery
+		[ "$BATTERY" = "" ] || BATTERY="$BATTERY$S_STATUS_DIV_R"
+		t set -qg @right_status "#[$STYLE_STATUS_R]$S_STATUS_R_BEGIN$BATTERY$CLOCK"
 	fi
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		# always output the format variable
