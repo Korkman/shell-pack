@@ -1086,7 +1086,7 @@ right_status() {
 			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
 		else
 			# short format
-			CLOCK="$(date '+%H:%M')$S_STATUS_DIV_R$(date '+%m-%d')"
+			CLOCK="$(date '+%H:%M') $(date '+%b-%d')"
 			if [ "$COLUMNS" -lt 120 ]; then
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
