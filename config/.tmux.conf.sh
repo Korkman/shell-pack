@@ -1083,10 +1083,10 @@ right_status() {
 		[ "$BATTERY" = "" ] || BATTERY="$BATTERY$S_STATUS_DIV_R"
 		if [ "$CLOCK_DETAILS" = "1" ]; then
 			# long format
-			CLOCK=$(date '+%H:%M:%S %Y-%m-%d')
+			CLOCK=$(date '+%Y-%m-%dT%H:%M:%S%z')
 		else
 			# short format
-			CLOCK="$(date '+%H:%M') $(date '+%b-%d')"
+			CLOCK="$(date '+%b-%d') $(date '+%H:%M')"
 			if [ "$COLUMNS" -lt 120 ]; then
 				LOADAVG=$(echo "$LOADAVG" | cut -d " " -f 1)
 			fi
