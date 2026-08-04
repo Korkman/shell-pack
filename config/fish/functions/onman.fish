@@ -174,6 +174,7 @@ function onman -d \
 	# --- build URL list: one URL per source, roff or txt based on mode ---
 	set -l urls
 	set -l url_modes  # parallel list: "roff" or "txt"
+	set -l url_descs  # parallel list: source descriptions
 
 	# section suffix for URLs
 	set -l sec_suffix ""
@@ -216,6 +217,7 @@ function onman -d \
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
 				set -a url_modes html
 		end
+		set -a url_descs "https://man.archlinux.org/ (always latest)"
 	end
 
 	# manned.org: good distro coverage including BSD, albeit outdated at times
@@ -231,6 +233,7 @@ function onman -d \
 				set -a urls "https://manned.org/man/$manned_distro/$page$sec_suffix"
 				set -a url_modes html
 		end
+		set -a url_descs "https://manned.org/ ($manned_distro)"
 	end
 	
 	if test "$skip_distro_releases" = no
@@ -244,6 +247,7 @@ function onman -d \
 					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
 					set -a url_modes html
 			end
+			set -a url_descs "https://manpages.ubuntu.com/ ($os_codename)"
 		end
 
 		# Generic Debian template for debian-like (includes Ubuntu)
@@ -258,6 +262,7 @@ function onman -d \
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
 					set -a url_modes html
 			end
+			set -a url_descs "https://manpages.debian.org ($deb_codename)"
 		end
 
 		if test "$os_type" = FreeBSD
@@ -274,6 +279,7 @@ function onman -d \
 					set -a urls $base_url
 					set -a url_modes html
 			end
+			set -a url_descs "https://man.freebsd.org/ ($os_version_id + Ports.quarterly)"
 		end
 	end
 
@@ -290,6 +296,7 @@ function onman -d \
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
 				set -a url_modes html
 		end
+		set -a url_descs "https://man.archlinux.org/ (always latest)"
 	end
 
 	# --- if --urls: print all candidate URLs (any mode) and exit ---
@@ -305,6 +312,7 @@ function onman -d \
 	for i in (seq (count $urls))
 		set -l url $urls[$i]
 		set -l url_mode $url_modes[$i]
+		set -l url_desc $url_descs[$i]
 
 		if test "$flag_debug" = yes; echo "onman: trying $url_mode $url" >&2; end
 		
@@ -376,12 +384,12 @@ function onman -d \
 		# For roff, use roff/mandoc/man -l so bold/overstrike sequences are always
 		# emitted regardless of whether stdout is a tty.
 		begin
-			set -l url_prefix (string match -rg '(^.+?://[^/]+/)' -- $url)
+			#set -l url_prefix (string match -rg '(^.+?://[^/]+/)' -- $url)
 			echo -n (set_color --bold brwhite)'NOTE:'(set_color normal)' Non-local man page'
 			if test $result_from_cache = yes
 				echo -n (set_color --bold brwhite)', CACHED'(set_color normal)
 			end
-			echo '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_prefix
+			echo '. '$url_mode' '(__sp_osc8_url $url 'sourced')' from: '$url_desc
 			if test "$url_mode" = roff
 				if test -z "$roff_renderer"
 					echo (set_color --bold red)'No roff renderer available. Consider passing --txt or --html for other formats.'(set_color normal)
