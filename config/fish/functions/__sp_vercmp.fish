@@ -1,68 +1,119 @@
-# original author: https://github.com/faho
-# original source: https://github.com/fish-shell/fish-shell/issues/4419#issuecomment-330951128
 function __sp_vercmp \
-    --description "Compare versions"
-    
-    # This is a pure fish version of rpm's "vercmp" utility.
-    # It is useful for e.g. making completions dependent on having at least a certain version.
-    # It both prints and returns
-    # "-1" if the first version is smaller
-    # "1" if the first version is greater
-    # "0" if both are equal
-    #
-    # This handles really rather weird versions like '1.4.0~pre2+git141-g6d40dace6358-1'
-    # (an actual debian package version),
-    # and also "2.6.0-610-g55ab7a42" - which is a $FISH_VERSION
-    # when building from git.
-    #
-    # Behavior is weird for some (meaningless) comparisons, e.g.
-    # Git versions with the same number of commits compare the hash (same as vercmp).
-    if not set -q argv[2]
-        echo "Expected two arguments" >&2
-        return 2
-    end
-    # Note: We do _not_ verify that the arguments are versions
-    # - the definition we accept is very loose anyway.
+	--description "Compare versions"
 
-    # First split on "." and "-" to remove those characters.
-    # Then split on every character to allow comparing beta versions and such.
-    set -l first (string split "." -- $argv[1] | string split "-" | string split "")
-    set -l second (string split "." -- $argv[2] | string split "-" | string split "")
-    # Missing trailing components are effectively 0
-    # This also makes 2.6a1 smaller than 2.6 - since the latter is interpreted as "2600", the former as "26a1".
-    while test (count $first) -lt (count $second)
-        set first $first 0
-    end
-    while test (count $second) -lt (count $first)
-        set second $second 0
-    end
-    while set -q first[1]
-        # Simple case - both are the same character, so skip ahead.
-        if test $first[1] = $second[1]
-            set -e first[1]
-            set -e second[1]
-            continue
-        else if string match -qr '[0-9]' -- $first[1]; and not string match -qr '[0-9]' -- $second[1]
-            # First is numeric, second isn't - first is greater.
-            # (I.e. 2.6a1 is _smaller_ than 2.6.0)
-            echo 1
-            return 2
-        else if not string match -qr '[0-9]' -- $first[1]; and string match -qr '[0-9]' -- $second[1]
-            # Other way around - second is numeric, so first is smaller.
-            echo -1
-            return 1
-        else if test (printf '%d' "'$first[1]" | string join "") -lt (printf '%d' "'$second[1]" | string join "")
-            # Both are numeric or both aren't - compare character value.
-            # Note that this is decidedly not locale-aware and encoding dependent.
-            echo -1
-            return 1
-        else
-            # These are different characters, so the only option is that second < first
-            echo 1
-            return 2
-        end
-    end
-    # No components differ, version is the same.
-    echo 0
-    return 0
+	# New implementation for version comparisons
+	# - Runs of digits are compared as whole numbers, so "1.10" > "1.1".
+	# - If one version is a prefix of the other, the longer one (with the
+	#   extra trailing characters) is considered greater, e.g. "1.1a" > "1.1"
+	#   and "1.1b" > "1.1a".
+	#
+	# Prints "-1" and returns 1 if the first version is smaller
+	# Prints "1" and returns 2 if the first version is greater
+	# Prints and returns 0 if both are equal
+
+	if not set -q argv[2]
+		echo "Expected two arguments" >&2
+		return 2
+	end
+
+	# Tokenize each version into runs of consecutive digits / non-digits.
+	set -l versions $argv[1] $argv[2]
+	set -l tokens1
+	set -l tokens2
+	for idx in 1 2
+		set -l tokens
+		set -l current ""
+		set -l current_is_digit ""
+		for c in (string split "" -- $versions[$idx])
+			set -l is_digit 0
+			string match -qr '^[0-9]$' -- $c; and set is_digit 1
+			if test -z "$current"
+				set current $c
+				set current_is_digit $is_digit
+			else if test "$is_digit" = "$current_is_digit"
+				set current "$current$c"
+			else
+				set tokens $tokens $current
+				set current $c
+				set current_is_digit $is_digit
+			end
+		end
+		if test -n "$current"
+			set tokens $tokens $current
+		end
+		if test $idx -eq 1
+			set tokens1 $tokens
+		else
+			set tokens2 $tokens
+		end
+	end
+
+	while true
+		if not set -q tokens1[1]; and not set -q tokens2[1]
+			echo 0
+			return 0
+		else if not set -q tokens1[1]
+			# First ran out of tokens - second has extra trailing characters.
+			echo -1
+			return 1
+		else if not set -q tokens2[1]
+			echo 1
+			return 2
+		end
+
+		set -l t1 $tokens1[1]
+		set -l t2 $tokens2[1]
+		set -e tokens1[1]
+		set -e tokens2[1]
+
+		if test "$t1" = "$t2"
+			continue
+		end
+
+		set -l t1_digit 0
+		set -l t2_digit 0
+		string match -qr '^[0-9]+$' -- $t1; and set t1_digit 1
+		string match -qr '^[0-9]+$' -- $t2; and set t2_digit 1
+
+		if test $t1_digit -eq 1 -a $t2_digit -eq 1
+			if test "$t1" -eq "$t2"
+				continue
+			else if test "$t1" -lt "$t2"
+				echo -1
+				return 1
+			else
+				echo 1
+				return 2
+			end
+		else
+			# Compare byte by byte; whichever token is a prefix of the other
+			# but shorter is considered smaller.
+			set -l c1 (string split "" -- $t1)
+			set -l c2 (string split "" -- $t2)
+			set -l n (count $c1)
+			set -l m (count $c2)
+			set -l i 1
+			while test $i -le $n -a $i -le $m
+				if test "$c1[$i]" != "$c2[$i]"
+					set -l a (printf '%d' "'$c1[$i]")
+					set -l b (printf '%d' "'$c2[$i]")
+					if test $a -lt $b
+						echo -1
+						return 1
+					else
+						echo 1
+						return 2
+					end
+				end
+				set i (math $i + 1)
+			end
+			if test $n -lt $m
+				echo -1
+				return 1
+			else
+				echo 1
+				return 2
+			end
+		end
+	end
 end
