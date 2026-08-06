@@ -1840,7 +1840,9 @@ Host $ssh_alias
 		functions -e __qssh_tmp_mc
 		
 		# strip alias from config
-		echo -n "" > ~/.ssh/config.new
+		set -l tmp_ssh_config ~/.ssh/config.new
+		rm -f "$tmp_ssh_config" || return 1
+		cp -a ~/.ssh/config "$tmp_ssh_config" || return 1
 		set -l skip no
 		for line in (cat ~/.ssh/config)
 			if [ "$line" = "# START QSSH TMP $ssh_alias" ]
@@ -1852,14 +1854,13 @@ Host $ssh_alias
 				continue
 			end
 			if [ "$skip" = "no" ]
-				echo "$line" >> ~/.ssh/config.new
+				echo "$line" >> "$tmp_ssh_config" || return 1
 			end
 		end
 		
-		rm -f ~/.ssh/config.bak
-		mv ~/.ssh/config ~/.ssh/config.bak
-		cat ~/.ssh/config.new > ~/.ssh/config # keeping permissions here
-		rm -f ~/.ssh/config.new
+		rm -f ~/.ssh/config.bak || return 1
+		mv ~/.ssh/config ~/.ssh/config.bak || return 1
+		mv "$tmp_ssh_config" ~/.ssh/config || return 1
 		
 		__qssh_db_mru_read mru $hostdef
 		__qssh_cache_invalidate
