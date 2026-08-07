@@ -269,10 +269,35 @@ main() {
 	# Allow shell to rename window
 	t set -g allow-rename on
 
+	# Status line colors
+	t set -g status on
+	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
+	t set -g mode-style "$STYLE_HIGHLIGHT"
+	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
+	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG
+	#if [ "$TPUT_COLORS" -ge 256 ]; then
+	#	t set -ag message-style bold
+	#fi
+	if [ "$__sp_tmux_ver" -ge 307 ]; then
+		if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
+			t set -ag message-style fill=$COLOR_HIGHLIGHT_BG
+			#t set -ag message-style align=centre
+			#t set -ag message-command-style align=left
+		fi
+		# NOTE: message-format looks promising, but unfortunately we cannot format
+		# input prompts (e.g. prefix+:) different than "display msg" (#{command_prompt} is no help)
+		# look out for v3.8 where prompt_input may be merged.
+		#t set -g message-format '…'
+	fi
+	
 	# make client-side scrollbuffers work
 	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
 	t set -g terminal-overrides 'xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@,*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
 
+	# set-environment seems to trigger creation of the first window
+	# therefore, put this rather at the end than the start of main()
+	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
+	
 	# make ctrl-arrow work in mc
 	# make shift-arrow work in mc
 	if [ "$__sp_tmux_ver" -lt 204 ]; then
@@ -289,7 +314,6 @@ main() {
 			[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
 			|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
 		"
-		
 	else
 		main_phase2
 	fi
@@ -330,27 +354,6 @@ main_phase2() {
 	# also reload on attach
 	if [ "$__sp_tmux_ver" -ge 202 ]; then
 		t set-hook client-attached "run-shell \"$TMUX_CONF_SH_ESC client_attached\""
-	fi
-	
-	# Status line colors
-	t set -g status on
-	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
-	t set -g mode-style "$STYLE_HIGHLIGHT"
-	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
-	t set -g message-style fg=$COLOR_HIGHLIGHT_FG,bg=$COLOR_HIGHLIGHT_BG
-	#if [ "$TPUT_COLORS" -ge 256 ]; then
-	#	t set -ag message-style bold
-	#fi
-	if [ "$__sp_tmux_ver" -ge 307 ]; then
-		if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
-			t set -ag message-style fill=$COLOR_HIGHLIGHT_BG
-			#t set -ag message-style align=centre
-			#t set -ag message-command-style align=left
-		fi
-		# NOTE: message-format looks promising, but unfortunately we cannot format
-		# input prompts (e.g. prefix+:) different than "display msg" (#{command_prompt} is no help)
-		# look out for v3.8 where prompt_input may be merged.
-		#t set -g message-format '…'
 	fi
 	
 	# Intuitive window splitting
@@ -466,7 +469,7 @@ main_phase2() {
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		t set -g status-left "#(\
 			$TMUX_CONF_SH_ESC left_status \
-			'#{@host_details}' '#{host}' '#{USER}' '#S' '#{client_width}' \
+			'#{@host_details}' '#{host}' '#{USER}' '#S' '#{window_width}' \
 			'#{@socket_name}' '#{client_key_table}' '#{scroll_position}' \
 			'#{pane_synchronized}' '#{client_flags}' '#{client_termfeatures}'\
 		)"
@@ -479,7 +482,7 @@ main_phase2() {
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		t set -g status-right "#(\
 			$TMUX_CONF_SH_ESC right_status \
-			'#{@clock_details}' '#{client_width}' '#{client_flags}' \
+			'#{@clock_details}' '#{window_width}' '#{client_flags}' \
 			'#{client_termfeatures}' \
 		)"
 	else
@@ -747,10 +750,6 @@ main_phase2() {
 	fi
 	
 	
-	# set-environment seems to trigger creation of the first window
-	# therefore, put this rather at the end than the start of main()
-	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
-	
 	# restored defaults (2026-05-16)
 	t bind-key z resize-pane -Z
 	t bind-key x confirm-before -p "kill-pane #P? (y/n)" kill-pane
@@ -928,7 +927,7 @@ left_status() {
 		TMUX_HOST="${TMUX_HOST%%.*}"
 		TMUX_USER="${USER:-$(id -un)}"
 		TMUX_SESSION="$(tmux display -p '#S')"
-		COLUMNS="$(tmux display -p '#{client_width}')"
+		COLUMNS="$(tmux display -p '#{window_width}')"
 		TMUX_SOCKET_NAME="$(tmux show -gqv @socket_name)"
 		CLIENT_KEY_TABLE="$(tmux display -p '#{client_key_table}')"
 		SCROLL_POSITION="$(tmux display -p '#{scroll_position}')"
@@ -1119,7 +1118,7 @@ assign_battery() {
 right_status() {
 	if [ "${1:-}" = "" ]; then
 		CLOCK_DETAILS="$(tmux show -gqv @clock_details)"
-		COLUMNS="$(tmux display -p '#{client_width}')"
+		COLUMNS="$(tmux display -p '#{window_width}')"
 		CLIENT_FLAGS="$(tmux display -p '#{client_flags}')"
 		CLIENT_FEATURES="$(tmux display -p '#{client_termfeatures}')"
 	else
