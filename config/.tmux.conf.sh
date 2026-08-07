@@ -25,24 +25,60 @@ TMUX_CONF_SH_IS_RELOAD=${TMUX_CONF_SH_IS_RELOAD:-0}
 # result examples: 3.0a -> 300    3.5 -> 305    3.10 -> 310
 __sp_tmux_ver=${__sp_tmux_ver:-$(( $(tmux -V | sed -e 's/[^0-9.]//g' -e 's/\./*100+/') ))}
 
+# tmux imports variables into the session
 # let updated session LC_NERDLEVEL, TERM overwrite global
 # very early since this influences symbols
-# TODO: import larger chunks of tmux options with as few calls as possible?
-update_env_from_tmux() {
+# TODO: import larger chunks of tmux environment and options to reduce calls?
+update_global_from_session() {
 	VARNAME="$1"
 	VAR_GLOBAL="$(tmux show-environment -g "$VARNAME" 2>/dev/null)"
 	VAR_GLOBAL="${VAR_GLOBAL#*=}"
 	VAR_LOCAL="$(tmux show-environment "$VARNAME" 2>/dev/null)"
-	VAR_LOCAL="${VAR_LOCAL#*=}"
-	# set the variable for the script invocation
-	eval "$VARNAME=\"$VAR_LOCAL\""
+	case "$VAR_LOCAL" in
+		-*)
+			# unset
+			eval "unset $VARNAME; export $VARNAME"
+			tmux set-environment -gr "$VARNAME"
+		;;
+		*)
+			# assigned
+			VAR_LOCAL="${VAR_LOCAL#*=}"
+			eval "$VARNAME=\"$VAR_LOCAL\"; export $VARNAME"
+			if [ "$VAR_LOCAL" != "$VAR_GLOBAL" ]; then
+				tmux set-environment -g "$VARNAME" "$VAR_LOCAL"
+			fi
+		;;
+	esac
 	
-	if [ "$VAR_LOCAL" != "$VAR_GLOBAL" ]; then
-		tmux set-environment -g "$VARNAME" "$VAR_LOCAL"
-	fi
 }
-update_env_from_tmux TERM
-update_env_from_tmux LC_NERDLEVEL
+if tmux has-session >/dev/null 2>&1; then
+	update_global_from_session TERM
+	update_global_from_session LC_NERDLEVEL
+fi
+
+# on initial load, TERM is empty and has to be pulled from show-env
+update_env_from_global() {
+	VARNAME="$1"
+	VAR_GLOBAL="$(tmux show-environment -g "$VARNAME" 2>/dev/null)"
+	case "$VAR_GLOBAL" in
+		-*)
+			# unset
+			eval "unset $VARNAME; export $VARNAME"
+		;;
+		*)
+			# assigned
+			VAR_GLOBAL="${VAR_GLOBAL#*=}"
+			eval "$VARNAME=\"$VAR_GLOBAL\"; export $VARNAME"
+		;;
+	esac
+}
+
+if [ -z "${TERM:-}" ]; then
+	update_env_from_global TERM
+fi
+if [ -z "${LC_NERDLEVEL:-}" ]; then
+	update_env_from_global LC_NERDLEVEL
+fi
 
 TPUT_COLORS=$([ "$TERM" != "" ] && command -v tput >/dev/null 2>&1 && tput colors 2>/dev/null || echo 8)
 
@@ -122,7 +158,7 @@ custom_styles
 
 # batching support: collect tmux commands with 't', then send them all
 # together as a single tmux invocation (joined by tmux's ';' command
-# separator) with 't_end', to minimize process spawns. 't_end' is called
+# separator) with 't_flush', to minimize process spawns. 't_flush' is called
 # automatically on exit.
 # args are joined with a control-char delimiter TMUX_CONF_BUFFER_D (unlikely
 # to ever appear in a tmux argument) and later re-split into positional params
@@ -139,10 +175,10 @@ t() {
 	#   with flushes for the argument count in place, we're at about 9KB per flush.
 	
 	TMUX_CONF_BUFFER_ARGC=$(( TMUX_CONF_BUFFER_ARGC + $# + 1 ))
-	if [ $TMUX_CONF_BUFFER_ARGC -gt 990 ]; then
+	if [ $TMUX_CONF_BUFFER_ARGC -gt $TMUX_CONF_BUFFER_THRESHOLD ]; then
 		# undo addition when debug output is desired
 		#TMUX_CONF_BUFFER_ARGC=$(( TMUX_CONF_BUFFER_ARGC - $# - 1 ))
-		t_end
+		t_flush
 		# re-apply addition
 		TMUX_CONF_BUFFER_ARGC=$(( TMUX_CONF_BUFFER_ARGC + $# + 1 ))
 	fi
@@ -159,6 +195,10 @@ t() {
 	# mark buffer as dirty
 	TMUX_CONF_BUFFER_FILLED=1
 }
+
+
+TMUX_FAILSAFE_DEBUG=${TMUX_FAILSAFE_DEBUG:-0}
+TMUX_FAILSAFE=${TMUX_FAILSAFE:-$TMUX_FAILSAFE_DEBUG}
 
 # in failsafe mode, tmux commands are passed as-is without buffering
 if [ "$TMUX_FAILSAFE" = "1" ]; then
@@ -183,7 +223,7 @@ if [ "$TMUX_FAILSAFE" = "1" ]; then
 	fi
 fi
 
-t_end() {
+t_flush() {
 	#echo "flushing:$TMUX_CONF_BUFFER_ARGC args (${#TMUX_CONF_BUFFER} bytes)"
 	if [ "$TMUX_CONF_BUFFER_FILLED" -eq 1 ]; then
 		__sp_tmux_old_ifs="$IFS"
@@ -207,14 +247,61 @@ TMUX_CONF_BUFFER=
 TMUX_CONF_BUFFER_FILLED=0
 TMUX_CONF_BUFFER_ARGC=0
 TMUX_CONF_BUFFER_D=$(printf '\1')
+TMUX_CONF_BUFFER_THRESHOLD=990
 
 # flush remaining buffer on exit
-trap "t_end" EXIT
+trap "t_flush" EXIT
 
 main() {
+	# c-a r: quick config reload
+	style_msg "Config reloaded…"
+	t bind r source-file ~/.tmux.conf '\;' display "$MSG"
+	
+	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
+	# NOTE: this must happen before set-environment
+	t set -g base-index 1
+	t set -w -g pane-base-index 1
+
+	# Pass thru window title set by shell
+	t set -g set-titles on
+	t set -g set-titles-string '#T'
+	
+	# Allow shell to rename window
+	t set -g allow-rename on
+
+	# make client-side scrollbuffers work
+	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
+	t set -g terminal-overrides 'xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@,*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
+
+	# make ctrl-arrow work in mc
+	# make shift-arrow work in mc
+	if [ "$__sp_tmux_ver" -lt 204 ]; then
+		t set -w -g xterm-keys on
+	fi
+	
+	if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
+		# not a reload - initial server setup
+		t set -ag update-environment LC_NERDLEVEL
+		t set -ag update-environment TERM
+		
+		# to speed up the inital load, move into run-shell -b
+		t run-shell -b "\
+			[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
+			|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
+		"
+		
+	else
+		main_phase2
+	fi
+	return 0
+}
+
+# the second part of the main config is loaded in background
+main_phase2() {
+	# load global buffer counters
 	if [ "$TMUX_FAILSAFE" = "1" ]; then
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
-			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to /tmp"
+			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to $ERRLOG"
 			tmux display "$MSG"
 		else
 			style_msg "Warning: Config errors in $TMUX_CONF_SH"
@@ -222,19 +309,28 @@ main() {
 		fi
 	fi
 	
-	# c-a r: quick config reload
-	style_msg "Config reloaded…"
-	t bind r source-file ~/.tmux.conf '\;' display "$MSG"
+	# color support:
+	# - try "screen" if "tmux" is not in infocmp
+	# - add -256color if terminal supports it
+	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
+	if [ "$TPUT_COLORS" -lt 256 ]; then
+		if infocmp tmux > /dev/null 2>&1; then
+			t set -g default-terminal tmux
+		else
+			t set -g default-terminal screen
+		fi
+	else
+		if infocmp tmux-256color > /dev/null 2>&1; then
+			t set -g default-terminal tmux-256color
+		else
+			t set -g default-terminal screen-256color
+		fi
+	fi
 	
 	# also reload on attach
 	if [ "$__sp_tmux_ver" -ge 202 ]; then
 		t set-hook client-attached "run-shell \"$TMUX_CONF_SH_ESC client_attached\""
 	fi
-	
-	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
-	# NOTE: this must happen before set-environment
-	t set -g base-index 1
-	t set -w -g pane-base-index 1
 	
 	# Status line colors
 	t set -g status on
@@ -256,7 +352,7 @@ main() {
 		# look out for v3.8 where prompt_input may be merged.
 		#t set -g message-format '…'
 	fi
-
+	
 	# Intuitive window splitting
 	t bind '|' split-window -h -c "#{pane_current_path}" # left/right, default: %
 	t bind '-' split-window -v -c "#{pane_current_path}" # top/bottom, default: "
@@ -316,24 +412,6 @@ main() {
 	# feels responsive, should not cause problems in our networks
 	t set -g escape-time 50
 
-	# color support:
-	# - try "screen" if "tmux" is not in infocmp
-	# - add -256color if terminal supports it
-	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
-	if [ "$TPUT_COLORS" -lt 256 ]; then
-		if infocmp tmux > /dev/null 2>&1; then
-			t set -g default-terminal tmux
-		else
-			t set -g default-terminal screen
-		fi
-	else
-		if infocmp tmux-256color > /dev/null 2>&1; then
-			t set -g default-terminal tmux-256color
-		else
-			t set -g default-terminal screen-256color
-		fi
-	fi
-	
 	# automatic rename of window name to active pane title
 	t set -w -g automatic-rename on
 	t set -w -g automatic-rename-format '#T'
@@ -362,23 +440,6 @@ main() {
 	# added: disable renaming to make new name permanent
 	t bind A command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
 	t bind , command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
-
-	# Pass thru window title set by shell
-	t set -g set-titles on
-	t set -g set-titles-string '#T'
-	
-	# Allow shell to rename window
-	t set -g allow-rename on
-	
-	# make ctrl-arrow work in mc
-	# make shift-arrow work in mc
-	if [ "$__sp_tmux_ver" -lt 204 ]; then
-		t set -w -g xterm-keys on
-	fi
-
-	# make client-side scrollbuffers work
-	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
-	t set -g terminal-overrides 'xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@,*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
 
 	# derive socket name from $TMUX (format: "socket_path,pid,session_id"),
 	# e.g. "/tmp/tmux-1000/pb,730888,1" -> "pb"
@@ -434,9 +495,6 @@ main() {
 		# center window list
 		# NOTE: absolute-centre quickly cuts away information
 		t set -g status-justify centre
-		
-		t set -ag update-environment LC_NERDLEVEL
-		t set -ag update-environment TERM
 	fi
 	
 	# vibrant copy-mode colors and
@@ -689,15 +747,14 @@ main() {
 	fi
 	
 	
+	# set-environment seems to trigger creation of the first window
+	# therefore, put this rather at the end than the start of main()
+	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
 	
 	# restored defaults (2026-05-16)
 	t bind-key z resize-pane -Z
 	t bind-key x confirm-before -p "kill-pane #P? (y/n)" kill-pane
 	# end restored defaults
-	
-	# set-environment seems to trigger creation of the first window
-	# therefore, put this rather at the end than the start of main()
-	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
 	
 	t set -w pane-border-style fg=$COLOR_PANE_BORDER_FG
 	t set -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
@@ -706,6 +763,9 @@ main() {
 	
 	# set at end so failsafe mode repeats everything
 	t set -g '@is-reload' 1
+	
+	#t display "debug main_background loaded"
+	return 0
 }
 
 tmux_show_err() {
@@ -758,7 +818,7 @@ fi
 legacy_force_status_update() {
 	# extra flushes and refreshes to work around bugs in old tmux, e.g. 2.8
 	if [ "$__sp_tmux_ver" -lt 301 ]; then
-		t_end
+		t_flush
 		# older tmux need a bit of extra tickeling to reliably update the status
 		tmux set -qg @left_status "$(tmux show -gqv @left_status)"
 		tmux set -qg @right_status "$(tmux show -gqv @right_status)"
@@ -1103,7 +1163,7 @@ right_status() {
 		# always output the format variable
 		echo "#{@right_status}"
 	else
-		t_end
+		t_flush
 		format="$(tmux show -gqv @right_status)"
 		echo "$format"
 	fi

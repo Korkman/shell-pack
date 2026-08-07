@@ -92,6 +92,9 @@ using socket SOCKET_NAME.
 						end # if
 					end # for
 					
+					# special case for TERM: set it to tmux show-option -v default-terminal
+					set -gx TERM (tmux show-option -v default-terminal)
+					
 					set -e __mmux_env_updating
 					
 				end # if
