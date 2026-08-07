@@ -74,7 +74,14 @@ update_env_from_global() {
 }
 
 if [ -z "${TERM:-}" ]; then
-	update_env_from_global TERM
+	if [ "$__sp_tmux_ver" -ge 301 ]; then
+		update_env_from_global TERM
+	else
+		# server startup on very old tmux unfortunately does not have true TERM in
+		# set -g env. so we hardcode :-( it will be updated on client attach, though.
+		TERM=screen-256color
+		export TERM
+	fi
 fi
 if [ -z "${LC_NERDLEVEL:-}" ]; then
 	update_env_from_global LC_NERDLEVEL
@@ -304,12 +311,34 @@ main() {
 		t set -w -g xterm-keys on
 	fi
 	
+	# color support:
+	# - try "screen" if "tmux" is not in infocmp
+	# - add -256color if terminal supports it
+	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
+	if [ "$TPUT_COLORS" -lt 256 ]; then
+		if infocmp tmux > /dev/null 2>&1; then
+			TMUX_TERMINAL=tmux
+		else
+			TMUX_TERMINAL=screen
+		fi
+	else
+		if infocmp tmux-256color > /dev/null 2>&1; then
+			TMUX_TERMINAL=tmux-256color
+		else
+			TMUX_TERMINAL=screen-256color
+		fi
+	fi
+	
+	t set -g default-terminal $TMUX_TERMINAL
+	# set a user copy of this variable because it can't be read in tmux <= debian buster
+	t set -g @copy-default-terminal $TMUX_TERMINAL
+	
 	if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
 		# not a reload - initial server setup
-		t set -ag update-environment LC_NERDLEVEL
-		t set -ag update-environment TERM
+		t set -ag update-environment " LC_NERDLEVEL"
+		t set -ag update-environment " TERM"
 		
-		# to speed up the inital load, move into run-shell -b
+		# to speed up the initial load, move into run-shell -b
 		t run-shell -b "\
 			[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
 			|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
@@ -322,7 +351,7 @@ main() {
 
 # the second part of the main config is loaded in background
 main_phase2() {
-	# load global buffer counters
+	
 	if [ "$TMUX_FAILSAFE" = "1" ]; then
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
 			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to $ERRLOG"
@@ -330,24 +359,6 @@ main_phase2() {
 		else
 			style_msg "Warning: Config errors in $TMUX_CONF_SH"
 			tmux display "$MSG"
-		fi
-	fi
-	
-	# color support:
-	# - try "screen" if "tmux" is not in infocmp
-	# - add -256color if terminal supports it
-	# - for certain programs, like mc, 'tmux-256color' will be replaced with 'screen-256color' by aliases
-	if [ "$TPUT_COLORS" -lt 256 ]; then
-		if infocmp tmux > /dev/null 2>&1; then
-			t set -g default-terminal tmux
-		else
-			t set -g default-terminal screen
-		fi
-	else
-		if infocmp tmux-256color > /dev/null 2>&1; then
-			t set -g default-terminal tmux-256color
-		else
-			t set -g default-terminal screen-256color
 		fi
 	fi
 	
@@ -755,8 +766,8 @@ main_phase2() {
 	t bind-key x confirm-before -p "kill-pane #P? (y/n)" kill-pane
 	# end restored defaults
 	
-	t set -w pane-border-style fg=$COLOR_PANE_BORDER_FG
-	t set -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	t set -g -w pane-border-style fg=$COLOR_PANE_BORDER_FG
+	t set -g -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
 	
 	custom_main
 	

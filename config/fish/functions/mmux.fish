@@ -93,7 +93,10 @@ using socket SOCKET_NAME.
 					end # for
 					
 					# special case for TERM: set it to tmux show-option -v default-terminal
-					set -gx TERM (tmux show-option -v default-terminal)
+					set -l NEWTERM (tmux show-options -gv @copy-default-terminal 2>/dev/null)
+					if test "$NEWTERM" != "" && test "$NEWTERM" != "$TERM"
+						set -gx TERM "$NEWTERM"
+					end
 					
 					set -e __mmux_env_updating
 					
