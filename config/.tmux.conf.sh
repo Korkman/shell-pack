@@ -6,6 +6,17 @@
 # supported minimum tmux version: 1.9 (Debian Jessie)
 # features degrade gracefully, all being enabled at 3.5
 
+# macOS ships /bin/sh as an ancient bash 3.x; re-exec with /bin/dash if available
+case "${BASH_VERSION:-}" in
+	3*)
+		if [ -x /bin/dash ]; then
+			exec /bin/dash "$0" "$@"
+		elif [ -x /bin/zsh ]; then
+			exec /bin/zsh "$0" "$@"
+		fi
+	;;
+esac
+
 # derive .tmux.conf.sh directory, real path and escaped real path
 TMUX_CONF_SH_DIR="$(cd "$(dirname "$0")" && pwd)"
 TMUX_CONF_SH="$TMUX_CONF_SH_DIR/$(basename "$0")"
