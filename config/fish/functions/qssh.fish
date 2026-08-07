@@ -1801,7 +1801,7 @@ function __qssh_mc_sftp -d \
 		# with incomplete arguments
 		__qssh_mru_update $hostdef
 		if ! __qssh_master_connect $hostdef
-			echo "Error establishing master connection"
+			__sp_error "Error establishing master connection"
 			__qssh_pause
 			return 0
 		end
@@ -1809,13 +1809,13 @@ function __qssh_mc_sftp -d \
 		set -l ssh_alias qssh-$hostdef_user-$hostdef_hostname-$controlPathSuffix
 		set -l ssh_regex_alias (string escape --style=regex -- ssh_alias)
 		
-		# craft a Host alias which will force mc to use either the existing
-		# connection or fail. NOTE: this might cause 
+		# craft a Host alias which will force mc to either use the existing
+		# connection or fail.
 		set -l ssh_config_tab \
 "# START QSSH TMP $ssh_alias
-# This will be deleted by qssh!
-# Force mc to share existing connection with qssh
-# $hostdef
+#     This will be deleted by qssh!
+#     Force mc to share existing connection with qssh
+#     $hostdef
 Host $ssh_alias
 	HostName nohost.invalid
 	User invalid
@@ -1823,7 +1823,25 @@ Host $ssh_alias
 	ControlMaster no
 	ControlPath $controlPath
 # END QSSH TMP $ssh_alias"
+
+		# modify ~/.ssh/config directly as we cannot direct ssh to a different one
+		# AND we want concurrency to be somewhat supported (multiple mc sftp shells open)
+		
+		# in non-existing, create one
+		if ! test -e ~/.ssh/config
+			touch ~/.ssh/config
+			chmod 0600 ~/.ssh/config
+		end
+		
+		# if non-zero in size, make sure there's a newline at the end before appending
+		if test -s ~/.ssh/config && test (tail -c -1 ~/.ssh/config | wc -l) -eq 0
+			echo "" >> ~/.ssh/config
+		end
+		
+		# append our stanza
 		echo "$ssh_config_tab" >> ~/.ssh/config
+		
+		# run mc in a fancy way
 		function __qssh_tmp_mc -V ssh_alias
 			# blocking signals before changing variables
 			block --local
@@ -1839,10 +1857,9 @@ Host $ssh_alias
 		__qssh_clean_env __qssh_tmp_mc
 		functions -e __qssh_tmp_mc
 		
-		# strip alias from config
-		set -l tmp_ssh_config ~/.ssh/config.new
-		rm -f "$tmp_ssh_config" || return 1
-		cp -a ~/.ssh/config "$tmp_ssh_config" || return 1
+		# strip out alias from the config by filtering lines into a new one
+		set -l tmp_ssh_config (mktemp --tmpdir qssh_ssh_config_restore.XXXXXX)
+		echo -n "" > "$tmp_ssh_config"
 		set -l skip no
 		for line in (cat ~/.ssh/config)
 			if [ "$line" = "# START QSSH TMP $ssh_alias" ]
@@ -1854,13 +1871,18 @@ Host $ssh_alias
 				continue
 			end
 			if [ "$skip" = "no" ]
-				echo "$line" >> "$tmp_ssh_config" || return 1
+				echo "$line" >> "$tmp_ssh_config"
 			end
 		end
 		
-		rm -f ~/.ssh/config.bak || return 1
-		mv ~/.ssh/config ~/.ssh/config.bak || return 1
-		mv "$tmp_ssh_config" ~/.ssh/config || return 1
+		# swap the config for the filtered one:
+		# copy live to bak
+		rm -f ~/.ssh/config.bak
+		cp -a ~/.ssh/config ~/.ssh/config.bak
+		# cat temporary to live (keeping permissions here)
+		cat "$tmp_ssh_config" > ~/.ssh/config
+		# discard temporary
+		rm -f "$tmp_ssh_config"
 		
 		__qssh_db_mru_read mru $hostdef
 		__qssh_cache_invalidate
