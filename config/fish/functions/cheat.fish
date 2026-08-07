@@ -187,19 +187,19 @@ function __cheat_glyphs
 	echo -n "Terminal glyphs and capabilities test:
 
    ┌──────────────────────────┐
-  │ Powerline Solid Arrow    └── This line is solid! (mc)
+  │ Powerline Solid Arrow    └── This line must appear solid! (mc)
   │ Powerline Hollow Arrow
-  │ Read-only lock
-  │ Bookmark
- 󰋞 │ Home
-  │ Debian Swirl Logo     Styles: $style_i, $style_s, $style_b and $style_u
-  │ Exit OK
-  │ Exit Error            Powerlines: $pl_a1 $pl_a2 $pl_a3
-  │ Hourglass End                     Disrupted? Adjust font size.
-  │ Calendar
-  │ Walking man           Policeline: $policeline
- ↓ │ Arrow Down (mc)
- ✕ │ Close X (mc)
+  │ Read-only lock        
+  │ Bookmark              
+  │ Debian Swirl Logo     Batteries at 10, 50, 100%, charging: 󰢜 󰢝 󰂅
+  │ Exit Error                                   not charging: 󰁺 󰁾 󰁹
+ 󰋞 │ Home                  
+  │ Hourglass End         Styles: $style_i, $style_s, $style_b and $style_u
+  │ Exit OK               
+  │ Walking man           Powerlines: $pl_a1 $pl_a2 $pl_a3
+ ↓ │ Arrow Down (mc)                   Disrupted? Adjust font size.
+  │ Calendar              
+ ✕ │ Close X (mc)          Policeline: $policeline 
 ───┘   
  __ Glyphs must not be cut off - some symbols may be as wide as these two
     underscores! If they don't, your font is monospace, which is wrong.
