@@ -188,18 +188,18 @@ function __cheat_glyphs
 
    ┌──────────────────────────┐
   │ Powerline Solid Arrow    └── This line must appear solid! (mc)
-  │ Powerline Hollow Arrow
-  │ Read-only lock        
-  │ Bookmark              
-  │ Debian Swirl Logo     Batteries at 10, 50, 100%, charging: 󰢜 󰢝 󰂅
-  │ Exit Error                                   not charging: 󰁺 󰁾 󰁹
- 󰋞 │ Home                  
-  │ Hourglass End         Styles: $style_i, $style_s, $style_b and $style_u
-  │ Exit OK               
-  │ Walking man           Powerlines: $pl_a1 $pl_a2 $pl_a3
- ↓ │ Arrow Down (mc)                   Disrupted? Adjust font size.
-  │ Calendar              
- ✕ │ Close X (mc)          Policeline: $policeline 
+  │ Powerline Hollow Arrow   
+  │ Read-only lock          🠴 UTF8 7.0 'Finger-Post' Arrows 🠶
+  │ Bookmark                
+  │ Debian Swirl Logo       Batteries at 10, 50, 100%, charging: 󰢜 󰢝 󰂅
+  │ Exit Error                                     not charging: 󰁺 󰁾 󰁹
+ 󰋞 │ Home                     
+  │ Hourglass End           Styles: $style_i, $style_s, $style_b and $style_u
+  │ Exit OK                  
+  │ Walking man             Powerlines: $pl_a1 $pl_a2 $pl_a3
+ ↓ │ Arrow Down (mc)                     Disrupted? Adjust font size.
+  │ Calendar                 
+ ✕ │ Close X (mc)            Policeline: $policeline 
 ───┘   
  __ Glyphs must not be cut off - some symbols may be as wide as these two
     underscores! If they don't, your font is monospace, which is wrong.
