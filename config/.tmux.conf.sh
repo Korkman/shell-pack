@@ -1052,86 +1052,116 @@ left_status() {
 # or battery at 100%)
 assign_battery() {
 	BATTERY=
-	for BAT in /sys/class/power_supply/BAT*; do
-		if [ -f "$BAT/capacity" ]; then
-			CAPACITY=$(cat "$BAT/capacity" 2>/dev/null)
-			if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
-				if [ "$(cat "$BAT/status" 2>/dev/null)" = "Charging" ]; then
-					if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
-						# charging battery icons
-						if [ "$CAPACITY" -gt 99 ]; then
-							BATICON="󰂅"
-						elif [ "$CAPACITY" -gt 90 ]; then
-							BATICON="󰂋"
-						elif [ "$CAPACITY" -gt 80 ]; then
-							BATICON="󰂊"
-						elif [ "$CAPACITY" -gt 70 ]; then
-							BATICON="󰢞"
-						elif [ "$CAPACITY" -gt 60 ]; then
-							BATICON="󰂉"
-						elif [ "$CAPACITY" -gt 50 ]; then
-							BATICON="󰢝"
-						elif [ "$CAPACITY" -gt 40 ]; then
-							BATICON="󰂈"
-						elif [ "$CAPACITY" -gt 30 ]; then
-							BATICON="󰂇"
-						elif [ "$CAPACITY" -gt 20 ]; then
-							BATICON="󰂆"
-						elif [ "$CAPACITY" -gt 10 ]; then
-							BATICON="󰢜"
-						else
-							BATICON="󰢟"
-						fi
-						BATTERY="$BATICON"
+	POWERED=0
+	CHARGING=0
+	if [ -d /sys/class/power_supply ]; then
+		for BAT in /sys/class/power_supply/BAT*; do
+			if [ -f "$BAT/capacity" ]; then
+				CAPACITY=$(cat "$BAT/capacity" 2>/dev/null)
+				if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
+					if [ "$(cat "$BAT/status" 2>/dev/null)" = "Charging" ]; then
+						POWERED=1
+						CHARGING=1
 					else
-						# charging battery text
-						BATTERY="${CAPACITY}%+"
-					fi
-				else
-					if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
-						# discharging battery icons
-						if [ "$CAPACITY" -gt 99 ]; then
-							BATICON="󰁹"
-						elif [ "$CAPACITY" -gt 90 ]; then
-							BATICON="󰂂"
-						elif [ "$CAPACITY" -gt 80 ]; then
-							BATICON="󰂁"
-						elif [ "$CAPACITY" -gt 70 ]; then
-							BATICON="󰂀"
-						elif [ "$CAPACITY" -gt 60 ]; then
-							BATICON="󰁿"
-						elif [ "$CAPACITY" -gt 50 ]; then
-							BATICON="󰁾"
-						elif [ "$CAPACITY" -gt 40 ]; then
-							BATICON="󰁽"
-						elif [ "$CAPACITY" -gt 30 ]; then
-							BATICON="󰁼"
-						elif [ "$CAPACITY" -gt 20 ]; then
-							BATICON="󰁻"
-						elif [ "$CAPACITY" -gt 10 ]; then
-							BATICON="󰁺"
-						else
-							BATICON="󱃍"
-						fi
-						BATTERY="$BATICON"
-					else
-						# discharging battery text
-						BATTERY="${CAPACITY}%"
+						POWERED=0
+						CHARGING=0
 					fi
 				fi
+				break
 			fi
-			return
+		done
+		if [ -f "/sys/class/power_supply/AC/online" ] && [ "$(cat "/sys/class/power_supply/AC/online")" = 1 ]; then
+			POWERED=1
 		fi
-	done
-	# macOS fallback
-	if command -v pmset >/dev/null 2>&1; then
+	elif command -v pmset >/dev/null 2>&1; then
+		# macOS
 		PMSET_OUT=$(pmset -g batt 2>/dev/null)
 		CAPACITY=$(echo "$PMSET_OUT" | sed -n 's/.*[^0-9]\([0-9]\{1,3\}\)%.*/\1/p' | head -n 1)
-		if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
-			if echo "$PMSET_OUT" | grep -q "AC Power"; then
-				BATTERY="${CAPACITY}%+"
+		if echo "$PMSET_OUT" | grep -q "AC Power"; then
+			POWERED=1
+		else
+			POWERED=0
+		fi
+		if echo "$PMSET_OUT" | grep -q "; charging"; then
+			CHARGING=1
+		else
+			CHARGING=0
+		fi
+	else
+		return
+	fi
+
+	if [ -n "$CAPACITY" ] && [ "$CAPACITY" -lt 100 ] 2>/dev/null; then
+		if [ "$CHARGING" = 1 ]; then
+			if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
+				# charging battery icons
+				if [ "$CAPACITY" -gt 99 ]; then
+					BATICON="󰂅"
+				elif [ "$CAPACITY" -gt 90 ]; then
+					BATICON="󰂋"
+				elif [ "$CAPACITY" -gt 80 ]; then
+					BATICON="󰂊"
+				elif [ "$CAPACITY" -gt 70 ]; then
+					BATICON="󰢞"
+				elif [ "$CAPACITY" -gt 60 ]; then
+					BATICON="󰂉"
+				elif [ "$CAPACITY" -gt 50 ]; then
+					BATICON="󰢝"
+				elif [ "$CAPACITY" -gt 40 ]; then
+					BATICON="󰂈"
+				elif [ "$CAPACITY" -gt 30 ]; then
+					BATICON="󰂇"
+				elif [ "$CAPACITY" -gt 20 ]; then
+					BATICON="󰂆"
+				elif [ "$CAPACITY" -gt 10 ]; then
+					BATICON="󰢜"
+				else
+					BATICON="󰢟"
+				fi
+				BATTERY="$BATICON"
 			else
+				# charging battery text
+				BATTERY="${CAPACITY}%+"
+			fi
+		else
+			if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
+				# discharging battery icons
+				if [ "$CAPACITY" -gt 99 ]; then
+					BATICON="󰁹"
+				elif [ "$CAPACITY" -gt 90 ]; then
+					BATICON="󰂂"
+				elif [ "$CAPACITY" -gt 80 ]; then
+					BATICON="󰂁"
+				elif [ "$CAPACITY" -gt 70 ]; then
+					BATICON="󰂀"
+				elif [ "$CAPACITY" -gt 60 ]; then
+					BATICON="󰁿"
+				elif [ "$CAPACITY" -gt 50 ]; then
+					BATICON="󰁾"
+				elif [ "$CAPACITY" -gt 40 ]; then
+					BATICON="󰁽"
+				elif [ "$CAPACITY" -gt 30 ]; then
+					BATICON="󰁼"
+				elif [ "$CAPACITY" -gt 20 ]; then
+					BATICON="󰁻"
+				elif [ "$CAPACITY" -gt 10 ]; then
+					BATICON="󰁺"
+				else
+					BATICON="󱃍"
+				fi
+				BATTERY="$BATICON"
+			else
+				# discharging battery text
 				BATTERY="${CAPACITY}%"
+			fi
+			
+			# not charging but powered state
+			if [ "$POWERED" = 1 ]; then
+				if [ "$LC_NERDLEVEL" -ge 3 ] && [ "$CLOCK_DETAILS" != "1" ]; then
+					BATTERY="$BATTERY="
+				else
+					BATTERY="$BATTERY="
+				fi
 			fi
 		fi
 	fi
