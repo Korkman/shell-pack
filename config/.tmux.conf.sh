@@ -12,7 +12,7 @@ case "${BASH_VERSION:-}" in
 		if [ -x /bin/dash ]; then
 			exec /bin/dash "$0" "$@"
 		elif [ -x /bin/zsh ]; then
-			exec /bin/zsh "$0" "$@"
+			exec -a sh /bin/zsh "$0" "$@"
 		fi
 	;;
 esac
