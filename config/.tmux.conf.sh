@@ -388,8 +388,8 @@ main() {
 		else
 			# to speed up the initial load, move into run-shell -b
 			t run-shell -b "\
-				[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
-				|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
+				[ \"\$($TMUX_CONF_SH_ESC main_phase2 2>&1 )\" = '' ] \
+				|| TMUX_FAILSAFE=1 $TMUX_CONF_SH_ESC main_phase2 \
 			"
 		fi
 	else
