@@ -71,7 +71,11 @@ EOF
 }
 
 PLATFORM_TAG_SUFFIX=""
-PLATFORM_NATIVE="$(uname)/$(uname --machine)"
+PLATFORM_NATIVE="$(uname)/$(uname -m)"
+if [ "$PLATFORM_NATIVE" = "Darwin/x86_64" ]; then
+	# No native docker images for this platform, switch to Linux/amd64 by default
+	PLATFORM_NATIVE="Linux/x86_64"
+fi
 if [ "$PLATFORM" != "" ]
 then
 	PLATFORM_TAG_SUFFIX=$(echo "-$PLATFORM" | sed 's/[/]/-/g')
