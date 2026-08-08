@@ -214,33 +214,6 @@ t() {
 	TMUX_CONF_BUFFER_FILLED=1
 }
 
-
-TMUX_FAILSAFE_DEBUG=${TMUX_FAILSAFE_DEBUG:-0}
-TMUX_FAILSAFE=${TMUX_FAILSAFE:-$TMUX_FAILSAFE_DEBUG}
-
-# in failsafe mode, tmux commands are passed as-is without buffering
-if [ "$TMUX_FAILSAFE" = "1" ]; then
-	# manually set TMUX_FAILSAFE_DEBUG=1 to get an adhoc error log
-	if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
-		if [ "$#" -gt 0 ]; then
-			ERRLOG="/tmp/tmux-subcommand-$1-errors.last"
-		else
-			ERRLOG="/tmp/tmux-errors.last"
-		fi
-		
-		echo "tmux.conf.sh error output" > "$ERRLOG"
-		t() {
-			tmux "$@" >> "$ERRLOG" 2>&1
-			return 0
-		}
-	else
-		t() {
-			tmux "$@" > /dev/null 2>&1
-			return 0
-		}
-	fi
-fi
-
 t_flush() {
 	#echo "flushing:$TMUX_CONF_BUFFER_ARGC args (${#TMUX_CONF_BUFFER} bytes)"
 	if [ "$TMUX_CONF_BUFFER_FILLED" -eq 1 ]; then
@@ -266,6 +239,68 @@ TMUX_CONF_BUFFER_FILLED=0
 TMUX_CONF_BUFFER_ARGC=0
 TMUX_CONF_BUFFER_D=$(printf '\1')
 TMUX_CONF_BUFFER_THRESHOLD=990
+
+
+TMUX_FAILSAFE_DEBUG=${TMUX_FAILSAFE_DEBUG:-0}
+TMUX_FAILSAFE=${TMUX_FAILSAFE:-$TMUX_FAILSAFE_DEBUG}
+# manually set TMUX_CONF_SH_ECHO=1 to echo every tmux invocation to stderr
+TMUX_CONF_SH_ECHO=${TMUX_CONF_SH_ECHO:-0}
+
+if [ "$TMUX_CONF_SH_ECHO" = "1" ]; then
+	TMUX_CONF_BUFFER_THRESHOLD=0
+	tmux() {
+		case "$1" in
+			# don't echo retrieval functions
+			show*|display*)
+				command tmux "$@"
+			;;
+			*)
+				# printf %q is bash-only, so quote each arg manually for dash/posix sh;
+				# only quote args that actually need it, to keep output readable
+				__echo_out=
+				for __echo_arg in "$@"; do
+					case "$__echo_arg" in
+						'\;')
+							# special case: "\;" is output as literal \;
+							__echo_out="$__echo_out$__echo_arg "
+						;;
+						*[!A-Za-z0-9,._+:/@%-]*)
+							__echo_out="$__echo_out\"$(printf '%s' "$__echo_arg" | sed 's/[\\\\"$`]/\\\\&/g')\" "
+						;;
+						*)
+							__echo_out="$__echo_out$__echo_arg "
+						;;
+					esac
+				done
+				echo "$__echo_out" >&2
+			;;
+		esac
+	}
+fi
+
+# in failsafe mode, tmux commands are passed as-is without buffering
+if [ "$TMUX_FAILSAFE" = "1" ]; then
+	# manually set TMUX_FAILSAFE_DEBUG=1 to get an adhoc error log
+	if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
+		if [ "$#" -gt 0 ]; then
+			ERRLOG="/tmp/tmux-subcommand-$1-errors.last"
+		else
+			ERRLOG="/tmp/tmux-errors.last"
+		fi
+		
+		echo "tmux.conf.sh error output" > "$ERRLOG"
+		t() {
+			tmux "$@" >> "$ERRLOG" 2>&1
+			return 0
+		}
+	else
+		t() {
+			tmux "$@" > /dev/null 2>&1
+			return 0
+		}
+	fi
+fi
+
 
 # flush remaining buffer on exit
 trap "t_flush" EXIT
@@ -348,12 +383,15 @@ main() {
 		# not a reload - initial server setup
 		t set -ag update-environment " LC_NERDLEVEL"
 		t set -ag update-environment " TERM"
-		
-		# to speed up the initial load, move into run-shell -b
-		t run-shell -b "\
-			[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
-			|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
-		"
+		if [ "$TMUX_CONF_SH_ECHO" = "1" ]; then
+			main_phase2
+		else
+			# to speed up the initial load, move into run-shell -b
+			t run-shell -b "\
+				[ \"\$('$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 2>&1 )\" = '' ] \
+				|| TMUX_FAILSAFE=1 '$HOME/.local/share/shell-pack/config/.tmux.conf.sh' main_phase2 \
+			"
+		fi
 	else
 		main_phase2
 	fi
