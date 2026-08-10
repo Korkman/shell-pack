@@ -319,9 +319,10 @@ end
 
 function __cheat_colors
 	begin
-		echo "256-color terminal palette (index shown on each swatch):
-"
-		# 0-15: the 16 basic ANSI colors (approximate default xterm rgb values)
+		echo "256-color terminal palette (index shown on each swatch)"
+		echo
+		echo "0-15: the 16 basic ANSI colors (terminal themes apply)"
+		echo
 		set -l basic_r 0 128 0 128 0 128 0 192 128 255 0 255 0 255 0 255
 		set -l basic_g 0 0 128 128 0 0 128 192 128 0 255 255 0 0 255 255
 		set -l basic_b 0 0 0 0 128 128 128 192 128 0 0 0 255 255 255 255
@@ -334,9 +335,10 @@ function __cheat_colors
 		end
 		echo
 
-		# 16-231: 6x6x6 RGB color cube, red-level blocks shown side by side
+		echo "16-231: 6x6x6 RGB color cubes (terminal themes usually don't apply)"
+		echo
 		set -l levels 0 95 135 175 215 255
-		set -l cube_per_row (__cheat_blocks_per_row 24 3 4 6)
+		set -l cube_per_row (__cheat_blocks_per_row 24 3 3 6)
 		for group_start in (seq 0 $cube_per_row 5)
 			set -l group_end (math "min($group_start + $cube_per_row - 1, 5)")
 			set -l reds (seq $group_start $group_end)
@@ -356,8 +358,9 @@ function __cheat_colors
 			echo
 		end
 
-		# 232-255: grayscale ramp, split into blocks of 6 shown side by side
-		set -l gray_per_row (__cheat_blocks_per_row 24 3 4 2)
+		echo "232-255: grayscale ramp, split into blocks of 6"
+		echo
+		set -l gray_per_row (__cheat_blocks_per_row 24 3 3 2)
 		for group_start in (seq 0 $gray_per_row 1)
 			set -l group_end (math "min($group_start + $gray_per_row - 1, 1)")
 			set -l blocks (seq $group_start $group_end)
