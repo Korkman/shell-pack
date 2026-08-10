@@ -4,6 +4,11 @@ function cheat
 		return
 	end
 
+	if [ "$argv[1]" = "--colors" ] || [ "$argv[1]" = "--colours" ]
+		__cheat_colors
+		return
+	end
+
 	if [ "$argv[1]" = "--mc" ]
 		__cheat_mc
 		return
@@ -54,6 +59,7 @@ Show glyphs cheatsheet        cheat --glyphs
 Show mc cheatsheet            cheat --mc
 Show tmux cheatsheet          cheat --tmux
 Show fzf query syntax         cheat --fzf-query
+Show 256-color chart          cheat --colors (--colours)
 Query cheat.sh for TOPIC      cheat TOPIC
   More information            cheat --chtsh
 
@@ -272,6 +278,100 @@ Are these color gradients fine?
 	end
 	set_color normal
 	echo
+end
+
+function __cheat_color_fg
+	# picks black (30) or bright white (97) foreground for readability on the given rgb background
+	set -l r $argv[1]
+	set -l g $argv[2]
+	set -l b $argv[3]
+	set -l luma (math -s0 "0.299 * $r + 0.587 * $g + 0.114 * $b")
+	if test $luma -gt 140
+		echo 30
+	else
+		echo 97
+	end
+end
+
+function __cheat_blocks_per_row
+	# argv: block_width gap max_blocks block_count -> how many blocks fit on one terminal row
+	set -l block_width $argv[1]
+	set -l gap $argv[2]
+	set -l max_blocks (math "min($argv[3], $argv[4])")
+	set -l cols $COLUMNS
+	if test -z "$cols"
+		set cols 80
+	end
+	for n in (seq $max_blocks -1 1)
+		if test (math "$n * $block_width + ($n - 1) * $gap") -le $cols
+			echo $n
+			return
+		end
+	end
+	echo 1
+end
+
+function __cheat_colors
+	begin
+		echo "256-color terminal palette (index shown on each swatch):
+"
+		# 0-15: the 16 basic ANSI colors (approximate default xterm rgb values)
+		set -l basic_r 0 128 0 128 0 128 0 192 128 255 0 255 0 255 0 255
+		set -l basic_g 0 0 128 128 0 0 128 192 128 0 255 255 0 0 255 255
+		set -l basic_b 0 0 0 0 128 128 128 192 128 0 0 0 255 255 255 255
+		for i in (seq 0 15)
+			set -l fg (__cheat_color_fg $basic_r[(math "$i + 1")] $basic_g[(math "$i + 1")] $basic_b[(math "$i + 1")])
+			printf "\e[48;5;%sm\e[%sm%4d\e[0m" $i $fg $i
+			if test (math "($i + 1) % 8") -eq 0
+				echo
+			end
+		end
+		echo
+
+		# 16-231: 6x6x6 RGB color cube, red-level blocks shown side by side
+		set -l levels 0 95 135 175 215 255
+		set -l cube_per_row (__cheat_blocks_per_row 24 3 4 6)
+		for group_start in (seq 0 $cube_per_row 5)
+			set -l group_end (math "min($group_start + $cube_per_row - 1, 5)")
+			set -l reds (seq $group_start $group_end)
+			for green in (seq 0 5)
+				for red in $reds
+					for blue in (seq 0 5)
+						set -l i (math "16 + $red * 36 + $green * 6 + $blue")
+						set -l fg (__cheat_color_fg $levels[(math "$red + 1")] $levels[(math "$green + 1")] $levels[(math "$blue + 1")])
+						printf "\e[48;5;%sm\e[%sm%4d\e[0m" $i $fg $i
+					end
+					if test $red != $reds[-1]
+						printf "   "
+					end
+				end
+				echo
+			end
+			echo
+		end
+
+		# 232-255: grayscale ramp, split into blocks of 6 shown side by side
+		set -l gray_per_row (__cheat_blocks_per_row 24 3 4 2)
+		for group_start in (seq 0 $gray_per_row 1)
+			set -l group_end (math "min($group_start + $gray_per_row - 1, 1)")
+			set -l blocks (seq $group_start $group_end)
+			for row in 0 1
+				for block in $blocks
+					set -l base (math "232 + $block * 12 + $row * 6")
+					for i in (seq $base (math "$base + 5"))
+						set -l gray (math "8 + 10 * ($i - 232)")
+						set -l fg (__cheat_color_fg $gray $gray $gray)
+						printf "\e[48;5;%sm\e[%sm%4d\e[0m" $i $fg $i
+					end
+					if test $block != $blocks[-1]
+						printf "   "
+					end
+				end
+				echo
+			end
+			echo
+		end
+	end | __sp_pager -P "cheat --colors | less - q to quit, h for help" '+G' '+g'
 end
 
 function __cheat_mc
