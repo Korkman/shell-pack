@@ -1,4 +1,9 @@
 function cheat
+	if [ "$argv[1]" = "--help" ]
+		# --help always shows the shell-pack cheatsheet, bypassing any native 'cheat' command
+		set argv[1] --shell-pack
+	end
+
 	if [ "$argv[1]" = "--glyphs" ]
 		__cheat_glyphs
 		return
@@ -62,6 +67,7 @@ Show fzf query syntax         cheat --fzf-query
 Show 256-color chart          cheat --colors (--colours)
 Query cheat.sh for TOPIC      cheat TOPIC
   More information            cheat --chtsh
+Show this help                cheat --help
 
 
 ========= Keymappings =========
