@@ -1,0 +1,169 @@
+#! /usr/bin/env fish
+
+# fish version -> alpine tag, debian codename, eol("eol"/"") triples
+# sourced from https://repology.org/project/fish/versions (distro-packaged fish)
+function __test_drive_fish_table
+	printf '%s\n' \
+		"3.5.1:3.17::" \
+		"3.6.0::bookworm:" \
+		"3.6.1:3.18::" \
+		"3.6.3:3.19::" \
+		"3.7.1:3.21::" \
+		"4.0.2:3.22:trixie:" \
+		"4.6.0:3.24::" \
+		"latest:edge:unstable:"
+end
+
+function __test_drive_fish_usage
+	echo "Usage: test-drive-fish [fish-version] [--debian] [--alpine] [test-drive.sh args...]"
+	echo ""
+	echo "Looks up the Docker distro/release that packages a given fish version and"
+	echo "proxies to ./test-drive.sh with it, using INSTALL_FISH=distro (i.e. install"
+	echo "fish from the distro package manager rather than a static binary)."
+	echo "If the first argument is not a known fish version, it defaults to 'latest' and"
+	echo "all arguments are passed through to test-drive.sh unchanged."
+	echo ""
+	echo "Options:"
+	echo "  -d, --debian   Force the Debian release for this fish version"
+	echo "  -a, --alpine   Force the Alpine release for this fish version"
+	echo "      --arch     Use Arch Linux (only supported for fish 'latest')"
+	echo "  -h, --help     Show this help"
+	echo ""
+	echo "Without -d/-a, Alpine is preferred when both are available for the version."
+	echo ""
+	echo "Available fish versions:"
+	echo ""
+	__test_drive_fish_table_print
+end
+
+function __test_drive_fish_table_print
+	set -l versions "fish Version"
+	set -l alpines "Alpine"
+	set -l debians "Debian"
+
+	for row in (__test_drive_fish_table)
+		set -l fields (string split ':' -- $row)
+		set -a versions $fields[1]
+
+		set -l alpine_cell "—"
+		test -n "$fields[2]"; and set alpine_cell "$fields[2]"
+		set -a alpines $alpine_cell
+
+		set -l debian_cell "—"
+		if test -n "$fields[3]"
+			set debian_cell $fields[3]
+			test "$fields[4]" = "eol"; and set debian_cell "$debian_cell (eol)"
+		end
+		set -a debians $debian_cell
+	end
+
+	set -l w_version 0
+	set -l w_alpine 0
+	set -l w_debian 0
+	for cell in $versions
+		test (string length -- $cell) -gt $w_version; and set w_version (string length -- $cell)
+	end
+	for cell in $alpines
+		test (string length -- $cell) -gt $w_alpine; and set w_alpine (string length -- $cell)
+	end
+	for cell in $debians
+		test (string length -- $cell) -gt $w_debian; and set w_debian (string length -- $cell)
+	end
+
+	set -l border_top "┌"(string repeat -n (math $w_version + 2) '─')"┬"(string repeat -n (math $w_alpine + 2) '─')"┬"(string repeat -n (math $w_debian + 2) '─')"┐"
+	set -l border_mid "├"(string repeat -n (math $w_version + 2) '─')"┼"(string repeat -n (math $w_alpine + 2) '─')"┼"(string repeat -n (math $w_debian + 2) '─')"┤"
+	set -l border_bottom "└"(string repeat -n (math $w_version + 2) '─')"┴"(string repeat -n (math $w_alpine + 2) '─')"┴"(string repeat -n (math $w_debian + 2) '─')"┘"
+
+	echo $border_top
+	printf '│ %s │ %s │ %s │\n' (string pad -r -w $w_version -- $versions[1]) (string pad -r -w $w_alpine -- $alpines[1]) (string pad -r -w $w_debian -- $debians[1])
+	echo $border_mid
+	for i in (seq 2 (count $versions))
+		printf '│ %s │ %s │ %s │\n' (string pad -r -w $w_version -- $versions[$i]) (string pad -r -w $w_alpine -- $alpines[$i]) (string pad -r -w $w_debian -- $debians[$i])
+	end
+	echo $border_bottom
+end
+
+set -l script_dir (dirname (status --current-filename))
+
+argparse --ignore-unknown 'd/debian' 'a/alpine' 'arch' 'h/help' -- $argv
+or exit 1
+
+if set -q _flag_help
+	__test_drive_fish_usage
+	exit 0
+end
+
+# no recognized version given -> default to "latest", pass all args through untouched
+set -l arg_version latest
+set -l passthrough $argv
+
+if test (count $argv) -ge 1
+	for row in (__test_drive_fish_table)
+		set -l fields (string split ':' -- $row)
+		if test "$fields[1]" = "$argv[1]"
+			set arg_version $argv[1]
+			set passthrough $argv[2..-1]
+			break
+		end
+	end
+end
+
+set -l match
+for row in (__test_drive_fish_table)
+	set -l fields (string split ':' -- $row)
+	if test "$fields[1]" = "$arg_version"
+		set match $fields
+		break
+	end
+end
+
+set -l alpine_tag $match[2]
+set -l debian_codename $match[3]
+set -l debian_eol $match[4]
+
+if set -q _flag_arch
+	if test "$arg_version" != "latest"
+		echo "test-drive-fish: --arch is only supported for fish 'latest'" >&2
+		exit 1
+	end
+	echo "test-drive-fish: fish $arg_version -> archlinux:latest (INSTALL_FISH=distro)"
+	set -gx INSTALL_FISH distro
+	exec "$script_dir/test-drive.sh" archlinux:latest $passthrough
+end
+
+set -l distro
+if set -q _flag_debian
+	if test -z "$debian_codename"
+		echo "test-drive-fish: no Debian release available for fish $arg_version" >&2
+		exit 1
+	end
+	set distro debian
+else if set -q _flag_alpine
+	if test -z "$alpine_tag"
+		echo "test-drive-fish: no Alpine release available for fish $arg_version" >&2
+		exit 1
+	end
+	set distro alpine
+else if test -n "$alpine_tag"
+	set distro alpine
+else if test -n "$debian_codename"
+	set distro debian
+else
+	echo "test-drive-fish: no distro release available for fish $arg_version" >&2
+	exit 1
+end
+
+set -l distro_tag
+if test "$distro" = "debian"
+	if test "$debian_eol" = "eol"
+		set distro_tag "debian/eol:$debian_codename"
+	else
+		set distro_tag "debian:$debian_codename"
+	end
+else
+	set distro_tag "alpine:$alpine_tag"
+end
+
+echo "test-drive-fish: fish $arg_version -> $distro_tag (INSTALL_FISH=distro)"
+set -gx INSTALL_FISH distro
+exec "$script_dir/test-drive.sh" $distro_tag $passthrough

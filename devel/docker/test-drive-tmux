@@ -1,0 +1,177 @@
+#! /usr/bin/env fish
+
+# tmux version -> alpine tag, debian codename, eol("eol"/"") triples
+function __test_drive_tmux_table
+	printf '%s\n' \
+		"1.6::wheezy:eol" \
+		"1.9::jessie:eol" \
+		"2.2:3.4::" \
+		"2.3:3.5:stretch:eol" \
+		"2.4:3.6::" \
+		"2.6:3.7::" \
+		"2.7:3.8::" \
+		"2.8:3.9:buster:eol" \
+		"2.9a:3.10::" \
+		"3.0a:3.11::" \
+		"3.1c:3.13:bullseye:eol" \
+		"3.2:3.14::" \
+		"3.2a:3.16::" \
+		"3.3a:3.17:bookworm:" \
+		"3.3a_git20230428:3.19::" \
+		"3.4:3.20::" \
+		"3.5a:3.22:trixie:" \
+		"3.6:3.23::" \
+		"3.6b:3.24::" \
+		"latest:edge:unstable:"
+end
+
+function __test_drive_tmux_usage
+	echo "Usage: test-drive-tmux [tmux-version] [--debian] [--alpine] [test-drive.sh args...]"
+	echo ""
+	echo "Looks up the Docker distro/release matching a tmux version and proxies "
+	echo "to ./test-drive.sh with it."
+	echo "If the first argument is not a known tmux version, it defaults to 'latest' and"
+	echo "all arguments are passed through to test-drive.sh unchanged."
+	echo ""
+	echo "Options:"
+	echo "  -d, --debian   Force the Debian release for this tmux version"
+	echo "  -a, --alpine   Force the Alpine release for this tmux version"
+	echo "      --arch     Use Arch Linux (only supported for tmux 'latest')"
+	echo "  -h, --help     Show this help"
+	echo ""
+	echo "Without -d/-a, Alpine is preferred when both are available for the version."
+	echo ""
+	echo "Available tmux versions:"
+	echo ""
+	__test_drive_tmux_table_print
+end
+
+function __test_drive_tmux_table_print
+	set -l versions "tmux Version"
+	set -l alpines "Alpine"
+	set -l debians "Debian"
+
+	for row in (__test_drive_tmux_table)
+		set -l fields (string split ':' -- $row)
+		set -a versions $fields[1]
+
+		set -l alpine_cell "—"
+		test -n "$fields[2]"; and set alpine_cell "$fields[2]"
+		set -a alpines $alpine_cell
+
+		set -l debian_cell "—"
+		if test -n "$fields[3]"
+			set debian_cell $fields[3]
+			test "$fields[4]" = "eol"; and set debian_cell "$debian_cell (eol)"
+		end
+		set -a debians $debian_cell
+	end
+
+	set -l w_version 0
+	set -l w_alpine 0
+	set -l w_debian 0
+	for cell in $versions
+		test (string length -- $cell) -gt $w_version; and set w_version (string length -- $cell)
+	end
+	for cell in $alpines
+		test (string length -- $cell) -gt $w_alpine; and set w_alpine (string length -- $cell)
+	end
+	for cell in $debians
+		test (string length -- $cell) -gt $w_debian; and set w_debian (string length -- $cell)
+	end
+
+	set -l border_top "┌"(string repeat -n (math $w_version + 2) '─')"┬"(string repeat -n (math $w_alpine + 2) '─')"┬"(string repeat -n (math $w_debian + 2) '─')"┐"
+	set -l border_mid "├"(string repeat -n (math $w_version + 2) '─')"┼"(string repeat -n (math $w_alpine + 2) '─')"┼"(string repeat -n (math $w_debian + 2) '─')"┤"
+	set -l border_bottom "└"(string repeat -n (math $w_version + 2) '─')"┴"(string repeat -n (math $w_alpine + 2) '─')"┴"(string repeat -n (math $w_debian + 2) '─')"┘"
+
+	echo $border_top
+	printf '│ %s │ %s │ %s │\n' (string pad -r -w $w_version -- $versions[1]) (string pad -r -w $w_alpine -- $alpines[1]) (string pad -r -w $w_debian -- $debians[1])
+	echo $border_mid
+	for i in (seq 2 (count $versions))
+		printf '│ %s │ %s │ %s │\n' (string pad -r -w $w_version -- $versions[$i]) (string pad -r -w $w_alpine -- $alpines[$i]) (string pad -r -w $w_debian -- $debians[$i])
+	end
+	echo $border_bottom
+end
+
+set -l script_dir (dirname (status --current-filename))
+
+argparse --ignore-unknown 'd/debian' 'a/alpine' 'arch' 'h/help' -- $argv
+or exit 1
+
+if set -q _flag_help
+	__test_drive_tmux_usage
+	exit 0
+end
+
+# no recognized version given -> default to "latest", pass all args through untouched
+set -l arg_version latest
+set -l passthrough $argv
+
+if test (count $argv) -ge 1
+	for row in (__test_drive_tmux_table)
+		set -l fields (string split ':' -- $row)
+		if test "$fields[1]" = "$argv[1]"
+			set arg_version $argv[1]
+			set passthrough $argv[2..-1]
+			break
+		end
+	end
+end
+
+set -l match
+for row in (__test_drive_tmux_table)
+	set -l fields (string split ':' -- $row)
+	if test "$fields[1]" = "$arg_version"
+		set match $fields
+		break
+	end
+end
+
+set -l alpine_tag $match[2]
+set -l debian_codename $match[3]
+set -l debian_eol $match[4]
+
+if set -q _flag_arch
+	if test "$arg_version" != "latest"
+		echo "test-drive-tmux: --arch is only supported for tmux 'latest'" >&2
+		exit 1
+	end
+	echo "test-drive-tmux: tmux $arg_version -> archlinux:latest"
+	exec "$script_dir/test-drive.sh" archlinux:latest $passthrough
+end
+
+set -l distro
+if set -q _flag_debian
+	if test -z "$debian_codename"
+		echo "test-drive-tmux: no Debian release available for tmux $arg_version" >&2
+		exit 1
+	end
+	set distro debian
+else if set -q _flag_alpine
+	if test -z "$alpine_tag"
+		echo "test-drive-tmux: no Alpine release available for tmux $arg_version" >&2
+		exit 1
+	end
+	set distro alpine
+else if test -n "$alpine_tag"
+	set distro alpine
+else if test -n "$debian_codename"
+	set distro debian
+else
+	echo "test-drive-tmux: no distro release available for tmux $arg_version" >&2
+	exit 1
+end
+
+set -l distro_tag
+if test "$distro" = "debian"
+	if test "$debian_eol" = "eol"
+		set distro_tag "debian/eol:$debian_codename"
+	else
+		set distro_tag "debian:$debian_codename"
+	end
+else
+	set distro_tag "alpine:$alpine_tag"
+end
+
+echo "test-drive-tmux: tmux $arg_version -> $distro_tag"
+exec "$script_dir/test-drive.sh" $distro_tag $passthrough

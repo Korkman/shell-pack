@@ -1,0 +1,92 @@
+#! /usr/bin/env fish
+
+# lets you pick, via fzf, which "shell-pack:test-drive-*" images (built by
+# test-drive.sh) to remove from podman / docker.
+
+set -l FORCE_DOCKER "$FORCE_DOCKER"
+test -z "$FORCE_DOCKER"; and set FORCE_DOCKER no
+set -l FORCE_NO_SUDO "$FORCE_NO_SUDO"
+test -z "$FORCE_NO_SUDO"; and set FORCE_NO_SUDO no
+
+function __test_drive_purge_usage
+	echo "Usage: test-drive-purge.sh [-f | --force]"
+	echo ""
+	echo "Lists podman/docker images built by test-drive.sh (repository"
+	echo "'shell-pack') in fzf; select one or more (tab to multi-select) and"
+	echo "press enter to remove them."
+	echo ""
+	echo "Options:"
+	echo "  -f, --force   Skip the removal confirmation prompt"
+	echo "  -h, --help    Show this help"
+	echo ""
+	echo "Environment Variables:"
+	echo "  FORCE_DOCKER    Force Docker instead of Podman (default: no)"
+	echo "  FORCE_NO_SUDO   Skip sudo for Docker (default: no)"
+end
+
+argparse 'f/force' 'h/help' -- $argv
+or exit 1
+
+if set -q _flag_help
+	__test_drive_purge_usage
+	exit 0
+end
+
+if not command -q fzf
+	echo "test-drive-purge.sh: fzf is required but not found in PATH" >&2
+	exit 1
+end
+
+set -l docker
+if command -q podman; and test "$FORCE_DOCKER" != yes
+	set docker podman
+else if test "$FORCE_NO_SUDO" = yes; or test (whoami) = root
+	set docker docker
+else
+	set docker sudo docker
+end
+
+set -l images ($docker images --filter reference='shell-pack:*' \
+	--format '{{.ID}}	{{.Repository}}:{{.Tag}}	{{.Size}}	{{.CreatedSince}}')
+
+if test (count $images) -eq 0
+	echo "test-drive-purge.sh: no shell-pack images found"
+	exit 0
+end
+
+set -l preview_cmd "$docker inspect --format '{{.Created}}' {1} 2>/dev/null | cut -c1-19 | sed 's/^/Created: /; s/\$/ UTC/'; "\
+"$docker inspect --format '{{.Size}}' {1} 2>/dev/null | awk '{printf \"Size:    %.1f MB\\n\", \$1/1000/1000}'; "\
+"echo; echo 'Containers using this image:'; "\
+"$docker ps -a --filter ancestor={1} --format '  {{.Names}} ({{.Status}})' 2>/dev/null"
+
+set -l selected (printf '%s\n' $images \
+	| column -t -s \t \
+	| fzf --multi --header 'tab:select all/none enter:remove esc:cancel' \
+		--preview "$preview_cmd" \
+		--preview-window 'right:38:wrap')
+
+if test (count $selected) -eq 0
+	echo "test-drive-purge.sh: nothing selected"
+	exit 0
+end
+
+set -l ids
+for line in $selected
+	set -a ids (string split ' ' -- $line)[1]
+end
+
+echo "About to remove:"
+printf '%s\n' $selected
+echo ""
+
+if not set -q _flag_force
+	read -l -P "Remove these images? [y/N] " confirm
+	if not string match -qi 'y*' -- $confirm
+		echo "Aborted."
+		exit 0
+	end
+end
+
+$docker rmi --force $ids
+
+echo "If desired, run '$docker system prune' to discard build cache layers as well"
