@@ -42,21 +42,31 @@ function git_move_tag -a current_tag
 	end
 end
 
-read -n1 -P "Move devel tag? (Y/n)" answer || set answer n
+read -n1 -P "Move version tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
-	echo "Skipped."
+	set move_version no
 else
-	git_move_tag "devel"
+	set move_version yes
 end
 read -n1 -P "Move latest tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
-	echo "Skipped."
+	set move_latest no
 else
+	set move_latest yes
+end
+read -n1 -P "Move devel tag? (Y/n)" answer || set answer n
+if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
+	set move_devel no
+else
+	set move_devel yes
+end
+
+if test $move_version = "yes"
+	git_move_tag "v$new_ver"
+end
+if test $move_latest = "yes"
 	git_move_tag "latest"
 end
-read -n1 -P "Move version tag? (Y/n)" answer || set answer n
-if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
-	echo "Skipped."
-else
-	git_move_tag "v$new_ver"
+if test $move_devel = "yes"
+	git_move_tag "devel"
 end
