@@ -106,6 +106,9 @@ custom_colors() { return; }
 custom_styles() { return; }
 custom_main() { return; }
 custom_functions() { return; }
+if [ -e "/etc/tmux.conf.local.sh" ]; then
+. "/etc/tmux.conf.local.sh"
+fi
 if [ -e "$HOME/.config/tmux.conf.local.sh" ]; then
 . "$HOME/.config/tmux.conf.local.sh"
 fi
