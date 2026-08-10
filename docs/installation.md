@@ -2,7 +2,7 @@
 Installation targets Linux, WSL and macOS, and should work for other \*nix as well.
 
 The following dependencies have to be met beforehand:
-  * [fish shell](https://fishshell.com/) version 3.5.1 or higher
+  * [fish shell](https://fishshell.com/) version 3.5.1 (recommended 4.0.9 or later)
     * Either `apt install fish`
     * or automated installer for several distros, YMMV:
       ```bash
