@@ -1,5 +1,5 @@
 #! /bin/sh
-# shellcheck disable=SC2329  # many functions are invoked via a variable
+# shellcheck disable=SC2329,SC1091
 {
 
 # shell-pack .tmux.conf.sh
@@ -12,6 +12,7 @@ case "${BASH_VERSION:-}" in
 		if [ -x /bin/dash ]; then
 			exec /bin/dash "$0" "$@"
 		elif [ -x /bin/zsh ]; then
+			# shellcheck disable=SC3038
 			exec -a sh /bin/zsh "$0" "$@"
 		fi
 	;;
@@ -400,7 +401,6 @@ main() {
 
 # the second part of the main config is loaded in background
 main_phase2() {
-	
 	if [ "$TMUX_FAILSAFE" = "1" ]; then
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
 			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to $ERRLOG"
@@ -579,6 +579,7 @@ main_phase2() {
 	# c-a 0: select window 10 if no window 0 exists
 	t bind 0 run-shell "$TMUX_CONF_SH_ESC select_win_0"
 	
+	# shellcheck disable=SC2086
 	if [ "$__sp_tmux_ver" -ge 204 ]; then
 		# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
 		# for older tmux versions we search for a utf8 whitespace character
@@ -802,6 +803,7 @@ main_phase2() {
 		tree_opts="-s -b"
 	fi
 	style_msg "Move window to session ..."
+	# shellcheck disable=SC2086
 	t bind W display "$MSG" '\;' choose-tree $tree_opts "$move_cmd"
 	
 	if [ "$__sp_tmux_ver" -lt 206 ]; then
@@ -908,12 +910,12 @@ toggle_broadcast() {
 	t display-message "$MSG"
 	if [ "$SYNC" = "on" ]; then
 		[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-status top
-		t set -w pane-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
-		t set -w pane-active-border-style bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG
+		t set -w pane-border-style "bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG"
+		t set -w pane-active-border-style "bg=$COLOR_MODE_SYNC_BG,fg=$COLOR_MODE_SYNC_FG"
 	else
 		[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-status off
-		t set -w pane-border-style fg=$COLOR_PANE_BORDER_FG
-		t set -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+		t set -w pane-border-style "fg=$COLOR_PANE_BORDER_FG"
+		t set -w pane-active-border-style "fg=$COLOR_PANE_ACTIVE_BORDER_FG"
 	fi
 	
 	if [ "$__sp_tmux_ver" -ge 305 ]; then
