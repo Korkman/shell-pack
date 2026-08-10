@@ -139,7 +139,12 @@ function onman -d \
 				set manned_distro "arch"
 			case alpine
 				# remove third digit of alpine version
-				set -l alpine_ver (string replace -r '\.[^.]*$' '' -- "$os_version_id")
+				set -l alpine_ver
+				if string match -q '*.*.*' -- "$os_version_id"
+					set alpine_ver (string replace -r '\.[^.]*$' '' -- "$os_version_id")
+				else
+					set alpine_ver "$os_version_id"
+				end
 				set manned_distro "alpine-$alpine_ver"
 			case '*'
 				# check ID_LIKE for debian/arch/fedora lineage
