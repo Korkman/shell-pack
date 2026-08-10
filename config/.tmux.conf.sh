@@ -314,20 +314,7 @@ main() {
 	style_msg "Config reloaded…"
 	t bind r source-file ~/.tmux.conf '\;' display "$MSG"
 	
-	# start windows at 1 instead of 0 (0 being far away from ctrl-a on keyboard)
-	# NOTE: this must happen before set-environment
-	t set -g base-index 1
-	t set -w -g pane-base-index 1
-
-	# Pass thru window title set by shell
-	t set -g set-titles on
-	t set -g set-titles-string '#T'
-	
-	# Allow shell to rename window
-	t set -g allow-rename on
-
 	# Status line colors
-	t set -g status on
 	t set -g status-style "bg=$COLOR_STATUS_BG,fg=$COLOR_STATUS_FG"
 	t set -g mode-style "$STYLE_HIGHLIGHT"
 	t set -g window-status-current-style "bg=$COLOR_WIN_STATUS_CURRENT_BG,fg=$COLOR_WIN_STATUS_CURRENT_FG"
@@ -347,9 +334,6 @@ main() {
 		#t set -g message-format '…'
 	fi
 	
-	# make client-side scrollbuffers work
-	# adding xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@ to default
-	t set -g terminal-overrides 'xterm*:smcup@:rmcup@,rxvt*:smcup@:rmcup@,xs:smcup@:rmcup@,*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
 
 	# set-environment seems to trigger creation of the first window
 	# therefore, put this rather at the end than the start of main()
@@ -419,43 +403,18 @@ main_phase2() {
 		t set-hook client-attached "run-shell \"$TMUX_CONF_SH_ESC client_attached\""
 	fi
 	
-	# Intuitive window splitting
-	t bind '|' split-window -h -c "#{pane_current_path}" # left/right, default: %
-	t bind '-' split-window -v -c "#{pane_current_path}" # top/bottom, default: "
-
-	# add current path to new windows
-	t bind c new-window -c "#{pane_current_path}"
-
-	# Large history
-	t set -g history-limit 50000
 
 	if [ "$__sp_tmux_ver" -ge 201 ]; then
 		# Mouse support (tmux >= 2.1)
 		t set -g mouse on
 	fi
 
-	# do pass clipboard OSC-52 codes so the client clipboard is updated
-	t set -g set-clipboard on
-
-	# Display messages longer
-	t set -g display-time 4000
-
-	# copy and paste
-
-	# only in emacs mode the selection ends before the cursor, the more commonly encountered method
-	# the most important vi keys are merged into the emacs copy mode, mostly conflict-free
-	t set -g mode-keys emacs
-	
-	# we need no command_prompt, it's perfectly fine to exit prompts with escape
-	t set -g status-keys emacs
 
 	# enter copy mode, tmux default: [
 	style_msg 'Entered copy-mode, use PgUp/PgDn to scroll, press q or enter to leave'
 	t bind PageUp copy-mode '\;' display-message "$MSG"
 	t bind up copy-mode '\;' display-message "$MSG"
 	t bind Escape copy-mode '\;' display-message "$MSG"
-	# add C-a v for paste (unmodified)
-	t bind v paste-buffer -r
 
 	# c-a arrows left/right: move window in (use . )
 	# tmux 3.0 "corrected" behavior, else older tmux
@@ -474,38 +433,9 @@ main_phase2() {
 		t bind B run-shell "$TMUX_CONF_SH_ESC toggle_broadcast"
 	fi
 	
-	# set very low escape time (ms)
-	# feels responsive, should not cause problems in our networks
-	t set -g escape-time 50
-
-	# automatic rename of window name to active pane title
-	t set -w -g automatic-rename on
-	t set -w -g automatic-rename-format '#T'
-
-	# gnu screen compatibility
-	t set -g prefix C-a           # ctrl-a command prefix: screen compat
-	t set -g prefix2 C-b          # ctrl-b command prefix: tmux default
-	t bind bspace previous-window # prev window, tmux default: p
-	t bind space next-window      # next window, tmux default: n
-	t bind C-space next-window    # catch accidential ctrl-key press
-	t bind S split-window -v      # split vertical, tmux default: "
-	t bind C-a last-window        # last window toggle, tmux default: l
-	t bind a send-prefix          # jump to beginning of line in bash, tmux default: different prefix C-b
-	t bind Q break-pane           # make split region a dedicated window, tmux default: !
-	# kill current pane, tmux default: x
-	t bind k confirm-before -p "Kill pane? (y/N)" kill-pane
-	# tab to move to next pane, tmux default: o
-	t bind tab select-pane -t:.+
-	# kill all windows, screen-like + Shift-K
-	t bind K confirm-before -p "Kill all windows and exit? (y/N)" kill-session
-	t bind "\\" confirm-before -p "Kill all windows and exit? (y/N)" kill-session
 	# show window number and name
 	style_msg "This is window #I (#W). C-a . changes index, C-a A changes name."
 	t bind N display-message "$MSG"
-	# rename window, tmux default: ,
-	# added: disable renaming to make new name permanent
-	t bind A command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
-	t bind , command-prompt -I "#W" "rename-window '%%'; set -qw allow-rename off"
 
 	# derive socket name from $TMUX (format: "socket_path,pid,session_id"),
 	# e.g. "/tmp/tmux-1000/pb,730888,1" -> "pb"
@@ -528,7 +458,6 @@ main_phase2() {
 	# the mode indicator (PRFX/COPY/SYNC/NORM) stays inline as a native tmux
 	# conditional so it keeps updating instantly on every redraw; only the
 	# user@host|session part is delegated to the left_status subcommand.
-	t set -g status-left-length 120
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		t set -g status-left "#(\
 			$TMUX_CONF_SH_ESC left_status \
@@ -541,7 +470,6 @@ main_phase2() {
 	fi
 	# show load, status indicator, better clock on the right
 	# loadavg and clock are both computed by the right_status subcommand
-	t set -g status-right-length 120
 	if [ "$__sp_tmux_ver" -ge 203 ]; then
 		t set -g status-right "#(\
 			$TMUX_CONF_SH_ESC right_status \
@@ -774,15 +702,8 @@ main_phase2() {
 		t bind M-l run-shell "$TMUX_CONF_SH_ESC toggle_host_details"
 		t bind M-r run-shell "$TMUX_CONF_SH_ESC toggle_clock_details"
 	fi
-	# top statusbar w/o mouse
-	t bind M-t set -g status-position top '\;' set -g status-justify left
-	t bind M-b set -g status-position bottom '\;' set -g status-justify centre
 	# quick "zen mode"
 	t bind M-z run-shell "$TMUX_CONF_SH_ESC toggle_zen_mode"
-	
-	# show cheat --tmux
-	t bind f1 run-shell 'fish --interactive -c "cheat --tmux"'
-	t bind h run-shell 'fish --interactive -c "cheat --tmux"'
 	
 	# enable focus reporting
 	# restricted to higher tmux versions as mcedit failed to render when opening files in Debian Bookworm
@@ -815,10 +736,6 @@ main_phase2() {
 	fi
 	
 	
-	# restored defaults (2026-05-16)
-	t bind-key z resize-pane -Z
-	t bind-key x confirm-before -p "kill-pane #P? (y/n)" kill-pane
-	# end restored defaults
 	
 	t set -g -w pane-border-style fg=$COLOR_PANE_BORDER_FG
 	t set -g -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
