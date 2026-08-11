@@ -1,6 +1,6 @@
 function onman -d \
 	'Show a man page fetched from an online source.'
-	argparse 'h/help' 'debug' 't/txt' 'text' 'roff' 'html' 'urls' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' 'renderer=' -- $argv
+	argparse 'h/help' 'debug' 't/txt' 'text' 'roff' 'html' 'urls' 'kernel=' 'os=' 'os-id=' 'os-version-id=' 'os-codename=' 'refresh' 'renderer=' -- $argv
 	or return 1
 
 	if set -q _flag_help; or test (count $argv) -eq 0
@@ -17,10 +17,11 @@ function onman -d \
 		echo "  --roff       Force roff URLs (skip plain-text sources)"
 		echo "  --html                   Include browser-accessible HTML URLs (alongside roff/txt)"
 		echo "  --urls               Print all candidate URLs (any mode) and exit; implies --html"
-		echo "  --os <type>              Override OS type (e.g. Linux, Darwin, FreeBSD)"
+		echo "  --os <id>:<ver>          Override OS ID and version/codename"
 		echo "  --os-id <id>             Override OS ID from os-release (e.g. debian, arch)"
 		echo "  --os-version-id <ver>    Override VERSION_ID from os-release (e.g. 15, 43)"
 		echo "  --os-codename <name>     Override VERSION_CODENAME from os-release (e.g. bookworm, noble)"
+		echo "  --kernel <type>          Override kernel type (e.g. Linux, Darwin, FreeBSD)"
 		echo "  --refresh                Refresh cache"
 		echo "  --renderer <man|mandoc|groff>  Force which tool renders roff man pages"
 		return 0
@@ -85,10 +86,43 @@ function onman -d \
 	else
 		set page $argv[1]
 	end
-
+	
+	# interpret "--os"
+	if set -q _flag_os
+		# derive OS version ID or codename from distro:.*
+		if set os_id_suffix (string match -gr -- ":(.+)" $_flag_os)
+			if string match -qr -- '^[0-9.]+$' $os_id_suffix
+				if ! set -q _flag_os_version_id
+					set _flag_os_version_id $os_id_suffix
+				end
+			else
+				if ! set -q _flag_os_codename
+					set _flag_os_codename $os_id_suffix
+				end
+			end
+			set _flag_os (string match -gr -- "(.+):" $_flag_os)
+		end
+		set _flag_os_id $_flag_os
+	end
+	
+	# derive kernel from distro id
+	if set -q _flag_os_id && ! set -q _flag_kernel
+		switch $_flag_os_id
+			case alpine arch centos debian fedora ubuntu 
+				set _flag_kernel Linux
+			case freebsd
+				set _flag_kernel FreeBSD
+			case NetBSD
+				set _flag_kernel NetBSD
+			case OpenBSD
+				set _flag_kernel OpenBSD
+		end
+	end
+	
 	# --- read os-release once; apply flag overrides immediately ---
 	set -l os_type (uname -s)
-	if set -q _flag_os; set os_type $_flag_os; end
+	if set -q _flag_kernel; set os_type $_flag_kernel; end
+	
 
 	set -l os_id ""
 	set -l os_id_like ""
