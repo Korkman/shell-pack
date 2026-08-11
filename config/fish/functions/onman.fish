@@ -213,6 +213,7 @@ function onman -d \
 	# --- build URL list: one URL per source, roff or txt based on mode ---
 	set -l urls
 	set -l url_modes  # parallel list: "roff" or "txt"
+	set -l url_compressions  # parallel list: "" or "gz"
 	set -l url_descs  # parallel list: source descriptions
 
 	# section suffix for URLs
@@ -249,12 +250,15 @@ function onman -d \
 			case roff
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
 				set -a url_modes roff
+				set -a url_compressions ""
 			case txt
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
 				set -a url_modes txt
+				set -a url_compressions ""
 			case html
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
 				set -a url_modes html
+				set -a url_compressions ""
 		end
 		set -a url_descs "https://man.archlinux.org/ (always latest)"
 	end
@@ -265,12 +269,15 @@ function onman -d \
 			case roff
 				set -a urls "https://manned.org/raw/$manned_distro/$page$sec_suffix"
 				set -a url_modes roff
+				set -a url_compressions ""
 			case txt
 				set -a urls "https://manned.org/txt/$manned_distro/$page$sec_suffix"
 				set -a url_modes ihtml
+				set -a url_compressions ""
 			case html
 				set -a urls "https://manned.org/man/$manned_distro/$page$sec_suffix"
 				set -a url_modes html
+				set -a url_compressions ""
 		end
 		set -a url_descs "https://manned.org/ ($manned_distro)"
 	end
@@ -280,11 +287,13 @@ function onman -d \
 		if test "$is_ubuntu_like" = yes
 			switch $mode
 				case roff
-					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
+					set -a urls "https://manpages.ubuntu.com/manpages.gz/$os_codename/man$forced_section/$page$forced_sec_suffix.gz"
 					set -a url_modes roff
+					set -a url_compressions gz
 				case html
 					set -a urls "https://manpages.ubuntu.com/manpages/$os_codename/man$forced_section/$page$forced_sec_suffix.html"
 					set -a url_modes html
+					set -a url_compressions ""
 			end
 			set -a url_descs "https://manpages.ubuntu.com/ ($os_codename)"
 		end
@@ -297,9 +306,11 @@ function onman -d \
 				case roff
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
 					set -a url_modes roff
+					set -a url_compressions ""
 				case html
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
 					set -a url_modes html
+					set -a url_compressions ""
 			end
 			set -a url_descs "https://manpages.debian.org ($deb_codename)"
 		end
@@ -314,9 +325,11 @@ function onman -d \
 				case txt roff
 					set -a urls $base_url"&format=ascii"
 					set -a url_modes txt
+					set -a url_compressions ""
 				case html
 					set -a urls $base_url
 					set -a url_modes html
+					set -a url_compressions ""
 			end
 			set -a url_descs "https://man.freebsd.org/ ($os_version_id + Ports.quarterly)"
 		end
@@ -328,12 +341,15 @@ function onman -d \
 			case roff
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.raw"
 				set -a url_modes roff
+				set -a url_compressions ""
 			case txt
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix.txt"
 				set -a url_modes txt
+				set -a url_compressions ""
 			case html
 				set -a urls "https://man.archlinux.org/man/$page$sec_suffix"
 				set -a url_modes html
+				set -a url_compressions ""
 		end
 		set -a url_descs "https://man.archlinux.org/ (always latest)"
 	end
@@ -352,6 +368,7 @@ function onman -d \
 		set -l url $urls[$i]
 		set -l url_mode $url_modes[$i]
 		set -l url_desc $url_descs[$i]
+		set -l url_compression $url_compressions[$i]
 
 		if test "$flag_debug" = yes; echo "onman: trying $url_mode $url" >&2; end
 		
@@ -378,6 +395,15 @@ function onman -d \
 				continue
 			end
 			
+			if test "$url_compression" = "gz"
+				mv "$tmpfile" "$tmpfile.gz"
+				gunzip "$tmpfile.gz" \
+				|| begin
+					if test "$flag_debug" = yes; echo "onman: discarding $url (decompression failed)" >&2; end
+					echo failed | __sp_blob_cache --set $cache_fail_key 1h
+					continue
+				end
+			end
 			__sp_blob_cache --clear $cache_fail_key
 			cat $tmpfile | __sp_blob_cache --set $cache_key 7d
 		else
