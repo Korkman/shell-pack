@@ -2,6 +2,12 @@ function dl -d \
 "Download a file, via https:// by default, using either curl or wget 1.x. 
 Will ask to resume or overwrite if already present. Pipe friendly."
 	# set defaults
+	# pros and cons in wget vs. curl
+	# - wget is limited to http/1.1, curl goes up to http/3
+	# - curl displays either a naked progress-bar or a full transfer table, wget has a nice combo
+	# - wget2 is NOT a drop-in replacement for wget and it is questionable whether it can cover the
+	#   basics we need here (pipe body to stdout, headers and progress to stderr)
+	# currently sticking with wget
 	set -l preferred wget
 	set -l force_preferred no
 	set -l verbose no
@@ -221,6 +227,9 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		set -l base_opt --max-redirect=10 --tries $retry_count --no-use-server-timestamps
 		if $__cap_wget_has_glob
 			set -a base_opt --no-glob
+		end
+		if $__cap_wget_has_compression
+			set -a base_opt --compression=auto
 		end
 		set -l silent_opt
 		set -l show_prog_opt "--show-progress"

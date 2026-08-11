@@ -261,6 +261,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_date_is_gnu "__sp_cap_date_is_gnu"
 	set -g __cap_date_is_bsd "__sp_cap_date_is_bsd"
 	set -g __cap_wget_has_glob "__sp_cap_wget_has_glob"
+	set -g __cap_wget_has_compression "__sp_cap_wget_has_compression"
 end
 
 function __sp_tweak_keybinds \

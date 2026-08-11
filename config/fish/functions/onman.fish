@@ -306,6 +306,7 @@ function onman -d \
 				case roff
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.gz"
 					set -a url_modes roff
+					# NOTE: contrary to the URL, the transferred content itself is not compressed
 					set -a url_compressions ""
 				case html
 					set -a urls "https://manpages.debian.org/$deb_codename/$page$sec_suffix.html"
