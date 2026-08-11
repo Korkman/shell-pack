@@ -16,32 +16,6 @@ end
 
 read -c "$cur_ver" -P "Edit version: " new_ver || exit
 
-if test "$new_ver" != "$cur_ver"
-	echo "Patching and committing shell-pack-version.fish"
-	set -l tmp_path "$func_path"".new"
-	rm -f "$tmp_path"
-	string replace "echo '$cur_ver'" "echo '$new_ver'" < "$func_path" > "$tmp_path"
-	and rm "$func_path"
-	and mv "$tmp_path" "$func_path"
-	and git add "$func_path"
-	and git commit -m "version bump"
-	and git push
-	or exit 1
-end
-
-echo "Moving tags"
-function git_move_tag -a current_tag
-	git tag -d $current_tag
-	and git push origin :refs/tags/$current_tag
-	or echo "Ignoring failed tag deletion: $current_tag"
-	git tag $current_tag
-	and git push origin $current_tag
-	or begin
-		echo "Failed adding tag $current_tag! Exiting!"
-		exit 2
-	end
-end
-
 read -n1 -P "Move version tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 	set move_version no
@@ -60,6 +34,34 @@ if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 else
 	set move_devel yes
 end
+
+
+function git_move_tag -a current_tag
+	git tag -d $current_tag
+	and git push origin :refs/tags/$current_tag
+	or echo "Ignoring failed tag deletion: $current_tag"
+	git tag $current_tag
+	and git push origin $current_tag
+	or begin
+		echo "Failed adding tag $current_tag! Exiting!"
+		exit 2
+	end
+end
+
+if test "$new_ver" != "$cur_ver"
+	echo "Patching and committing shell-pack-version.fish"
+	set -l tmp_path "$func_path"".new"
+	rm -f "$tmp_path"
+	string replace "echo '$cur_ver'" "echo '$new_ver'" < "$func_path" > "$tmp_path"
+	and rm "$func_path"
+	and mv "$tmp_path" "$func_path"
+	and git add "$func_path"
+	and git commit -m "version bump"
+	and git push
+	or exit 1
+end
+
+echo "Moving tags"
 
 if test $move_version = "yes"
 	git_move_tag "v$new_ver"
