@@ -16,19 +16,19 @@ end
 
 read -c "$cur_ver" -P "Edit version: " new_ver || exit
 
-read -n1 -P "Move version tag? (Y/n)" answer || set answer n
+read -P "Move version tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 	set move_version no
 else
 	set move_version yes
 end
-read -n1 -P "Move latest tag? (Y/n)" answer || set answer n
+read -P "Move latest tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 	set move_latest no
 else
 	set move_latest yes
 end
-read -n1 -P "Move devel tag? (Y/n)" answer || set answer n
+read -P "Move devel tag? (Y/n)" answer || set answer n
 if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
 	set move_devel no
 else
