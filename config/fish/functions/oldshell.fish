@@ -24,7 +24,12 @@ function oldshell -d \
 		# unexport TMUX connection in case oldshell has support for
 		# importing tmux env, which can cause loops
 		set -lu TMUX
-		# changing LC_NERDLEVEL without triggering event
-		env LC_NERDLEVEL=0 $OLDSHELL -l $argv
+		# changing LC_NERDLEVEL with env so no event is created
+		if test -z "$argv"
+			env LC_NERDLEVEL=0 $OLDSHELL -il
+		else
+			set argv (string escape -- $argv)
+			env LC_NERDLEVEL=0 $OLDSHELL -ilc "$argv"
+		end
 	end
 end
