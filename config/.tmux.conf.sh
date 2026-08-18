@@ -334,11 +334,6 @@ main() {
 		#t set -g message-format '…'
 	fi
 	
-
-	# set-environment seems to trigger creation of the first window
-	# therefore, put this rather at the end than the start of main()
-	t set-environment __sp_tmux_ver "$__sp_tmux_ver"
-	
 	# make ctrl-arrow work in mc
 	# make shift-arrow work in mc
 	if [ "$__sp_tmux_ver" -lt 204 ]; then
@@ -368,9 +363,37 @@ main() {
 	t set -g @copy-default-terminal $TMUX_TERMINAL
 	
 	if [ "$TMUX_CONF_SH_IS_RELOAD" != "1" ]; then
-		# not a reload - initial server setup
+		# not a reload - initial server setup - placing "appending" set -a instructions here
 		t set -ag update-environment " LC_NERDLEVEL"
 		t set -ag update-environment " TERM"
+		
+		# modern overrides come as "feature flags": support clipboard and hyperlinks
+		# they need to come before terminal-overrides (at least for tmux 3.3a)
+		if [ "$__sp_tmux_ver" -ge 302 ]; then
+			t set -ag terminal-features ",*:clipboard"
+		fi
+		if [ "$__sp_tmux_ver" -ge 304 ]; then
+			t set -ag terminal-features ",*:hyperlinks"
+		fi
+		
+		# to enable native terminal scroll bars, we strip cursor position features
+		# smcup and rmcup from terminfo reported to tmux
+		TERM_OVERRIDES='*:smcup@:rmcup@'
+		if [ "$__sp_tmux_ver" -lt 304 ]; then
+			# in old tmux, we have to set the whole string to defaults + ours
+			OLD_TMUX_TERM_OVERRIDE_DEFAULTS='*88col*:colors=88,*256col*:colors=256,xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007:Cc=\E]12;%p1%s\007:Cr=\E]112\007:Cs=\E[%p1%d q:Csr=\E[2 q,screen*:XT'
+			t set -qg terminal-overrides "$OLD_TMUX_TERM_OVERRIDE_DEFAULTS,$TERM_OVERRIDES"
+		fi
+		if [ "$__sp_tmux_ver" -ge 304 ]; then
+			# in later tmux we can simply append our overrides
+			t set -ag terminal-overrides ",$TERM_OVERRIDES"
+		fi
+		
+		# set-environment seems to trigger creation of the first window
+		# has to come after terminal-overrides for very old tmux
+		# therefore, place this rather late, but not too late or else flicker will occur
+		t set-environment __sp_tmux_ver "$__sp_tmux_ver"
+		
 		if [ "$TMUX_CONF_SH_ECHO" = "1" ]; then
 			main_phase2
 		else
@@ -388,6 +411,7 @@ main() {
 
 # the second part of the main config is loaded in background
 main_phase2() {
+	
 	if [ "$TMUX_FAILSAFE" = "1" ]; then
 		if [ "$TMUX_FAILSAFE_DEBUG" = "1" ]; then
 			style_msg "TMUX_FAILSAFE_DEBUG=1, logging to $ERRLOG"
