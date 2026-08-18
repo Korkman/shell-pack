@@ -102,6 +102,10 @@ function __sp_tweak_env -d \
 		#	TERM TERM_PROGRAM TERM_PROGRAM_VERSION COLORTERM \
 		
 		mmux --grab-hooks
+		# for some reason we need to trigger __spt_track_term manually here
+		# (the variable tracker set up earlier)
+		# so that creating new windows in an attached tmux session recognizes the new TERM
+		set -gx TERM "$TERM"
 		
 		# __sp_man_page needs a backup copy of the preset "man" function
 		if ! functions -q __sp_man_page_default && functions -q man
