@@ -352,6 +352,10 @@ function __sp_tweak_keybinds \
 	# alt-left and -right in linux console
 	bind \e\e\[D "prevd-or-backward-word"
 	bind \e\e\[C "nextd-or-forward-word"
+	# in recent fish releases ctrl does token jumps which is a nice idea but
+	# I personally need ctrl-arrows and alt-arrows to behave the same
+	bind \e\[1\;5D "prevd-or-backward-word"
+	bind \e\[1\;5C "nextd-or-forward-word"
 	# alt-down in linux console
 	bind \e\e\[B "__sp_cd_dive"
 	# alt-up in linux console
