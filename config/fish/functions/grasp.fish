@@ -29,7 +29,7 @@ function grasp -d \
 	set -l default_pager_lines 100000
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
-	argparse --stop-nonopt p/pager t/tail=? n/line-number -- $argv
+	argparse --stop-nonopt p/pager 't/tail=?' n/line-number -- $argv
 	
 	if ! test -e "$HOME/.local/share/shell-pack"
 		mkdir -p "$HOME/.local/share/shell-pack"
