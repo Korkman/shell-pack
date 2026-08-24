@@ -176,9 +176,9 @@ function grasp -d \
 	set -a fzf_defaults --highlight-line \
 		--multi --exact --ansi \
 		--no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" \
-		--history "$GRASP_HIST_FILE"
+		'--height=~100%' --history "$GRASP_HIST_FILE"
 	
-	# removed as it interferes with docker-fastexec (input broken)
+	# changed to ~100% as it interfered with docker-fastexec (broke input)
 	# --height=-1
 	
 	# start in compact mode with invisible search (q exits)
