@@ -38,9 +38,8 @@ function rrg -d \
 	
 	set -l fzf_binds (printf %s \
 		'alt-p:toggle-preview,'\
-		'alt-v:execute(nullerror vi +{2} {1}),'\
 		'f3:execute(nullerror fishcall mcview {1}),'\
-		'f4:execute(nullerror fishcall mcedit {1}:{2}),'\
+		'f4:execute(nullerror fishcall __sp_editor --line {2} {1}),'\
 		'alt-l:execute(clear; cat {1} | fishcall __sp_pager +{2}g),'\
 		'f1,alt-h:execute(fishcall rrg-help),'\
 		'alt-q:abort,'\
@@ -54,7 +53,7 @@ function rrg -d \
 	)
 	
 
-	printf 'f1:help enter:results-in-file a-p:pane a-l:pager\na-v:vim f3:mcview f4:mcedit a-i:line a-o:content' | __sp_fzf_header
+	printf 'f1:help enter:results-in-file a-p:pane a-l:pager\nf3:mcview f4:editor a-i:line a-o:content' | __sp_fzf_header
 	__sp_fzf_defaults 'Rapid Ripgrep'
 	
 	# this causes display error in microsoft terminal

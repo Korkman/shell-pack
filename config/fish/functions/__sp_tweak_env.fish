@@ -144,6 +144,8 @@ function __sp_tweak_user_defaults -d \
 	end
 	
 	for var in (string split ' ' -- $__sp_tweaked_env_vars)
+		# remove user intervention watchdog
+		functions -e "__sp_untweak_var_$var"
 		switch $var
 			case EDITOR
 				# default to mcedit for EDITOR if not set
@@ -175,6 +177,11 @@ function __sp_tweak_user_defaults -d \
 				set -g VIRTUAL_ENV_DISABLE_PROMPT yes
 			case RIPGREP_CONFIG_PATH
 				set -x -g RIPGREP_CONFIG_PATH $__sp_config_fish_dir"/../ripgrep.conf"
+		end
+		# add user intervention watchdog (stop tweaking var when user changes it)
+		function "__sp_untweak_var_$var" -v "$var"
+			set -l var (string replace -- "__sp_untweak_var_" "" (status current-function))
+			set -g __sp_tweaked_env_vars (string join ' ' (string match -v -- "$var" (string split ' ' -- $__sp_tweaked_env_vars)))
 		end
 	end
 end

@@ -204,15 +204,9 @@ function create -d "Creates a new text file with a basic template and opens it i
 	if test $executable -eq 1
 		chmod +x "$filename"
 	end
-
-	# open the file in the default editor with cursor position for supported editors
-	switch "$EDITOR"
-		case "*mcedit" "*vi" "*vim" "*nano"
-			"$EDITOR" +$line "$filename"
-		case '*'
-			"$EDITOR" "$filename"
-	end
-
+	
+	__sp_editor --line $line $filename
+	
 	# check if the file still matches the template after editing
 	if string match --quiet -- (echo -e "$template" | string join '\n') (cat "$filename" | string join '\n')
 		read -l -P "Delete unmodified template? (Y/n) " REPLY

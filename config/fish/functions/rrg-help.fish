@@ -46,9 +46,8 @@ $fzf_query_help
    toggle pane                      alt-p
    show content in pane (default)   alt-o
    show result line in pane         alt-i
-   start vim on matched line        alt-v           
    start less on matched line       alt-l
-   start mcedit on matched line     f4
+   start editor on matched line     f4
    start mcview on file             f3
    read all matches in file         enter
 

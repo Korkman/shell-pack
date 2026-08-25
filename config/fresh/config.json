@@ -47,6 +47,10 @@
       "action": "goto_line"
     },
     {
+      "modifiers": ["alt"], "key": "l",
+      "action": "goto_line"
+    },
+    {
       "modifiers": ["ctrl"], "key": "g",
       "action": "goto_line"
     },
@@ -71,6 +75,10 @@
     {
       "key": "F8",
       "action": "delete_line"
+    },
+    {
+      "key": "F9",
+      "action": "menu_activate"
     },
     {
       "key": "F10",

@@ -34,5 +34,7 @@ tmux
 * for a full list, read [.tmux.conf](/config/.tmux.conf)
 
 fresh
+* new kid on the block\
+  `set -gx VISUAL fresh` to use it temporarily or `set -U VISUAL fresh` for a permament switch
 * has a few keybinds changed
 * see [config/fresh/config.json](/config/fresh/config.json)

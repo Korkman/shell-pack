@@ -140,7 +140,7 @@ function ggit -d \
 				end
 				continue
 			case "message"
-				mcedit "$msg_filename"
+				__sp_editor "$msg_filename"
 				continue
 			case "*"
 				#echo "Abort"
