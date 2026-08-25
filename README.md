@@ -56,6 +56,7 @@ for download will be asked for:
  * [rg](https://github.com/BurntSushi/ripgrep) (ripgrep)
  * [fzf](https://github.com/junegunn/fzf) (fuzzy finder)
  * [dool](https://github.com/scottchiefbaker/dool) (dstat replacement)
+ * [fresh](https://github.com/sinelaw/fresh) (modern text editor / IDE)
 
 ## Bundled shell integrations
 Some terminals propagate custom shell integration scripts to enable advanced
