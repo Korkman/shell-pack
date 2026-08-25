@@ -1,0 +1,161 @@
+// shell-pack config preset
+{
+  "version": 2,
+  "locale": "en",
+  // fresh's own updater is permanently disabled (it won't update at our custom location)
+  // so shell-pack manages updates
+  "check_for_updates": false,
+  "self_update": false,
+  "editor": {
+    // nerd_font_icons is set in init.ts, depending on LC_NERDLEVEL
+    "use_tabs": true,
+    "tab_size": 3,
+    "whitespace_tabs_leading": true,
+    "whitespace_spaces_leading": true,
+    "whitespace_spaces_trailing": true,
+    "auto_close": true,
+    "line_wrap": false,
+    "indentation_guide": "none",
+    "indentation_guide_glyph": "│",
+    "rainbow_indentation": true,
+    "rulers": [72, 120],
+    "line_numbers": true
+  },
+  "file_explorer": {
+    "auto_open_on_last_buffer_close": false,
+    "follow_active_buffer": true,
+    "show_hidden": true,
+    "show_gitignored": true
+  },
+  "terminal": {
+    "shell": {
+      // make sure to remove TMUX from env so specific escapes don't confuse fresh
+      "command": "/usr/bin/env",
+      "args": [
+        "TMUX=", "sh", "-c", "exec $SHELL"
+      ]
+    }
+  },
+  "active_keybinding_map": "vscode",
+  "keybindings": [
+    {
+      "modifiers": ["ctrl"], "key": "d",
+      "action": "duplicate_line"
+    },
+    {
+      "modifiers": ["ctrl"], "key": "l",
+      "action": "goto_line"
+    },
+    {
+      "modifiers": ["ctrl"], "key": "g",
+      "action": "goto_line"
+    },
+    // terminals in tabs yay!
+    {
+      "modifiers": ["ctrl"], "key": "t",
+      "action": "open_terminal"
+    },
+    // some F-keys from midnight commander
+    {
+      "key": "F2",
+      "action": "save"
+    },
+    {
+      "key": "F4",
+      "action": "query_replace"
+    },
+    {
+      "key": "F5",
+      "action": "copy"
+    },
+    {
+      "key": "F8",
+      "action": "delete_line"
+    },
+    {
+      "key": "F10",
+      "action": "quit",
+      "when": "global"
+    },
+    // prefer the classic interactive replace
+    {
+      "modifiers": ["ctrl"], "key": "r",
+      "action": "query_replace"
+    },
+    {
+      "modifiers": ["ctrl"], "key": "h",
+      "action": "query_replace"
+    },
+    {
+      "modifiers": ["ctrl"], "key": ",",
+      "action": "open_settings"
+    },
+	 // never too many keys to quit
+    {
+      "modifiers": ["alt"], "key": "q",
+      "action": "quit"
+    },
+    // default from vscode: ctrl-, to open settings
+    {
+      "modifiers": ["ctrl"], "key": ",",
+      "action": "open_settings"
+    },
+    // since ctrl-, is not passing my terminal, add chord ctrl-k ,
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "," }
+      ],
+      "action": "open_settings"
+    },
+    // default from vscode: chord ctrl-k m to change language
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "m" }
+      ],
+      "action": "set_language"
+    },
+    // default from vscode: ctrl-k m ctrl-s to open keybinds
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "modifiers": ["ctrl"], "key": "s" }
+      ],
+      "action": "open_keybinding_editor"
+    },
+    // add a chord to toggle comments in case ctrl-/ does not pass
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "/" }
+      ],
+      "action": "toggle_comment"
+    },
+    // add chords to next / previous buffer in case ctrl-pgup/-pgdn don't pass
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "right" }
+      ],
+      "action": "next_buffer"
+    },
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "left" }
+      ],
+      "action": "prev_buffer"
+    }
+  ],
+  "languages": {
+    "yaml": {
+      "tab_size": 2,
+      "use_tabs": false
+    },
+    "json": {
+      "tab_size": 2,
+      "use_tabs": false
+    }
+  }
+}

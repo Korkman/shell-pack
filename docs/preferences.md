@@ -32,3 +32,7 @@ tmux
 * shows a nice blue bar on the bottom
 * starts window index on 1
 * for a full list, read [.tmux.conf](/config/.tmux.conf)
+
+fresh
+* has a few keybinds changed
+* see [config/fresh/config.json](/config/fresh/config.json)

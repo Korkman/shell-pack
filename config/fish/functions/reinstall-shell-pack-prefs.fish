@@ -1,7 +1,7 @@
 __polyfill_cmp
 
 function reinstall-shell-pack-prefs \
--d "Reinstalls mc, htop, tmux, screen preferences"
+-d "Reinstalls mc, htop, tmux, screen, fresh preferences"
 	
 	set htop_config "htoprc"
 	set htop_version "no version"
@@ -21,19 +21,19 @@ function reinstall-shell-pack-prefs \
 	and cmp -s -- "$__sp_config_dir/mc/ini" ~/.config/mc/ini
 	and cmp -s -- "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
 	and cmp -s -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
-		echo "Your preferences are up-to-date"
+	and cmp -s -- "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
+	and cmp -s -- "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
+		echo "Your configs match shell-pack presets."
 		return
 	end
 	
-	echo "Your preferences do not match recommendations. Overwrite:"
-	echo " - tmux / screen"
-	echo " - htop"
-	echo " - mc"
+	echo "Some settings of the following tools don't match current shell-pack presets."
+	echo "- tmux, screen, htop, mc, fresh -"
 	if [ "$FORCE_INSTALL_SP_PREFS" = "y" ]
 		set answer y
 		set -ge FORCE_INSTALL_SP_PREFS
 	else
-		read -P '? (Y/n) ' answer || set answer n
+		read -P 'RESET them to defaults (recommended)? (Y/n) ' answer || set answer n
 	end
 	if [ "$answer" != "" ] && [ "$answer" != "y" ] && [ "$answer" != 'Y' ]
 		echo "Skipping preferences."
@@ -53,6 +53,7 @@ function reinstall-shell-pack-prefs \
 	mkdir -p ~/.config/htop
 	rm -f ~/.config/htop/htoprc
 	cp "$__sp_config_dir/htop/$htop_config" ~/.config/htop/htoprc
+	
 	mkdir -p ~/.config/mc
 	rm -f ~/.config/mc/ini
 	cp "$__sp_config_dir/mc/ini" ~/.config/mc/ini
@@ -60,5 +61,11 @@ function reinstall-shell-pack-prefs \
 	cp "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
 	rm -f ~/.config/mc/panels.ini
 	cp "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
+	
+	mkdir -p ~/.config/fresh
+	rm -f ~/.config/fresh/config.json
+	rm -f ~/.config/fresh/init.ts
+	cp "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
+	cp "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
 	
 end

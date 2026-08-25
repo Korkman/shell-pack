@@ -119,7 +119,7 @@ Congratulations! Your prompt should look gorgeus now.
 ## Updates
 Retrieving the latest version is as simple as running ```upgrade-shell-pack```. If any dependencies need to be upgraded as well, shell-pack will say so.
 
-Shell-pack will check for a new version once a day on login and suggest an upgrade. This can be disabled by setting the variable $UPGRADE_SHELLPACK to "no" (`set -U UPGRADE_SHELLPACK no`) and enabled again through erasing the variable (`set -eU UPGRADE_SHELLPACK`).
+Shell-pack will check for a new version once a day on login and suggest an upgrade. This can be disabled by setting the variable $UPGRADE_SHELLPACK to "no" (`set -U UPGRADE_SHELLPACK no`) and enabled again through erasing the variable (`set -eU UPGRADE_SHELLPACK`). This also controls `fresh` editor updates.
 
 ## Other installation methods
 

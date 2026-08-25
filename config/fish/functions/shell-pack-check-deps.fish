@@ -38,6 +38,7 @@ function shell-pack-check-deps -d \
 	if command -q python3 && __sp_test_product_version "python3" "3.6.0" "python3 --version"
 		__sp_test_product_version "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	end
+	__sp_test_product_version "fresh"   "0.4.10" "fresh --version"    "Run: shell-pack-deps install fresh latest"
 	
 	if test "$__shp_outdated_deps" != ""
 		echo "outdated: $__shp_outdated_deps"
