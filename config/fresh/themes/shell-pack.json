@@ -40,8 +40,6 @@
     "menu_hover_bg": [100, 100, 100],
     "menu_hover_fg": [255, 255, 255],
     "menu_border_fg": [0, 255, 135],
-    "popup_border_fg": [0, 255, 135],
-    "menu_highlight_bg": [0, 255, 135],
-    "menu_highlight_fg": [0, 0, 0]
+    "popup_border_fg": [0, 255, 135]
   }
 }
