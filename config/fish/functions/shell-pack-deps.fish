@@ -173,7 +173,7 @@ function shell-pack-deps-install-fresh
 	
 	set uname_s (uname -s)
 	
-	if test (uname -m) = "x86_64"
+	if test (uname -m) = "x86_64" || test (uname -m) = "amd64"
 		if test "$uname_s" = "Darwin"
 			set url "$tpl_x86_64_apple_darwin"
 		else if test "$uname_s" = "Linux"
