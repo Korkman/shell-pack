@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "machine_id": "unknown",
+  "updated_at": "2026-08-26T19:49:30.080Z",
+  "active": [
+    {
+      "label": "pbeck",
+      "branch": "pbeck",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:44:48.306Z"
+    },
+    {
+      "label": "applications",
+      "branch": "applications",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:44:48.306Z"
+    },
+    {
+      "label": "devel",
+      "branch": "devel",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:44:48.306Z"
+    },
+    {
+      "label": "tmp",
+      "branch": "tmp",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:44:48.306Z"
+    },
+    {
+      "label": "main",
+      "branch": "main",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:44:48.306Z"
+    }
+  ],
+  "archived": [
+    {
+      "label": "docker · date",
+      "root": "/home/pbeck/git-shell-pack/devel/docker",
+      "original_root": "/home/pbeck/git-shell-pack/devel/docker",
+      "branch": "main",
+      "archived_at": "2026-08-26T19:49:29.520Z",
+      "repo_root": "/home/pbeck/git-shell-pack"
+    }
+  ]
+}
