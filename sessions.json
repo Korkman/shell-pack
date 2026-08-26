@@ -1,31 +1,13 @@
 {
   "version": 1,
   "machine_id": "unknown",
-  "updated_at": "2026-08-26T19:56:01.225Z",
+  "updated_at": "2026-08-26T19:56:28.547Z",
   "active": [
     {
-      "label": "git-shell-pack",
-      "branch": "git-shell-pack",
+      "label": "git-shell-pack · env — >lemint (pbeck)",
+      "branch": "git-shell-pack · env — >lemint (pbeck)",
       "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:55:15.692Z"
-    },
-    {
-      "label": "tmp",
-      "branch": "tmp",
-      "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:55:15.693Z"
-    },
-    {
-      "label": "Temp2",
-      "branch": "Temp2",
-      "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:55:15.693Z"
-    },
-    {
-      "label": "main",
-      "branch": "main",
-      "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:55:15.693Z"
+      "created_at": "2026-08-26T19:56:28.304Z"
     }
   ],
   "archived": [
@@ -43,6 +25,14 @@
       "original_root": "/home/pbeck/git-shell-pack/devel",
       "branch": "main",
       "archived_at": "2026-08-26T19:56:00.995Z",
+      "repo_root": "/home/pbeck/git-shell-pack"
+    },
+    {
+      "label": "git-shell-pack",
+      "root": "/home/pbeck/git-shell-pack",
+      "original_root": "/home/pbeck/git-shell-pack",
+      "branch": "main",
+      "archived_at": "2026-08-26T19:56:28.378Z",
       "repo_root": "/home/pbeck/git-shell-pack"
     }
   ]
