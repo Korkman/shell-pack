@@ -103,7 +103,8 @@
     // never too many keys to quit
     {
       "modifiers": ["alt"], "key": "q",
-      "action": "quit"
+      "action": "quit",
+      "when": "global"
     },
     // default from vscode: ctrl-, to open settings
     {
@@ -161,6 +162,11 @@
       "modifiers": ["ctrl"], "key": "e",
       "action": "toggle_file_explorer",
       "when": "fileExplorer"
+    },
+    {
+      "modifiers": ["alt"], "key": "o",
+      "action": "orchestrator_dock_toggle",
+      "when": "global"
     }
   ],
   "languages": {
