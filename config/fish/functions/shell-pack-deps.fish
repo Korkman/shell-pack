@@ -164,10 +164,10 @@ function shell-pack-deps-install-fresh
 	
 	set tpl_aarch64_apple_darwin "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-aarch64-apple-darwin.tar.xz"
 	set tpl_x86_64_apple_darwin "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-x86_64-apple-darwin.tar.xz"
-	set tpl_aarch64_linux "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-aarch64-unknown-linux-musl.tar.gz"
-	set tpl_x86_64_linux "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-x86_64-unknown-linux-musl.tar.gz"
-	set tpl_aarch64_freebsd "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-aarch64-unknown-freebsd.tar.gz"
-	set tpl_x86_64_freebsd "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-x86_64-unknown-freebsd.tar.gz"
+	set tpl_aarch64_linux "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-aarch64-unknown-linux-musl.tar.xz"
+	set tpl_x86_64_linux "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-x86_64-unknown-linux-musl.tar.xz"
+	set tpl_aarch64_freebsd "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-aarch64-unknown-freebsd.tar.xz"
+	set tpl_x86_64_freebsd "https://github.com/sinelaw/fresh/releases/download/TAG/fresh-editor-x86_64-unknown-freebsd.tar.xz"
 	
 	set initial_dir "$PWD"
 	
