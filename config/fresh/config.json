@@ -11,7 +11,7 @@
     "use_tabs": true,
     "tab_size": 3,
     "whitespace_tabs_leading": true,
-    "whitespace_spaces_leading": true,
+    "whitespace_spaces_leading": false,
     "whitespace_spaces_trailing": true,
     "auto_close": true,
     "line_wrap": false,
