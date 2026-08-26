@@ -1,0 +1,49 @@
+{
+  "name": "shell-pack",
+  "extends": "builtin://high-contrast",
+  "editor": {
+    "cursor": [255, 190, 50],
+    "bracket_match_fg": [0, 255, 135],
+    "bracket_rainbow_1": [255, 224, 102],
+    "bracket_rainbow_2": [204, 93, 232],
+    "bracket_rainbow_3": [77, 171, 247],
+    "bracket_rainbow_4": [255, 224, 102],
+    "bracket_rainbow_5": [204, 93, 232],
+    "bracket_rainbow_6": [77, 171, 247],
+    "indent_rainbow_1": [255, 224, 102],
+    "indent_rainbow_2": [204, 93, 232],
+    "indent_rainbow_3": [77, 171, 247],
+    "indent_rainbow_4": [255, 224, 102],
+    "indent_rainbow_5": [204, 93, 232],
+    "indent_rainbow_6": [77, 171, 247]
+  },
+  "syntax": {
+    "string": [140, 191, 242],
+    "comment": [160, 160, 160],
+    "constant": [191, 242, 140],
+    "function": [255, 255, 160],
+    "variable_builtin": [255, 221, 0],
+    "keyword": [191, 140, 242],
+    "punctuation_bracket": [ 204, 93, 232 ]
+  },
+  "ui": {
+    "tab_active_bg": [100, 100, 100],
+    "tab_active_fg": [255, 255, 255],
+    "tab_inactive_bg": [30, 30, 35],
+    "tab_separator_bg": [15, 15, 25],
+    "scrollbar_thumb_fg": [140, 140, 140],
+    "scrollbar_thumb_hover_fg": [0, 255, 135],
+    "status_palette_bg": [0, 114, 146],
+    "status_palette_fg": [255, 255, 255],
+    "status_lsp_actionable_bg": [255, 203, 0],
+    "menu_active_bg": [0, 255, 135],
+    "menu_hover_bg": [100, 100, 100],
+    "menu_hover_fg": [255, 255, 255],
+    "menu_border_fg": [0, 255, 135],
+    "popup_border_fg": [0, 255, 135],
+    "popup_selection_bg": [0, 255, 135],
+    "popup_selection_fg": [0, 0, 0],
+    "menu_highlight_bg": [0, 255, 135],
+    "menu_highlight_fg": [0, 0, 0]
+  }
+}

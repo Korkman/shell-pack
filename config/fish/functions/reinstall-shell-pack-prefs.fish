@@ -23,6 +23,7 @@ function reinstall-shell-pack-prefs \
 	and cmp -s -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
 	and cmp -s -- "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
 	and cmp -s -- "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
+	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
 		echo "Your configs match shell-pack presets."
 		return
 	end
@@ -62,10 +63,12 @@ function reinstall-shell-pack-prefs \
 	rm -f ~/.config/mc/panels.ini
 	cp "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
 	
-	mkdir -p ~/.config/fresh
+	mkdir -p ~/.config/fresh/themes
 	rm -f ~/.config/fresh/config.json
 	rm -f ~/.config/fresh/init.ts
+	rm -f ~/.config/fresh/themes/shell-pack.json
 	cp "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
 	cp "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
+	cp "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
 	
 end

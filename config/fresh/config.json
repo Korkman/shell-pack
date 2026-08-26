@@ -12,14 +12,16 @@
     "tab_size": 3,
     "whitespace_tabs_leading": true,
     "whitespace_spaces_leading": false,
-    "whitespace_spaces_trailing": true,
+    "whitespace_spaces_trailing": false,
     "auto_close": true,
     "line_wrap": false,
     "indentation_guide": "none",
     "indentation_guide_glyph": "│",
     "rainbow_indentation": true,
     "rulers": [72, 120],
-    "line_numbers": true
+    "line_numbers": true,
+    "rainbow_brackets": false,
+    "highlight_matching_brackets": true
   },
   "file_explorer": {
     "auto_open_on_last_buffer_close": false,
@@ -98,7 +100,7 @@
       "modifiers": ["ctrl"], "key": ",",
       "action": "open_settings"
     },
-	 // never too many keys to quit
+    // never too many keys to quit
     {
       "modifiers": ["alt"], "key": "q",
       "action": "quit"
@@ -154,6 +156,11 @@
         { "key": "left" }
       ],
       "action": "prev_buffer"
+    },
+    {
+      "modifiers": ["ctrl"], "key": "e",
+      "action": "toggle_file_explorer",
+      "when": "fileExplorer"
     }
   ],
   "languages": {
@@ -165,5 +172,6 @@
       "tab_size": 2,
       "use_tabs": false
     }
-  }
+  },
+  "theme": "shell-pack.json"
 }
