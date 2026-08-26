@@ -1,37 +1,31 @@
 {
   "version": 1,
   "machine_id": "unknown",
-  "updated_at": "2026-08-26T19:49:30.080Z",
+  "updated_at": "2026-08-26T19:56:01.225Z",
   "active": [
     {
-      "label": "pbeck",
-      "branch": "pbeck",
+      "label": "git-shell-pack",
+      "branch": "git-shell-pack",
       "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:44:48.306Z"
-    },
-    {
-      "label": "applications",
-      "branch": "applications",
-      "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:44:48.306Z"
-    },
-    {
-      "label": "devel",
-      "branch": "devel",
-      "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:44:48.306Z"
+      "created_at": "2026-08-26T19:55:15.692Z"
     },
     {
       "label": "tmp",
       "branch": "tmp",
       "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:44:48.306Z"
+      "created_at": "2026-08-26T19:55:15.693Z"
+    },
+    {
+      "label": "Temp2",
+      "branch": "Temp2",
+      "base_ref": "origin/master",
+      "created_at": "2026-08-26T19:55:15.693Z"
     },
     {
       "label": "main",
       "branch": "main",
       "base_ref": "origin/master",
-      "created_at": "2026-08-26T19:44:48.306Z"
+      "created_at": "2026-08-26T19:55:15.693Z"
     }
   ],
   "archived": [
@@ -41,6 +35,14 @@
       "original_root": "/home/pbeck/git-shell-pack/devel/docker",
       "branch": "main",
       "archived_at": "2026-08-26T19:49:29.520Z",
+      "repo_root": "/home/pbeck/git-shell-pack"
+    },
+    {
+      "label": "devel",
+      "root": "/home/pbeck/git-shell-pack/devel",
+      "original_root": "/home/pbeck/git-shell-pack/devel",
+      "branch": "main",
+      "archived_at": "2026-08-26T19:56:00.995Z",
       "repo_root": "/home/pbeck/git-shell-pack"
     }
   ]
