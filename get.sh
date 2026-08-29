@@ -11,6 +11,7 @@ set -eu
 DOWNLOAD_TAG="${1:-latest}"
 
 # this will be the location where shell-pack code, config and deps will be installed to
+# shellcheck disable=SC2016
 SHELL_PACK_BASEDIR_STR='$HOME/.local/share/shell-pack' # NOTE: do not use {brackets} so the path is fish compatible
 SHELL_PACK_BASEDIR="${HOME}/.local/share/shell-pack"
 SHELL_PACK_SRCDIR="${SHELL_PACK_BASEDIR}/src"
@@ -75,7 +76,7 @@ then
 	if [ -t 0 ] && [ -e "${DOWNLOAD_FILENAME}" ]; then
 		# when in terminal, ask whether to re-use downloaded file
 		echo "Pre-downloaded file detected, use for installation? (y/N)"
-		read answer || answer=n
+		read -r answer || answer=n
 		if [ "$answer" = "y" ]; then
 			PRE_DOWNLOADED=y
 		fi
@@ -150,10 +151,10 @@ SHELL_PACK_BINDIR="${SHELL_PACK_BASEDIR}/bin"
 mkdir -p "${SHELL_PACK_BINDIR}"
 
 # this merges several symlinks into SHELL_PACK_BINDIR
-echo -n "Maintaining symlinks in ${SHELL_PACK_BINDIR} "
+printf "Maintaining symlinks in %s " "${SHELL_PACK_BINDIR}"
 for item in "${SHELL_PACK_SRCDIR}/bin/"*; do
 	item=$(basename "$item")
-	echo -n "."
+	printf "."
 	if [ ! -e "${SHELL_PACK_BINDIR}/${item}" ]; then
 		ln -s "../src/bin/${item}" "${SHELL_PACK_BINDIR}/${item}"
 	fi
@@ -218,6 +219,5 @@ else
 	exit 0
 fi
 
-
-exit
+# exit
 }
