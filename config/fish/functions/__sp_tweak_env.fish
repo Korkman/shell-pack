@@ -148,11 +148,11 @@ function __sp_tweak_user_defaults -d \
 		functions -e "__sp_untweak_var_$var"
 		switch $var
 			case EDITOR
-				# default to mcedit for EDITOR if not set
-				set -x -g EDITOR "mcedit"
+				# default to fresh for EDITOR if not set
+				set -x -g EDITOR "fresh"
 			case VISUAL
 				# same for VISUAL
-				set -x -g VISUAL "mcedit"
+				set -x -g VISUAL "fresh"
 			case PAGER
 				# default pager setup
 				# do not add arguments here. it usually points to a binary
