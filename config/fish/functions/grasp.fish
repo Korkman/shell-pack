@@ -199,6 +199,7 @@ function grasp -d \
 	end
 
 	set -l fzf_status
+	set -l bat_filename
 	if test ! -t 0
 		if test ! -t 1
 			# STDOUT is not a terminal! Someone is using us as a pipe (`man sh | less` on BSD)
@@ -210,9 +211,9 @@ function grasp -d \
 		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"STDIN"(set_color normal)" "(set_color normal)
 		set -a fzf_defaults --input-label "$input_label"
 		
-		#if set -q _flag_line_number
-		#	set -a fzf_defaults --bind "start:trigger(l)"
-		#end
+		if set -q STDIN_FILENAME
+			set bat_filename $STDIN_FILENAME
+		end
 	else
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
@@ -229,6 +230,7 @@ function grasp -d \
 				# in stream mode, follow the file
 				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
+			set bat_filename $argv[1]
 		else if type -q $argv[1]
 			# run passed command
 			set cmd $argv
@@ -259,14 +261,34 @@ function grasp -d \
 		# leave cmd execution (and killing of it) to fzf
 		__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
 		
-		if set -q _flag_line_number
-			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | fishcall __sp_linenumbers -w auto"
-		end
 	end
 	
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
-	fzf
+	
+	if command -q bat
+		set bat_cmd bat --color=always --wrap=never --style=plain
+		if test -n $bat_filename
+			set -a bat_cmd --file-name=$bat_filename
+		end
+	end
+	if set -q FZF_DEFAULT_COMMAND
+		if set -q bat_cmd
+			set bat_cmd (__sp_quote_args $bat_cmd)
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | $bat_cmd"
+		end
+		if set -q _flag_line_number
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | fishcall __sp_linenumbers -w auto"
+		end
+		fzf
+	else
+		if set -q bat_cmd
+			$bat_cmd | fzf
+		else
+			fzf
+		end
+	end
+	
 	set fzf_status $status
 	
 	if status is-interactive && test $fzf_status -eq 50

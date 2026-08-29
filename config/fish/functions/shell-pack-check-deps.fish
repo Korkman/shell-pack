@@ -39,6 +39,7 @@ function shell-pack-check-deps -d \
 		__sp_test_product_version "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	end
 	__sp_test_product_version "fresh"   "0.4.10" "fresh --version"    "Run: shell-pack-deps install fresh latest"
+	__sp_test_product_version "bat"     "0.26.1"  "bat --version"     "Run: shell-pack-deps install bat \$minver"
 	
 	if test "$__shp_outdated_deps" != ""
 		echo "outdated: $__shp_outdated_deps"

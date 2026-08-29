@@ -4,5 +4,9 @@ bin/rg
 bin/sk
 bin/dool.d
 bin/fresh
+bin/bat
 devel/test-qmount-files
-
+# for when config/fresh is symlinked to $HOME during development 
+config/fresh/types/fresh.d.ts
+config/fresh/types/plugins.d.ts
+config/fresh/tsconfig.json
