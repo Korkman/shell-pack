@@ -48,7 +48,7 @@ $fzf_query_help
    show result line in pane         alt-i
    start less on matched line       alt-l
    start editor on matched line     f4
-   start mcview on file             f3
+   start pager on file              f3
    read all matches in file         enter
 
 === rrg-in-file usage ===
