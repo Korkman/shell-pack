@@ -209,15 +209,12 @@ function grasp -d \
 	if set -q _flag_search
 		set -a fzf_defaults --query "$_flag_search"
 	end
-	if set -q GRASP_PAGER
-		# 'result' is otherwise bound to up+down-match (below); keep it inactive until a query is typed
-		set start_bind "$start_bind+unbind(result)"
-	end
-	set -a fzf_defaults --bind "$start_bind,change:rebind(result)"
+	set -a fzf_defaults --bind "$start_bind"
 	
 	if set -q GRASP_PAGER
 		# setup as pager: display unmatched lines, match results from current position downwards
-		set -a fzf_defaults --layout=reverse-list --raw --bind 'result:up+down-match,zero:down'
+		set -a fzf_defaults --layout=reverse-list --raw --bind 'change:up+down-match,zero:down'
+		# NOTE: binding "result:up+down-match" crashed for slow input
 		# when used as pager, chances are we get lines formatted for full $COLUMNS as STDIN, so we adjust style to display full width - no compromise
 		set -a fzf_defaults --no-scrollbar --pointer="" --marker=""
 		if set -q _flag_line
