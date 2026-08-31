@@ -244,7 +244,7 @@ end
 
 function __ggit_diff_full
 	__ggit_set_filename "$argv[1]" || return
-	git diff --color=always -- "$filename" | __sp_pager
+	git diff --color=always -- "$filename" | __sp_pager -R
 end
 
 function __ggit_file_from_status -d "Strip git status from beginning of line"

@@ -1,4 +1,7 @@
 function __sp_man_page
+	# propagate virtual filename "man" for bat colors
+	set -x STDIN_FILENAME "man"
+	
 	# handle --reconfigure: strip flag, remember it
 	set -l do_reconfigure no
 	if contains -- --reconfigure $argv

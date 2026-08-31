@@ -17,9 +17,19 @@ function grasp -d \
 		echo "      Add line numbers."
 		echo "      When reading from STDIN, use 'alt-l' hotkey instead (works on a snapshot)."
 		echo
+		echo "  --line=N, -lN"
+		echo "      Jump to line N on startup."
+		echo
 		echo "  --pager, -p"
 		echo "      Use as pager. Starts at the top and changes default line limit to 100000."
 		echo "      'ppage' is a shorthand for this."
+		echo
+		echo "  --syntax[=LANGUAGE]"
+		echo "      Force bat syntax highlighting, ignoring the size threshold and stream-mode skip."
+		echo "      Optionally pass LANGUAGE to bat's -l flag (e.g. --syntax=json)."
+		echo
+		echo "  --search=QUERY"
+		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
 		echo "When launched, hit 'alt-b' for a list of keybinds. 'q' quits, '/' opens search."
 		return 1
@@ -27,9 +37,15 @@ function grasp -d \
 	
 	set -l default_lines 10000
 	set -l default_pager_lines 100000
+	set -l default_bat_max_size 1048576
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
-	argparse --stop-nonopt p/pager 't/tail=?' n/line-number -- $argv
+	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'search=' -- $argv
+	
+	if set -q _flag_line && ! string match -qr '^[1-9][0-9]*$' -- $_flag_line
+		echo "Error: --line requires a positive integer argument" >&2
+		return 2
+	end
 	
 	if ! test -e "$HOME/.local/share/shell-pack"
 		mkdir -p "$HOME/.local/share/shell-pack"
@@ -47,6 +63,11 @@ function grasp -d \
 		set GRASP_TAIL $_flag_tail
 	else if not set -q GRASP_TAIL
 		set GRASP_TAIL $default_lines
+	end
+
+	# above this many bytes, skip bat (no syntax highlighting) for a file
+	if not set -q GRASP_BAT_MAX_SIZE
+		set GRASP_BAT_MAX_SIZE $default_bat_max_size
 	end
 
 	set -x GRASP_DUMPFILE "$HOME/grasp-saved.txt"
@@ -67,6 +88,7 @@ function grasp -d \
 			echo "Options:"
 			echo "  -nN, --tail=N   Max number of lines in memory (default: $default_lines)"
 			echo "  -p, --pager     'pager' mode: behave more like a pager with search (raises tail default to $default_pager_lines)"
+			echo "  --line=N        Jump to line N on startup"
 			echo
 			echo "Alias ppage invokes grasp with --pager."
 		end >&2
@@ -95,6 +117,7 @@ function grasp -d \
 		echo 'alt-y/dbl-clk:to-clipboard'
 		if test (count $argv) -gt 0
 			echo 'ctrl-r,f5:reload'
+			echo 'alt-e,f4:edit'
 		end
 		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
 	end | __sp_fzf_header
@@ -181,14 +204,26 @@ function grasp -d \
 	# changed to ~100% as it interfered with docker-fastexec (broke input)
 	# --height=-1
 	
-	# start in compact mode with invisible search (q exits)
-	set -a fzf_defaults --bind 'start:unbind(result)+trigger(esc)+hide-header,change:rebind(result)'
+	# start in compact mode with invisible search (q exits), unless a query was pre-filled
+	set -l start_bind 'start:trigger(esc)+hide-header'
+	if set -q _flag_search
+		set -a fzf_defaults --query "$_flag_search"
+	end
+	if set -q GRASP_PAGER
+		# 'result' is otherwise bound to up+down-match (below); keep it inactive until a query is typed
+		set start_bind "$start_bind+unbind(result)"
+	end
+	set -a fzf_defaults --bind "$start_bind,change:rebind(result)"
 	
 	if set -q GRASP_PAGER
 		# setup as pager: display unmatched lines, match results from current position downwards
 		set -a fzf_defaults --layout=reverse-list --raw --bind 'result:up+down-match,zero:down'
 		# when used as pager, chances are we get lines formatted for full $COLUMNS as STDIN, so we adjust style to display full width - no compromise
 		set -a fzf_defaults --no-scrollbar --pointer="" --marker=""
+		if set -q _flag_line
+			# input ('tail -n') is finite, so 'load' fires only once it's all been read - no race with 'pos()'
+			set -a fzf_defaults --bind "load:pos($_flag_line)"
+		end
 	else
 		# in stream mode, results keep flowing in, so don't bind 'result'. instead use --tac to follow the flow.
 		set -a fzf_defaults --tac --no-reverse
@@ -196,25 +231,38 @@ function grasp -d \
 		set -a fzf_defaults --bind 'alt-shift-up,shift-page-up,alt-page-up,g:last+track-current,alt-shift-down,shift-page-down,alt-page-down,G:first'
 		# start in compact mode with visible search
 		#set -a fzf_defaults --bind 'start:trigger(space)+hide-header'
+		if set -q _flag_line
+			# input ('tail -f') never completes, so 'load' never fires; reapply pos() on every
+			# 'result' update (nothing else uses it in stream mode) until the target line has
+			# streamed in, then unbind so it stops fighting with manual navigation
+			set -a fzf_defaults --bind "result:transform:if [ \"\$FZF_TOTAL_COUNT\" -ge $_flag_line ]; then echo pos($_flag_line)+unbind(result); fi"
+		end
 	end
 
 	set -l fzf_status
 	set -l bat_filename
+	# in stream mode (piped stdin), bat is skipped by default; only man output keeps highlighting
+	set -l skip_bat 1
 	if test ! -t 0
+		# read from stdin which is not a terminal
+		
 		if test ! -t 1
-			# STDOUT is not a terminal! Someone is using us as a pipe (`man sh | less` on BSD)
+			# STDOUT is not a terminal,! Someone is using us as a pipe (`man sh | less` on BSD)
 			cat
 			return
 		end
 
-		# read from stdin which is not a terminal
-		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"STDIN"(set_color normal)" "(set_color normal)
-		set -a fzf_defaults --input-label "$input_label"
-		
 		if set -q STDIN_FILENAME
 			set bat_filename $STDIN_FILENAME
+			set grasptitle $STDIN_FILENAME
+			if test "$STDIN_FILENAME" = man
+				set skip_bat 0
+			end
+		else
+			set grasptitle STDIN
 		end
 	else
+		set skip_bat 0
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
 			if test ! -t 1
@@ -231,9 +279,19 @@ function grasp -d \
 				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
 			set bat_filename $argv[1]
+			if set -q _flag_line
+				# only enforce the size threshold when jumping to a line, since that's the case
+				# most likely to open a huge file and pay the bat highlighting cost up front
+				set -l file_size (wc -c < $argv[1] | string trim)
+				if test $file_size -gt $GRASP_BAT_MAX_SIZE
+					set skip_bat 1
+				end
+			end
+			set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
 		else if type -q $argv[1]
 			# run passed command
 			set cmd $argv
+			# no FZF_EDIT_COMMAND, would be a weird workflow
 			
 			if test ! -t 1
 				# STDOUT is not a terminal! Someone is using us as a pipe
@@ -247,43 +305,52 @@ function grasp -d \
 		
 		set grasptitle $cmd
 		
-		# restrict grasptitle to 80% of terminal width
-		fish_prompt_shorten_string grasptitle 80
-		set grasptitle (__sp_quote_args $grasptitle)
-		#set grasptitle "cmd"
-		
-		# add nice title, enable reload
-		set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"$grasptitle"(set_color normal)" "(set_color normal)
 		set -a fzf_defaults \
-			--input-label "$input_label" \
 			--bind 'r,ctrl-r,f5:become(exec fzf)'
+		
+		if set -q FZF_EDIT_COMMAND
+			__sp_quote_args $FZF_EDIT_COMMAND | read -z -x FZF_EDIT_COMMAND
+			set -a fzf_defaults \
+				--bind 'alt-e,f4:enable-raw+execute(eval $FZF_EDIT_COMMAND)'
+		end
 		
 		# leave cmd execution (and killing of it) to fzf
 		__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
-		
 	end
 	
+	# restrict grasptitle to 80% of terminal width
+	fish_prompt_shorten_string grasptitle 80
+	set grasptitle (__sp_quote_args $grasptitle)
+	
+	# add nice title, enable reload
+	set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"$grasptitle"(set_color normal)" "(set_color normal)
+	set -a fzf_defaults \
+		--input-label "$input_label"
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
-	if command -q bat
-		set bat_cmd bat --color=always --wrap=never --style=plain
-		if test -n $bat_filename
+	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; end
+		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain
+		if test -n "$_flag_syntax"
+			set -a bat_cmd -l $_flag_syntax
+		else if test -n $bat_filename
 			set -a bat_cmd --file-name=$bat_filename
 		end
 	end
 	if set -q FZF_DEFAULT_COMMAND
+		# file mode
 		if set -q bat_cmd
 			set bat_cmd (__sp_quote_args $bat_cmd)
-			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | $bat_cmd"
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | $bat_cmd 2>&1"
 		end
 		if set -q _flag_line_number
-			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | fishcall __sp_linenumbers -w auto"
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | fishcall __sp_linenumbers -w auto 2>&1"
 		end
 		fzf
 	else
+		# stream mode
 		if set -q bat_cmd
-			$bat_cmd | fzf
+			$bat_cmd 2>&1 | fzf
 		else
 			fzf
 		end

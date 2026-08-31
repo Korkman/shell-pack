@@ -35,25 +35,25 @@ function rrg -d \
 	
 	# export query
 	set -x query "$query"
+	set -x QUERY_ESC (__sp_quote_args $query)
 	
 	set -l fzf_binds (printf %s \
 		'alt-p:toggle-preview,'\
-		'f3:execute(nullerror fishcall mcview {1}),'\
-		'f4:execute(nullerror fishcall __sp_editor --line {2} {1}),'\
-		'alt-l:execute(clear; cat {1} | fishcall __sp_pager +{2}g),'\
+		'f3,alt-l:execute(nullerror fishcall __sp_pager --line {2} {1}),'\
+		'f4,alt-e:execute(nullerror fishcall __sp_editor --line {2} {1}),'\
 		'f1,alt-h:execute(fishcall rrg-help),'\
 		'alt-q:abort,'\
 		'f10:abort,'\
 		'esc:cancel,'\
 		'alt-i:change-preview(printf "Result line #{n}:\nLine %s in file %s\nMatched content:\n%s" {2} {1} {3..})+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
 		'alt-o:change-preview(rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
-		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
+		'enter:execute(fishcall __sp_pager --search=$query --line {2} {1}),'\
 		'right-click:toggle-preview,'\
 		'home:pos(0),end:pos(-1)'\
 	)
 	
 
-	printf 'f1:help enter:results-in-file a-p:pane a-l:pager\nf3:mcview f4:editor a-i:line a-o:content' | __sp_fzf_header
+	printf 'f1:help enter:results-in-file a-p:pane\nf3,a-l:page f4,a-e:edit a-i:line a-o:content' | __sp_fzf_header
 	__sp_fzf_defaults 'Rapid Ripgrep'
 	
 	# this causes display error in microsoft terminal
