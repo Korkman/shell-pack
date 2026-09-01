@@ -6,12 +6,12 @@ function ppage -d \
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
-		echo "Limited to 100000 lines by default."
+		echo "Limited to 100 MiB by default (GRASP_PAGER_MAX_SIZE)."
 		echo
 		echo "Options:"
 		echo
-		echo "  --tail=[COUNT], -t[COUNT]"
-		echo "      Change line limit to COUNT."
+		echo "  --tail=[BYTES], -t[BYTES]"
+		echo "      Change input limit to BYTES."
 		echo
 		echo "  --line-number, -n"
 		echo "      Add line numbers."

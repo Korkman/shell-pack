@@ -6,12 +6,12 @@ function grasp -d \
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
-		echo "Limited to 10000 lines by default."
+		echo "Limited to 10000 lines by default (GRASP_TAIL)."
 		echo
 		echo "Options:"
 		echo
 		echo "  --tail=[COUNT], -t[COUNT]"
-		echo "      Change line limit to COUNT."
+		echo "      Change line limit to COUNT (byte limit in --pager mode)."
 		echo
 		echo "  --line-number, -n"
 		echo "      Add line numbers."
@@ -21,7 +21,8 @@ function grasp -d \
 		echo "      Jump to line N on startup."
 		echo
 		echo "  --pager, -p"
-		echo "      Use as pager. Starts at the top and changes default line limit to 100000."
+		echo "      Use as pager. Starts at the top and limits memory use by bytes instead of lines."
+		echo "      If the input exceeds the byte limit, offers to open it in \$VISUAL/\$EDITOR or 'less' instead."
 		echo "      'ppage' is a shorthand for this."
 		echo
 		echo "  --syntax[=LANGUAGE]"
@@ -36,7 +37,7 @@ function grasp -d \
 	end >&2
 	
 	set -l default_lines 10000
-	set -l default_pager_lines 100000
+	set -l default_pager_max_size 104857600
 	set -l default_bat_max_size 1048576
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
@@ -54,15 +55,21 @@ function grasp -d \
 	
 	if set -q _flag_pager
 		set GRASP_PAGER yes
-		if ! set -q _flag_tail
-			set _flag_tail $default_pager_lines
-		end
 	end
 	
-	if set -q _flag_tail
-		set GRASP_TAIL $_flag_tail
-	else if not set -q GRASP_TAIL
-		set GRASP_TAIL $default_lines
+	if set -q GRASP_PAGER
+		# pager mode caps memory by input size in bytes, not line count
+		if set -q _flag_tail
+			set GRASP_PAGER_MAX_SIZE $_flag_tail
+		else if not set -q GRASP_PAGER_MAX_SIZE
+			set GRASP_PAGER_MAX_SIZE $default_pager_max_size
+		end
+	else
+		if set -q _flag_tail
+			set GRASP_TAIL $_flag_tail
+		else if not set -q GRASP_TAIL
+			set GRASP_TAIL $default_lines
+		end
 	end
 
 	# above this many bytes, skip bat (no syntax highlighting) for a file
@@ -87,7 +94,7 @@ function grasp -d \
 			echo 
 			echo "Options:"
 			echo "  -nN, --tail=N   Max number of lines in memory (default: $default_lines)"
-			echo "  -p, --pager     'pager' mode: behave more like a pager with search (raises tail default to $default_pager_lines)"
+			echo "  -p, --pager     'pager' mode: behave more like a pager with search (byte limit default: $default_pager_max_size)"
 			echo "  --line=N        Jump to line N on startup"
 			echo
 			echo "Alias ppage invokes grasp with --pager."
@@ -198,8 +205,13 @@ function grasp -d \
 	# add keybinds and more to list of args
 	set -a fzf_defaults --highlight-line \
 		--multi --exact --ansi \
-		--no-sort --tail=$GRASP_TAIL --bind "$fzf_binds" \
+		--no-sort --bind "$fzf_binds" \
 		'--height=~100%' --history "$GRASP_HIST_FILE"
+	
+	if not set -q GRASP_PAGER
+		# pager mode already bounds memory via the byte-size limit applied to its input
+		set -a fzf_defaults --tail=$GRASP_TAIL
+	end
 	
 	# changed to ~100% as it interfered with docker-fastexec (broke input)
 	# --height=-1
@@ -240,6 +252,9 @@ function grasp -d \
 	set -l bat_filename
 	# in stream mode (piped stdin), bat is skipped by default; only man output keeps highlighting
 	set -l skip_bat 1
+	if not set -q GRASP_CUT_HEAD_OR_TAIL
+		set -x GRASP_CUT_HEAD_OR_TAIL tail
+	end
 	if test ! -t 0
 		# read from stdin which is not a terminal
 		
@@ -247,6 +262,42 @@ function grasp -d \
 			# STDOUT is not a terminal,! Someone is using us as a pipe (`man sh | less` on BSD)
 			cat
 			return
+		end
+
+		if set -q GRASP_PAGER
+			# in pager mode, check if stdin is a file descriptor with known size
+			# and if big, offer alternatives
+			
+			set -l stdin_size
+			__sp_get_filesize /dev/stdin | read stdin_size
+			# unknown size (e.g. an actual pipe, not a redirected file) is too common for small
+			# snippets piped into ppage to bother the user about it - just proceed
+			if test "$stdin_size" != "-1" && test "$stdin_size" -gt $GRASP_PAGER_MAX_SIZE
+				switch (__sp_grasp_oversized_choice --size=$stdin_size $GRASP_PAGER_MAX_SIZE)
+					case editor
+						__sp_editor -
+						return
+					case less
+						# cap less's own memory use too; busybox less lacks these flags
+						if $__cap_less_has_buffer_args
+							less -b (math -s0 "$GRASP_PAGER_MAX_SIZE / 1024") -B
+						else
+							more
+						end
+						return
+					case fzf-tail
+						set GRASP_CUT_HEAD_OR_TAIL tail
+						set -x GRASP_CUT_STDIN yes
+					case fzf-head
+						set GRASP_CUT_HEAD_OR_TAIL head
+						set -x GRASP_CUT_STDIN yes
+					case force
+						# how about 1 TiB of RAM
+						set -x GRASP_PAGER_MAX_SIZE 1099511627776
+					case cancel
+						return 1
+				end
+			end
 		end
 
 		if set -q STDIN_FILENAME
@@ -259,6 +310,8 @@ function grasp -d \
 			set grasptitle STDIN
 		end
 	else
+		# read from file
+		
 		set skip_bat 0
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
@@ -268,21 +321,43 @@ function grasp -d \
 				return
 			end
 			
+			set -l file_size
+			if set -q GRASP_PAGER || set -q _flag_line
+				# only pay for this when needed: pager mode's oversized check, or bat's
+				# syntax threshold when jumping to a line (likeliest case of a huge file)
+				set file_size (__sp_get_filesize $argv[1])
+			end
+			
+			if set -q GRASP_PAGER && test -n "$file_size" && test "$file_size" -gt $GRASP_PAGER_MAX_SIZE
+				switch (__sp_grasp_oversized_choice --editable --size=$file_size $GRASP_PAGER_MAX_SIZE)
+					case editor
+						__sp_editor $argv[1]
+						return
+					case less
+						less $argv[1]
+						return
+					case fzf-tail
+						set GRASP_CUT_HEAD_OR_TAIL tail
+					case fzf-head
+						set GRASP_CUT_HEAD_OR_TAIL head
+					case force
+						# how about 1 TiB of RAM
+						set -x GRASP_PAGER_MAX_SIZE 1099511627776
+					case cancel
+						return 1
+				end
+			end
+			
 			# read tail from file
 			if set -q GRASP_PAGER
-				set cmd tail -n $GRASP_TAIL $argv[1]
+				set cmd $GRASP_CUT_HEAD_OR_TAIL -c $GRASP_PAGER_MAX_SIZE $argv[1]
 			else
 				# in stream mode, follow the file
 				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
 			set bat_filename $argv[1]
-			if set -q _flag_line
-				# only enforce the size threshold when jumping to a line, since that's the case
-				# most likely to open a huge file and pay the bat highlighting cost up front
-				set -l file_size (wc -c < $argv[1] | string trim)
-				if test $file_size -gt $GRASP_BAT_MAX_SIZE
-					set skip_bat 1
-				end
+			if test -n "$file_size" && test "$file_size" -gt $GRASP_BAT_MAX_SIZE
+				set skip_bat 1
 			end
 			set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
 		else if type -q $argv[1]
@@ -346,10 +421,18 @@ function grasp -d \
 		fzf
 	else
 		# stream mode
-		if set -q bat_cmd
-			$bat_cmd 2>&1 | fzf
+		if test -n "$GRASP_CUT_STDIN"
+			if set -q bat_cmd
+				$GRASP_CUT_HEAD_OR_TAIL | $bat_cmd 2>&1 | fzf
+			else
+				$GRASP_CUT_HEAD_OR_TAIL -c $GRASP_PAGER_MAX_SIZE | fzf
+			end
 		else
-			fzf
+			if set -q bat_cmd
+				$bat_cmd 2>&1 | fzf
+			else
+				fzf
+			end
 		end
 	end
 	
