@@ -421,7 +421,7 @@ function onman -d \
 			end
 			
 			# small roff sources are likely to be a plain "include other page" command, which we pseudo-resolve through recursion
-			set -l filesize (wc -c < $tmpfile | string trim)
+			set -l filesize (__sp_get_filesize $tmpfile)
 			if test $filesize -lt 1024
 				set -l stack_count (status stack-trace | string match '*onman*' | count)
 				if test $stack_count -gt 8
