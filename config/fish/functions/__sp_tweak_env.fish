@@ -265,6 +265,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_env_has_null "__sp_cap_env_has_null"
 	set -g __cap_stat_has_printf "__sp_cap_stat_has_printf"
 	set -g __cap_less_has_mouse "__sp_cap_less_has_mouse"
+	set -g __cap_less_has_buffer_args "__sp_cap_less_has_buffer_args"
 	set -g __cap_find_has_xtype "__sp_cap_find_has_xtype"
 	set -g __cap_proc_pid_stat "__cap_proc_pid_stat"
 	set -g __cap_ps_has_lstart "__cap_ps_has_lstart"
