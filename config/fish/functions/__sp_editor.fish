@@ -23,5 +23,8 @@ function __sp_editor -d \
 	else
 		"$EDITOR" "$filename"
 	end
-
+	if test "$EDITOR" = "fresh" && test "$filename" = "-"
+		# workaround fresh issue [#3134](https://github.com/sinelaw/fresh/issues/3134)
+		rm -f /tmp/fresh-stdin-*.tmp &> /dev/null
+	end
 end
