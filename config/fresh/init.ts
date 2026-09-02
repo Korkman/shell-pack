@@ -80,3 +80,26 @@ editor.on("buffer_activated", shellpackExitSelectionModeIfActive);
 editor.on("buffer_deactivated", shellpackExitSelectionModeIfActive);
 
 editor.on("after_copy", shellpackExitSelectionModeIfActive);
+
+// there's no bindKey/unbindKey API to attach ctrl-w to close_tab only on
+// non-terminal buffers, so ctrl-w is bound statically (config.json) to this
+// handler, which tracks the active buffer's terminal-ness via
+// buffer_activated and only closes the tab when it's not a terminal -
+// leaves terminal buffers' own ctrl-w behavior (readline word-delete, etc.)
+// untouched.
+let shellpackActiveBufferIsTerminal = false;
+
+editor.on("buffer_activated", (args: { buffer_id: number }) => {
+  const info = editor.getBufferInfo(args.buffer_id);
+  shellpackActiveBufferIsTerminal = info?.is_terminal ?? false;
+});
+
+(globalThis as any).shellpack_close_tab_if_not_term = function () {
+  if (!shellpackActiveBufferIsTerminal) {
+    editor.executeAction("close_tab");
+  }
+};
+
+registerHandler("shellpack_close_tab_if_not_term", (globalThis as any).shellpack_close_tab_if_not_term);
+// to be actually available, we must use editor.registerCommand, which also makes the function visible in palette
+editor.registerCommand("Close tab if not terminal", "Closes tab if not terminal", "shellpack_close_tab_if_not_term");

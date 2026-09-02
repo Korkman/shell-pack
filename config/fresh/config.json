@@ -191,6 +191,11 @@
     {
       "modifiers": ["alt"], "key": "space",
       "action": "shellpack_toggle_selection_mode"
+    },
+    // close_tab, but only when the active buffer isn't a terminal (see init.ts)
+    {
+      "modifiers": ["ctrl"], "key": "w",
+      "action": "shellpack_close_tab_if_not_term"
     }
   ],
   "languages": {
