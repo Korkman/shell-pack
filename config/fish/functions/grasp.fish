@@ -402,7 +402,7 @@ function grasp -d \
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
 	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; end
-		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain
+		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
 		if test -n "$_flag_syntax"
 			set -a bat_cmd -l $_flag_syntax
 		else if test -n $bat_filename
