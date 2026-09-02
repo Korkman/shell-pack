@@ -1,0 +1,14 @@
+{
+  "name": "shell-pack-16-colors",
+  "extends": "builtin://high-contrast",
+  "editor": {
+    "whitespace_indicator_fg": [128, 128, 128],
+    "selection_bg": [127, 0, 127]
+  },
+  "syntax": {
+  },
+  "ui": {
+    "tab_active_bg": [255, 255, 0],
+    "tab_active_fg": [0, 0, 0]
+  }
+}

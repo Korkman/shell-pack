@@ -10,9 +10,11 @@ if (editor.getEnv("LC_NERDLEVEL") === "3") {
   editor.setSetting("editor.nerd_font_icons", false);
 }
 
-// fall back to a high-contrast theme when the terminal lacks 256-color support
+// fall back to a high-contrast 16 and 8 colors compatible theme when the terminal lacks 256-color support
 if (!(editor.getEnv("TERM") ?? "").endsWith("-256color")) {
-  editor.setSetting("theme", "high-contrast");
+  editor.setSetting("theme", "shell-pack-16-colors");
+} else {
+  editor.setSetting("theme", "shell-pack");
 }
 
 // "selection mode": alt-space starts a selection, plain arrow keys then

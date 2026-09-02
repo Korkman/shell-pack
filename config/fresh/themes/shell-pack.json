@@ -16,7 +16,7 @@
     "indent_rainbow_4": [255, 224, 102],
     "indent_rainbow_5": [204, 93, 232],
     "indent_rainbow_6": [77, 171, 247],
-    "selection_bg": [80, 80, 0]
+    "selection_bg": [100, 0, 100]
   },
   "syntax": {
     "string": [140, 191, 242],
