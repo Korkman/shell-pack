@@ -156,7 +156,21 @@
       ],
       "action": "toggle_comment"
     },
-    // add chords to next / previous buffer in case ctrl-pgup/-pgdn don't pass
+    {
+      "modifiers": ["ctrl"], "key": "e",
+      "action": "toggle_file_explorer",
+      "when": "fileExplorer"
+    },
+    {
+      "modifiers": ["alt"], "key": "o",
+      "action": "orchestrator_dock_toggle",
+      "when": "global"
+    },
+    // several alternatives to switch buffers in case ctrl-pgup/-pgdn don't pass
+    {
+      "modifiers": ["alt"], "key": "t",
+      "action": "switch_to_tab_by_name"
+    },
     {
       "keys": [
         { "modifiers": ["ctrl"], "key": "k" },
@@ -171,15 +185,12 @@
       ],
       "action": "prev_buffer"
     },
+    // start a selection, then expand it with plain arrow keys (see init.ts)
+    // alt-space is free (ctrl-space is LSP autocomplete) and alt survives
+    // a raw linux VT console (sent as an ESC prefix)
     {
-      "modifiers": ["ctrl"], "key": "e",
-      "action": "toggle_file_explorer",
-      "when": "fileExplorer"
-    },
-    {
-      "modifiers": ["alt"], "key": "o",
-      "action": "orchestrator_dock_toggle",
-      "when": "global"
+      "modifiers": ["alt"], "key": "space",
+      "action": "shellpack_toggle_selection_mode"
     }
   ],
   "languages": {
