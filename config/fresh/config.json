@@ -21,7 +21,9 @@
     "rulers": [72, 120],
     "line_numbers": true,
     "rainbow_brackets": false,
-    "highlight_matching_brackets": true
+    "highlight_matching_brackets": true,
+    "auto_create_empty_buffer_on_last_buffer_close": false,
+    "restore_previous_session": false
   },
   "file_explorer": {
     "auto_open_on_last_buffer_close": false,
@@ -104,6 +106,17 @@
     {
       "modifiers": ["alt"], "key": "q",
       "action": "quit",
+      "when": "global"
+    },
+    {
+      "modifiers": ["ctrl"], "key": "q",
+      "action": "quit",
+      "when": "normal"
+    },
+    // even force_quit gets a key
+    {
+      "modifiers": ["alt", "shift"], "key": "q",
+      "action": "force_quit",
       "when": "global"
     },
     // default from vscode: ctrl-, to open settings
