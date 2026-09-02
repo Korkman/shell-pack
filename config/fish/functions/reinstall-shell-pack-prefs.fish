@@ -24,6 +24,7 @@ function reinstall-shell-pack-prefs \
 	and cmp -s -- "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
 	and cmp -s -- "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
 	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
+	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack-16-colors.json" ~/.config/fresh/themes/shell-pack-16-colors.json
 		echo "Your configs match shell-pack presets."
 		return
 	end
@@ -67,8 +68,10 @@ function reinstall-shell-pack-prefs \
 	rm -f ~/.config/fresh/config.json
 	rm -f ~/.config/fresh/init.ts
 	rm -f ~/.config/fresh/themes/shell-pack.json
+	rm -f ~/.config/fresh/themes/shell-pack-16-colors.json
 	cp "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
 	cp "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
 	cp "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
+	cp "$__sp_config_dir/fresh/themes/shell-pack-16-colors.json" ~/.config/fresh/themes/shell-pack-16-colors.json
 	
 end
