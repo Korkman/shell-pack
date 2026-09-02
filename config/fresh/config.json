@@ -36,7 +36,7 @@
       // make sure to remove TMUX from env so specific escapes don't confuse fresh
       "command": "/usr/bin/env",
       "args": [
-        "TMUX=", "sh", "-c", "exec $SHELL"
+        "-u", "TMUX", "sh", "-c", "exec $SHELL"
       ]
     }
   },
