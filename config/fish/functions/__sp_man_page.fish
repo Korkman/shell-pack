@@ -44,11 +44,29 @@ function __sp_man_page
 		return
 	end
 	
+	# choose appropriate pager
+	if set -q MANPAGER
+		set pager $MANPAGER
+	else if set -q PAGER
+		set pager $PAGER
+	else
+		set pager ppage
+	end
+	
 	if command -q man
 		# test if fish's man preset finds the help
 		# (this introduces a slight latency, sorry. but it catches alternative 'man' use cases well.)
 		if PAGER=cat MANPAGER=cat __sp_man_page_default $argv &> /dev/null
-			__sp_man_page_default $argv
+			if test "$pager" = "less"
+				# let man adapt to less
+				__sp_man_page_default $argv
+			else
+				# NOTE: some 'man' implementations (FreeBSD, Debian Jessie) add weird
+				# backspace sequences to apply multiple formats to characters, which
+				# bat doesn't merge correctly as of v26.1.
+				# therefore we strip all color and style sequences from the man output.
+				PAGER=cat MANPAGER=cat __sp_man_page_default $argv | awk '{ gsub(/\x1B\[[0-9;]*m/, "", $0); gsub(/.\x08/, "", $0); print }' | $pager
+			end
 			return
 		else
 			set man_status $status
@@ -60,15 +78,6 @@ function __sp_man_page
 	
 	set -l search_cmd $man_arg_topic
 
-	# choose appropriate pager
-	if set -q MANPAGER
-		set pager $MANPAGER
-	else if set -q PAGER
-		set pager $PAGER
-	else
-		set pager ppage
-	end
-	
 	# whitelist of commands to always pass --help to
 	# NOTE: theoretically a list of all commands known to support --help could go here
 	#       to support systems which lack man pages. attempting to strike some balance.
