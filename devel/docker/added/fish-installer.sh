@@ -257,25 +257,81 @@ run_installer() {
 		;;
 		'Static')
 			install_arch="$(uname -m)"
-
-			if ! command -v xz > /dev/null || ! command -v wget > /dev/null
+			
+			miss_packages=false
+			miss_curl=false
+			miss_xz=false
+			
+			if ! command -v xz > /dev/null
+			then
+				miss_xz=true
+				miss_packages=true
+			fi
+			
+			if ! command -v wget > /dev/null && ! command -v curl > /dev/null
+			then
+				miss_curl=true
+				miss_packages=true
+			fi
+			
+			if $miss_packages
 			then
 				if command -v apt-get > /dev/null
 				then
 					sudo apt-get update
-					sudo apt-get -y install xz-utils wget
+					if $miss_xz
+					then
+						sudo apt-get -y install xz-utils
+					fi
+					if $miss_curl
+					then
+						sudo apt-get -y install curl
+					fi
 				elif command -v dnf > /dev/null
 				then
 					sudo dnf update
-					sudo dnf install -y xz wget
+					if $miss_xz
+					then
+						sudo dnf install -y xz
+					fi
+					if $miss_curl
+					then
+						sudo dnf install -y curl
+					fi
 				elif command -v pacman > /dev/null
 				then
-					sudo pacman -Sy --noconfirm xz wget
+					sudo pacman -Sy --noconfirm
+					if $miss_xz
+					then
+						sudo pacman -S --noconfirm xz
+					fi
+					if $miss_curl
+					then
+						sudo pacman -S --noconfirm curl
+					fi
 				elif command -v zypper > /dev/null
 				then
-					sudo zypper --non-interactive install xz wget
+					if $miss_xz
+					then
+						sudo zypper --non-interactive install xz
+					fi
+					if $miss_curl
+					then
+						sudo zypper --non-interactive install curl
+					fi
+				elif command -v apk > /dev/null
+				then
+					sudo apk update
+					if $miss_xz
+					then
+						sudo apk add xz
+					fi
+					if $miss_curl
+					then
+						sudo apk add curl
+					fi
 				else
-					echo "No suitable package manager found to install xz and wget, please install them manually and re-run" >&2
+					echo "No suitable package manager found to install xz and curl/wget, please install them manually and re-run" >&2
 					exit 1
 				fi
 			fi
