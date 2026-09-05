@@ -390,5 +390,12 @@ function __spt_init -d \
 end
 
 function __spt_track_term -v TERM
-	set -gx __cap_colors (type -q tput && tput colors || echo 8)
+	if type -q tput
+		and set -l colors (tput colors 2>/dev/null)
+		set -gx __cap_colors $colors
+	else if string match -q -- "*-256color" "$TERM"
+		set -gx __cap_colors 256
+	else
+		set -gx __cap_colors 8
+	end
 end

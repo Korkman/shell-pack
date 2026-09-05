@@ -387,7 +387,7 @@ function onman -d \
 				set -a cmd --silent
 			end
 			set -a cmd "$url"
-			$cmd > $tmpfile
+			$cmd > $tmpfile 2>/dev/null
 			set -l dl_status $status
 			if test $dl_status -ne 0 || ! test -s $tmpfile
 				if test "$flag_debug" = yes; echo "onman: discarding $url (download failed, empty, or too small: $filesize bytes)" >&2; end

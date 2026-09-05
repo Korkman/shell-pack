@@ -99,7 +99,16 @@ if [ -z "${LC_NERDLEVEL:-}" ]; then
 	update_env_from_global LC_NERDLEVEL
 fi
 
-TPUT_COLORS=$([ "$TERM" != "" ] && command -v tput >/dev/null 2>&1 && tput colors 2>/dev/null || echo 8)
+TPUT_COLORS=
+if [ "$TERM" != "" ] && command -v tput >/dev/null 2>&1; then
+	TPUT_COLORS=$(tput colors 2>/dev/null)
+fi
+if [ "$TPUT_COLORS" = "" ]; then
+	case "$TERM" in
+		*-256color) TPUT_COLORS=256 ;;
+		*) TPUT_COLORS=8 ;;
+	esac
+fi
 
 # placeholders which can be overridden in a local sh
 custom_colors() { return; }
