@@ -262,7 +262,7 @@ run_installer() {
 			miss_curl=false
 			miss_xz=false
 			
-			if ! command -v xz > /dev/null
+			if ! command -v unxz > /dev/null
 			then
 				miss_xz=true
 				miss_packages=true
