@@ -490,7 +490,7 @@ function onman -d \
 			end
 			echo
 			echo 'Download URL: '(__sp_osc8_url $url)
-		end | __sp_pager
+		end | STDIN_FILENAME=man __sp_pager
 		rm -f $tmpfile
 		return
 	end
