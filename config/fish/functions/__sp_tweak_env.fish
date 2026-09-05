@@ -207,8 +207,8 @@ function __sp_tweak_polyfills -d \
 		if $__cap_ls_has_time_style
 			set -l output (command ls -nl --time-style=+%s "$file" | string split --no-empty ' ')
 			and echo "$output[6]"
-		else if $__cap_stat_has_printf
-			stat --printf '%Y' "$file"
+		else if $__cap_stat_has_c_format
+			stat -c '%Y' "$file"
 		else
 			stat -f %m "$file"
 		end
@@ -278,6 +278,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_wget_has_show_progress "__sp_cap_wget_has_show_progress"
 	set -g __cap_wget_has_no_use_server_timestamps "__sp_cap_wget_has_no_use_server_timestamps"
 	set -g __cap_wget_has_verbose "__sp_cap_wget_has_verbose"
+	set -g __cap_stat_has_c_format "__sp_cap_stat_has_c_format"
 end
 
 function __sp_tweak_keybinds \

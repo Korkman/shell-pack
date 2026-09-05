@@ -25,8 +25,8 @@ function __sp_get_filesize -a file -d \
 	# devices don't carry a meaningful size in `ls -l`, ask `stat` instead
 	if command test -c "$file" -o -b "$file"
 		set -l size
-		if $__cap_stat_has_printf
-			command stat -L --printf '%s' "$file" 2>/dev/null | read size
+		if $__cap_stat_has_c_format
+			command stat -L -c '%s' "$file" 2>/dev/null | read size
 		else
 			command stat -L -f %z "$file" 2>/dev/null | read size
 		end

@@ -220,7 +220,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		
 		if test -n "$output_file"
 			curl $base_opt $silent_opt $writeout_opt $resume_opt -o "$output_file" "$url"
-			or begin; test -e "$output_file" && test (stat -c %s "$output_file") -eq 0 && rm "$output_file"; return 1; end
+			or begin; test -e "$output_file" && test (__sp_get_filesize "$output_file") -eq 0 && rm "$output_file"; return 1; end
 		else if test "$to_stdout" = "no"
 			curl $base_opt $silent_opt $writeout_opt $resume_opt -O "$url" 1>&2 || return 1
 		else
@@ -273,7 +273,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		end
 		wget $base_opt $silent_opt $show_prog_opt $resume_opt $final_opt
 		or begin
-			if test -n "$output_file" && test -e "$output_file" && test (stat -c %s "$output_file") -eq 0
+			if test -n "$output_file" && test -e "$output_file" && test (__sp_get_filesize "$output_file") -eq 0
 				rm "$output_file"
 			end
 			return 1
