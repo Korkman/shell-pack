@@ -473,7 +473,7 @@ function onman -d \
 							# we assume -man and -mdoc macro packages are available
 							set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
 							groff -Tutf8 -man -mdoc -rLL={$cols}n $tmpfile 2>/dev/null
-					end
+					end | __sp_strip_ansi
 				end
 			else if test "$url_mode" = ihtml
 				# inline html mode (only formatting and some escapes, from manned.org/txt/)

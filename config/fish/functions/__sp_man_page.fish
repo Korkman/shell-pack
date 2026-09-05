@@ -65,7 +65,7 @@ function __sp_man_page
 				# backspace sequences to apply multiple formats to characters, which
 				# bat doesn't merge correctly as of v26.1.
 				# therefore we strip all color and style sequences from the man output.
-				PAGER=cat MANPAGER=cat __sp_man_page_default $argv | awk '{ gsub(/\x1B\[[0-9;]*m/, "", $0); gsub(/.\x08/, "", $0); print }' | $pager
+				PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_strip_ansi | $pager
 			end
 			return
 		else
