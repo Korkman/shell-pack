@@ -422,7 +422,7 @@ function __sp_tweak_live_patches -d \
 				# load the default keybinds from a dedicated null instance
 				tmux -L shellpack_live_patch_temp -f /dev/null new-session -d -s temp
 				# dump to tmpfile
-				set -l tmux_tmpfile (mktemp --tmpdir __sp_tmux_live_patch.XXXXXX)
+				set -l tmux_tmpfile (__sp_mkuniq --xdg-runtime __sp_tmux_live_patch.XXXXXX)
 				# NOTE: to avoid error messages on debian buster for now, selectively grep the removed keys and restore them
 				tmux -L shellpack_live_patch_temp list-keys | grep -E '.*-T root.*(MouseDown3Pane|MouseDrag1Pane|WheelUpPane).*' > $tmux_tmpfile
 				tmux -L shellpack_live_patch_temp kill-server

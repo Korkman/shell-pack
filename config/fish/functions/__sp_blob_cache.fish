@@ -78,7 +78,7 @@ function __sp_blob_cache -d \
 	if set -q _flag_get_tmpfile
 		mkdir -p "$cache_dir"
 		or return 1
-		set -l tmp_file (mktemp "$cache_dir/.blob_cache_tmp.XXXXXX")
+		set -l tmp_file (__sp_mkuniq "$cache_dir/.blob_cache_tmp.XXXXXX")
 		or return 1
 		echo "$tmp_file"
 		return 0
@@ -130,7 +130,7 @@ function __sp_blob_cache -d \
 			return $status
 		end
 
-		set -l tmp_file (mktemp "$cache_dir/.blob_cache_tmp.XXXXXX")
+		set -l tmp_file (__sp_mkuniq "$cache_dir/.blob_cache_tmp.XXXXXX")
 		or return 1
 
 		# read stdin into temp file

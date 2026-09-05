@@ -1858,7 +1858,7 @@ Host $ssh_alias
 		functions -e __qssh_tmp_mc
 		
 		# strip out alias from the config by filtering lines into a new one
-		set -l tmp_ssh_config (mktemp --tmpdir qssh_ssh_config_restore.XXXXXX)
+		set -l tmp_ssh_config (__sp_mkuniq --xdg-runtime qssh_ssh_config_restore.XXXXXX)
 		echo -n "" > "$tmp_ssh_config"
 		set -l skip no
 		for line in (cat ~/.ssh/config)

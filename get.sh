@@ -85,8 +85,24 @@ else
 	PRE_DOWNLOADED=y
 fi
 
+mktmptemp() {
+	if [ "${XDG_RUNTIME_DIR:-}" != "" ]
+	then
+		RUNTIME_TMP=$XDG_RUNTIME_DIR
+	else
+		TMPDIR=${TMPDIR:-/tmp}
+		RUNTIME_TMP="$TMPDIR/shell-pack-get-$(id -u)"
+		if ! [ -e "$RUNTIME_TMP" ]
+		then
+			mkdir "$RUNTIME_TMP"
+		fi
+		chmod 0700 "$RUNTIME_TMP"
+	fi
+	mktemp -p "$RUNTIME_TMP" "$@"
+}
+
 if [ "${PRE_DOWNLOADED}" = "n" ]; then
-	DOWNLOAD_TMPDIR=$(mktemp -d --tmpdir "shell-pack-get-XXXXXX")
+	DOWNLOAD_TMPDIR=$(mktmptemp -d "shell-pack-get-XXXXXX")
 	DOWNLOAD_FILENAME="${DOWNLOAD_TMPDIR}/${DOWNLOAD_FILENAME}"
 	DOWNLOAD_URL="https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz"
 	echo "Downloading ${DOWNLOAD_FILENAME} ..."

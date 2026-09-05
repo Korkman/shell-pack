@@ -1,7 +1,7 @@
 function __sp_clean_utf8 -d \
 	'Attempt to clean dirty text into utf-8 on a best-effort basis'
 	if test (count $argv) -eq 0
-		set tmpfile (mktemp /tmp/__sp_clean_utf8.XXXXXX.html)
+		set tmpfile (__sp_mkuniq --xdg-runtime __sp_clean_utf8.html.XXXXXX)
 		cat > $tmpfile
 		set input $tmpfile
 	else

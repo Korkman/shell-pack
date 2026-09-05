@@ -151,7 +151,7 @@
 		fi
 		
 		
-		GNUPGHOME=$(mktemp --tmpdir -d .qcrypt-gnupghome-XXXXXX)
+		GNUPGHOME=$(fishcall __sp_mkuniq --xdg-runtime .qcrypt-gnupghome)
 		export GNUPGHOME
 		
 		set +e

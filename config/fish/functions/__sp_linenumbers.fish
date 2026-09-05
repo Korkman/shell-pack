@@ -9,7 +9,7 @@ function __sp_linenumbers -d \
 	
 	if ! set -q _flag_total && test "$_flag_width" = "auto"
 		# count lines in tmp file to determine width
-		set -l tmpfile (mktemp --tmpdir __sp_linenumbers.XXXXXX)
+		set -l tmpfile (__sq_mkuniq --xdg-runtime __sp_linenumbers.XXXXXX)
 		cat > $tmpfile
 		wc -l < $tmpfile | string match -q --regex "^\s*(?<_flag_total>[0-9]+)"
 		cat $tmpfile | __sp_linenumbers --width=auto --total=$_flag_total

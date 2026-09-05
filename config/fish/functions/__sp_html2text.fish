@@ -79,7 +79,7 @@ Options:
 	switch $renderer
 	case w3m
 		if test (count $argv) -eq 0
-			set -l tmpfile (mktemp /tmp/html2text.XXXXXX.html)
+			set -l tmpfile (__sp_mkuniq --xdg-runtime html2text.html.XXXXXX)
 			cat > $tmpfile
 			w3m -dump -T text/html $tmpfile
 			rm -f $tmpfile
@@ -94,7 +94,7 @@ Options:
 		end
 	case elinks
 		if test (count $argv) -eq 0
-			set -l tmpfile (mktemp /tmp/__sp_html2text.XXXXXX.html)
+			set -l tmpfile (__sp_mkuniq --xdg-runtime __sp_html2text.html.XXXXXX)
 			cat > $tmpfile
 			elinks -no-numbering -no-references -dump $tmpfile
 			rm -f $tmpfile
@@ -103,7 +103,7 @@ Options:
 		end
 	case links
 		if test (count $argv) -eq 0
-			set -l tmpfile (mktemp /tmp/__sp_html2text.XXXXXX.html)
+			set -l tmpfile (__sp_mkuniq --xdg-runtime __sp_html2text..html.XXXXXX)
 			cat > $tmpfile
 			links -dump $tmpfile
 			rm -f $tmpfile

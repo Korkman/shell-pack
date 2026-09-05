@@ -379,7 +379,7 @@ function onman -d \
 			continue
 		end
 		
-		set -l tmpfile (mktemp /tmp/online-man-XXXXXX)
+		set -l tmpfile (__sp_mkuniq --xdg-runtime online-man-XXXXXX)
 		
 		if set -q _flag_refresh || ! __sp_blob_cache --allow-stale --get $cache_key > $tmpfile
 			set -l cmd timeout 3 dl --tries=1
