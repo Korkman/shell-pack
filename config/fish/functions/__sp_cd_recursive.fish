@@ -28,12 +28,9 @@ function __sp_cd_recursive -d \
 		set -l find_args find
 		set -a find_args $symlinks
 		set -a find_args . -xdev -mindepth 1
-		if [ "$argv[1]" = "--dotfiles" ]
-			set -a find_args -false
-		else
-			set -a find_args -path '.*/.*'
+		if ! [ "$argv[1]" = "--dotfiles" ]
+			set -a find_args -path '.*/.*' -prune -o
 		end
-		set -a find_args -prune -o
 		if $__cap_find_has_xtype
 			set -a find_args -xtype d
 		else

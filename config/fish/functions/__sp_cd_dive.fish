@@ -25,15 +25,13 @@ function __sp_cd_dive -d \
 	
 	while true
 		set -l find_args find $dir -mindepth 1 -maxdepth 1
-		if [ "$argv[1]" = "--dotfiles" ]
-			set -a find_args -false
-		else
-			set -a find_args -path '.*/.*'
+		if ! [ "$argv[1]" = "--dotfiles" ]
+			set -a find_args -path '.*/.*' -prune -o
 		end
 		if $__cap_find_has_xtype
-			set -a find_args -o -xtype d
+			set -a find_args -xtype d
 		else
-			set -a find_args -o -type d
+			set -a find_args -type d
 		end
 		set -a find_args -print
 		
