@@ -6,11 +6,15 @@ function __sp_http_head
 		set timeout $_flag_t
 	end
 	
-	if command -q curl
+	if type -q curl
 		curl -o /dev/null -D - --max-time $timeout --location --max-redirs 10 --retry 0 --fail --silent "$argv[1]"
-	else if command -q wget && ! wget --version | string match -q "GNU Wget2*"
+	else if type -q wget && ! wget --help &| string match -q "GNU Wget2*"
 		# classic wget writes --server-response headers to stderr
-		wget -O /dev/null --server-response --timeout $timeout --max-redirect 10 --quiet "$argv[1]" 2>&1
+		set -l wget wget -O /dev/null --server-response --timeout=$timeout -q
+		if $__cap_wget_has_max_redirect
+			set -a wget --max-redirect=10
+		end
+		$wget "$argv[1]" 2>&1
 	else
 		# this function is not compatible with wget2. making it work is non-trivial.
 		# TODO: implement wget2 compatibility

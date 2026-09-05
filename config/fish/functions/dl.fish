@@ -2,13 +2,19 @@ function dl -d \
 "Download a file, via https:// by default, using either curl or wget 1.x. 
 Will ask to resume or overwrite if already present. Pipe friendly."
 	# set defaults
-	# pros and cons in wget vs. curl
+	#
+	# pros and cons in wget/wget2/curl
 	# - wget is limited to http/1.1, curl goes up to http/3
-	# - curl displays either a naked progress-bar or a full transfer table, wget has a nice combo
+	# - curl displays either a naked progress-bar or a full transfer table
+	# - wget has a friendly combination of progress-bar and numbers
 	# - wget2 is NOT a drop-in replacement for wget and it is questionable whether it can cover the
 	#   basics we need here (pipe body to stdout, headers and progress to stderr)
-	# currently sticking with wget
-	set -l preferred wget
+	#
+	# conclusion
+	# curls http2+ support offers vastly better performance when connectivity is bad.
+	# also, wget isn't always literally wget. distros symlink busybox or even wget2 instead.
+	# the nice progress-bar display doesn't outweigh curls pros, so we go with curl as default now.
+	set -l preferred curl
 	set -l force_preferred no
 	set -l verbose no
 	set -l silent no
@@ -33,7 +39,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		return 1
 	end >&2
 	
-	# interpret, filter dash prefixed args
+	# interpret and filter dash prefixed args, build cache key
 	set -l args
 	for arg in $argv
 		switch $arg
@@ -117,7 +123,7 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	
 	# this function is not compatible with wget2. making it work is non-trivial.
 	# TODO: implement wget2 compatibility
-	type -q wget && ! wget --version | string match -q "GNU Wget2*"
+	type -q wget && ! wget --help &| string match -q "GNU Wget2*"
 	and set -l wget_available yes
 	or set -l wget_available no
 	
@@ -224,7 +230,13 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		
 	else if test "$use_tool" = "wget"
 		test "$silent" = "yes" || echo "Download with wget ..." >&2
-		set -l base_opt --max-redirect=10 --tries $retry_count --no-use-server-timestamps
+		set -l base_opt --tries $retry_count
+		if $__cap_wget_has_no_use_server_timestamps
+			set -a base_opt --no-use-server-timestamps
+		end
+		if $__cap_wget_has_max_redirect
+			set -a base_opt --max-redirect=10
+		end
 		if $__cap_wget_has_glob
 			set -a base_opt --no-glob
 		end
@@ -232,14 +244,19 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 			set -a base_opt --compression=auto
 		end
 		set -l silent_opt
-		set -l show_prog_opt "--show-progress"
+		set -l show_prog_opt
 		set -l resume_opt -c
 		if test "$resume_dl" = "no" || test "$to_stdout" = "yes" 
 			set -e resume_opt
 		end
 		if test "$silent" = "yes"
 			set silent_opt "-q"
-			set -e show_prog_opt
+		else
+			if $__cap_wget_has_show_progress
+				set -a show_prog_opt "--show-progress"
+			else if $__cap_wget_has_verbose
+				set -a show_prog_opt "--verbose"
+			end
 		end
 		if test "$verbose" = "yes"
 			set -a base_opt --server-response
@@ -253,10 +270,6 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 		else
 			# TODO: redirecting STDOUT of wget2 in fedora 43 includes the progressbar
 			set final_opt -O - "$url"
-		end
-		# switch to --verbose for very old versions of wget (Debian Wheezy)
-		if set -q show_prog_opt && ! wget --help | string match -q -- "*--show-progress*"
-			set show_prog_opt "--verbose"
 		end
 		wget $base_opt $silent_opt $show_prog_opt $resume_opt $final_opt
 		or begin

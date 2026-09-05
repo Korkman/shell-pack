@@ -258,7 +258,7 @@ function __sp_tweak_capabilities -d \
 
 	# lazyloading capability variables
 	# usage:
-	#   if $__sp_cap_ls_has_time_style
+	#   if $__cap_ls_has_time_style
 	#   ...
 	#   end
 	set -g __cap_ls_has_time_style "__sp_cap_ls_has_time_style"
@@ -274,6 +274,10 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_date_is_bsd "__sp_cap_date_is_bsd"
 	set -g __cap_wget_has_glob "__sp_cap_wget_has_glob"
 	set -g __cap_wget_has_compression "__sp_cap_wget_has_compression"
+	set -g __cap_wget_has_max_redirect "__sp_cap_wget_has_max_redirect"
+	set -g __cap_wget_has_show_progress "__sp_cap_wget_has_show_progress"
+	set -g __cap_wget_has_no_use_server_timestamps "__sp_cap_wget_has_no_use_server_timestamps"
+	set -g __cap_wget_has_verbose "__sp_cap_wget_has_verbose"
 end
 
 function __sp_tweak_keybinds \
