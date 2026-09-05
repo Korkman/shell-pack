@@ -466,7 +466,7 @@ function onman -d \
 						case man
 							# advantage: macro packages are best-effort automatically
 							# NOTE: man may fail in containers when host apparmor interferes (opensuse tumbleweed)
-							MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man -l $tmpfile
+							MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man $tmpfile
 						case mandoc
 							mandoc -T utf8 $tmpfile 2>/dev/null
 						case groff
