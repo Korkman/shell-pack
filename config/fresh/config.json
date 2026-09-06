@@ -58,6 +58,14 @@
       "modifiers": ["ctrl"], "key": "g",
       "action": "goto_line"
     },
+    {
+      "modifiers": ["alt"], "key": "n",
+      "action": "find_next"
+    },
+    {
+      "modifiers": ["alt", "shift"], "key": "n",
+      "action": "find_previous"
+    },
     // terminals in tabs yay!
     {
       "modifiers": ["ctrl"], "key": "t",
