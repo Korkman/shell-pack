@@ -1,7 +1,4 @@
 function __sp_man_page
-	# propagate virtual filename "man" for bat colors
-	set -x STDIN_FILENAME "man"
-	
 	# handle --reconfigure: strip flag, remember it
 	set -l do_reconfigure no
 	if contains -- --reconfigure $argv
@@ -61,11 +58,12 @@ function __sp_man_page
 				# let man adapt to less
 				__sp_man_page_default $argv
 			else
-				# NOTE: some 'man' implementations (FreeBSD, Debian Jessie) add weird
-				# backspace sequences to apply multiple formats to characters, which
-				# bat doesn't merge correctly as of v26.1.
-				# therefore we strip all color and style sequences from the man output.
-				PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_strip_ansi | $pager
+				# some 'man' implementations (FreeBSD, Debian Jessie) add overstrike
+				# sequences to apply bold/underline, which bat doesn't merge correctly
+				# as of v26.1. re-encode those as ANSI SGR instead of stripping them.
+				# ask man-db to keep bold/underline formatting even though stdout isn't a tty
+				# (harmless no-op on implementations that don't recognize this var)
+				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | $pager
 			end
 			return
 		else
