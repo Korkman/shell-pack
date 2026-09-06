@@ -384,9 +384,41 @@ function __spt_init -d \
 	set -g fish_prompt_pwd_dir_length 0
 	set -g theme_time_format "+%H:%M:%S"           # time format for time hints
 	set -g theme_date_format "+%Y-%m-%d"           # date format for date hints
+	
+	# full fish theme override to ensure nothing clashes
+	# unused colors commented out
+	set -g fish_color_autosuggestion (__spt fish_autosuggestion_color)
+	set -eg fish_color_builtin
+	set -g fish_color_cancel '-r'
 	set -g fish_color_command (__spt fish_command_color)
 	set -g fish_color_comment (__spt fish_comment_color)
-	set -g fish_color_autosuggestion (__spt fish_autosuggestion_color)
+	#set -g fish_color_cwd 'green'
+	#set -g fish_color_cwd_root 'red'
+	set -g fish_color_end '009900'
+	set -g fish_color_error 'ff0000'
+	set -g fish_color_escape '00a6b2'
+	set -eg fish_color_function
+	set -g fish_color_history_current '--bold'
+	#set -g fish_color_host 'normal'
+	#set -g fish_color_host_remote 'yellow'
+	set -eg fish_color_keyword
+	set -g fish_color_match '--background=brblue'
+	set -g fish_color_normal 'normal'
+	set -g fish_color_operator '00a6b2'
+	set -eg fish_color_option
+	set -g fish_color_param '00afff'
+	set -g fish_color_quote 'ffaf00'
+	set -g fish_color_redirection '00afff'
+	set -g fish_color_search_match 'white --background=brblack'
+	set -g fish_color_selection 'white --bold --background=brblack'
+	#set -g fish_color_status 'red'
+	#set -g fish_color_user 'brgreen'
+	set -g fish_color_valid_path '--underline'
+	
+	set -g fish_pager_color_description $fish_color_quote '--italics'
+	set -g fish_pager_color_prefix '--underline'
+	set -g fish_pager_color_progress '000000' "--background=$fish_color_command"
+	set -g fish_pager_color_selected_background '-r'
 end
 
 function __spt_track_term -v TERM
