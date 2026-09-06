@@ -56,19 +56,37 @@ function __sp_man_colorize -d \
 		i = 1
 		while (i <= n) {
 			c = substr(line, i, 1)
-			# overstrike: char, backspace, char
+			# overstrike: one or more "\bchar" repeats stacked on the same column (some
+			# renderers, e.g. FreeBSD man.cgi, combine bold+underline as "_\bX\bX")
 			if (i + 2 <= n && substr(line, i + 1, 1) == "\b") {
-				c2 = substr(line, i + 2, 1)
-				if (c == "_" && c2 != "_") {
-					if (bold_open && !bold_ansi) turn_off_bold()
-					if (!under_open) { out = out under_on; under_open = 1; under_ansi = 0 }
-					out = out c2
-				} else {
-					if (under_open && !under_ansi) turn_off_under()
-					if (!bold_open) { out = out bold_on; bold_open = 1; bold_ansi = 0 }
-					out = out c2
+				glyphs = c
+				k = i + 1
+				while (k + 1 <= n && substr(line, k, 1) == "\b") {
+					glyphs = glyphs substr(line, k + 1, 1)
+					k += 2
 				}
-				i += 3
+				len_g = length(glyphs)
+				final_char = substr(glyphs, len_g, 1)
+				is_bold = 0
+				is_under = 0
+				for (gi = 1; gi < len_g; gi++) {
+					gc = substr(glyphs, gi, 1)
+					if (gc == "_" && final_char != "_") is_under = 1
+					else if (gc == final_char) is_bold = 1
+				}
+				if (!is_bold && !is_under) is_bold = 1
+				# some renderers (e.g. FreeBSD man.cgi mdoc subheadings) follow an
+				# underline-only overstrike with a bare, un-backspaced repeat of the
+				# same char to fake extra emphasis on dumb terminals - absorb it
+				if (is_under && !is_bold && k <= n && substr(line, k, 1) == final_char && !(k + 1 <= n && substr(line, k + 1, 1) == "\b")) {
+					k += 1
+				}
+				if (!is_bold && bold_open && !bold_ansi) turn_off_bold()
+				if (!is_under && under_open && !under_ansi) turn_off_under()
+				if (is_bold && !bold_open) { out = out bold_on; bold_open = 1; bold_ansi = 0 }
+				if (is_under && !under_open) { out = out under_on; under_open = 1; under_ansi = 0 }
+				out = out final_char
+				i = k
 				continue
 			}
 			# already-ANSI SGR (modern grotty): ESC [ code(s) m
