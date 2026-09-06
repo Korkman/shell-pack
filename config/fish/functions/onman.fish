@@ -473,24 +473,27 @@ function onman -d \
 							# we assume -man and -mdoc macro packages are available
 							set -l cols (if test -n "$COLUMNS"; echo $COLUMNS; else; echo 80; end)
 							groff -Tutf8 -man -mdoc -rLL={$cols}n $tmpfile 2>/dev/null
-					end
+					end | __sp_man_colorize
 				end
 			else if test "$url_mode" = ihtml
 				# inline html mode (only formatting and some escapes, from manned.org/txt/)
 				echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' sed'
 				set -l esc (printf '\033')
-				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc"[3m/g; s/<\/i>/"$esc"[23m/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile
+				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc"[4m/g; s/<\/i>/"$esc"[24m/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile \
+				| __sp_man_colorize
 			else if test "$url_mode" = html
 				# full html mode, render with lynx or w3m?
 				echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' __sp_html2text'
 				__sp_html2text $tmpfile
 			else
+				# pure textmode
+				# NOTE: bat highlighting this causes indentation errors, so we skip it for now
 				echo (set_color --bold brwhite)'No more processing applied'(set_color normal)
 				cat $tmpfile
 			end
 			echo
 			echo 'Download URL: '(__sp_osc8_url $url)
-		end | __sp_man_colorize | __sp_pager
+		end | __sp_pager
 		rm -f $tmpfile
 		return
 	end
