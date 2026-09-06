@@ -4,17 +4,11 @@ FROM $BUILD_FROM
 # update sources
 RUN apk update
 
-# minimum packages for installer and basic functionality
-RUN apk add coreutils \
-    procps wget xz gzip tar \
-    findutils
-
-# extended packages - comment out for a "survival mode" container
-RUN apk add mc htop curl netcat-openbsd bash ncurses \
-    openssh-client tmux screen zip gzip bzip2 tar \
-    git
-
-# individual packages so we can test ancient versions, too
+# shell-pack does run with nothing but busybox if it has to.
+# comment out these packages for a "survival mode" container.
+# some packages are attempted individually as they don't exist in ancient releases.
+RUN apk add coreutils procps findutils wget mc htop curl netcat-openbsd bash ncurses \
+    openssh-client tmux screen xz zip gzip bzip2 tar git
 RUN apk add python3 || true
 RUN apk add openssh-server || true
 RUN apk add 7zip || true
