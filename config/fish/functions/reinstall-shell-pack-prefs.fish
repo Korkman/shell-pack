@@ -21,6 +21,7 @@ function reinstall-shell-pack-prefs \
 	and cmp -s -- "$__sp_config_dir/mc/ini" ~/.config/mc/ini
 	and cmp -s -- "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
 	and cmp -s -- "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
+	and cmp -s -- "$__sp_config_dir/mc/menu" ~/.config/mc/menu
 	and cmp -s -- "$__sp_config_dir/fresh/config.json" ~/.config/fresh/config.json
 	and cmp -s -- "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
 	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
@@ -63,6 +64,8 @@ function reinstall-shell-pack-prefs \
 	cp "$__sp_config_dir/mc/mc.keymap" ~/.config/mc/mc.keymap
 	rm -f ~/.config/mc/panels.ini
 	cp "$__sp_config_dir/mc/panels.ini" ~/.config/mc/panels.ini
+	rm -f ~/.config/mc/menu
+	cp "$__sp_config_dir/mc/menu" ~/.config/mc/menu
 	
 	mkdir -p ~/.config/fresh/themes
 	rm -f ~/.config/fresh/config.json
