@@ -105,6 +105,8 @@ function __sp_man_page
 		set -a wl_dash_h $dash_h_for_man
 	end
 
+	set -l persistable_methods help hh h o t c
+
 	set -l _persisted_method
 	if contains -- $search_cmd $wl_dash_dash_help
 		set _persisted_method hh
@@ -115,7 +117,7 @@ function __sp_man_page
 	end
 
 	# apply persisted help-method preference (one universal list var per method)
-	for _method in hh h o t c
+	for _method in $persistable_methods
 		set -l _var __sp_man_page_saved_$_method
 		if set -q $_var && contains -- $search_cmd $$_var
 			set _persisted_method $_method
@@ -126,7 +128,7 @@ function __sp_man_page
 	# --reconfigure: remove command from whichever persisted-preference list it appears in
 	if test $do_reconfigure = yes
 		set -l _cleared no
-		for _method in hh h o t c
+		for _method in $persistable_methods
 			set -l _var __sp_man_page_saved_$_method
 			if set -q $_var && contains -- $search_cmd $$_var
 				set -U $_var (string match --invert --entire --regex '^'(string escape --style=regex -- $search_cmd)'$' -- $$_var)
@@ -142,16 +144,18 @@ function __sp_man_page
 	set -l _sp_choice
 	if test -n "$_persisted_method"
 		switch $_persisted_method
-			case hh
-				set _sp_choice h
-			case h
-				set _sp_choice 2
 			case o
 				set _sp_choice o
 			case t
 				set _sp_choice t
 			case c
 				set _sp_choice c
+			case hh
+				set _sp_choice h
+			case h
+				set _sp_choice 5
+			case help
+				set _sp_choice 6
 		end
 	end
 
@@ -174,20 +178,22 @@ function __sp_man_page
 			# interactive mode
 			# for saving the previous choice
 			echo "Alternatives to "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$search_cmd"(set_color normal)
+			echo "  1|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$argv         "(set_color $fish_color_comment)"# fetch man page from internet (roff if supported)"(set_color normal)
+			echo "  2|t) "(set_color $fish_color_command)"onman --txt "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet (plain text)"(set_color normal)
+			echo "  3|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd         "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			if type -q $search_cmd
-				echo "  1|h) "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"--help"(set_color normal)
-				echo "  2)   "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"-h"(set_color normal)
+				echo "  4|h) "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"--help"(set_color normal)
+				echo "  5)   "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"-h"(set_color normal)
+				echo "  6)   "(set_color $fish_color_command)"$search_cmd "(set_color $fish_color_param)"help"(set_color normal)
 			else
-				echo "  "(__spt unavailable_option)"1|h) $search_cmd --help"(set_color normal)(set_color $fish_color_comment)"  # not a valid cmd"(set_color normal)
-				echo "  "(__spt unavailable_option)"2)   $search_cmd -h"(set_color normal)(set_color $fish_color_comment)"      # not a valid cmd"(set_color normal)
+				echo "  "(__spt unavailable_option)"4|h) $search_cmd --help"(set_color normal)(set_color $fish_color_comment)"  # not a valid cmd"(set_color normal)
+				echo "  "(__spt unavailable_option)"5)   $search_cmd -h"(set_color normal)(set_color $fish_color_comment)"      # not a valid cmd"(set_color normal)
+				echo "  "(__spt unavailable_option)"6)   $search_cmd help"(set_color normal)(set_color $fish_color_comment)"    # not a valid cmd"(set_color normal)
 			end
-			echo "  3|o) "(set_color $fish_color_command)"onman "(set_color $fish_color_param)"$argv         "(set_color $fish_color_comment)"# fetch man page from internet (roff if supported)"(set_color normal)
-			echo "  4|t) "(set_color $fish_color_command)"onman --txt "(set_color $fish_color_param)"$argv   "(set_color $fish_color_comment)"# fetch man page from internet (plain text)"(set_color normal)
-			echo "  5|c) "(set_color $fish_color_command)"cheat "(set_color $fish_color_param)"$search_cmd         "(set_color $fish_color_comment)"# fetch cheat sheet from cheat.sh"(set_color normal)
 			if test -n "$chosen_method"
-				echo "  6|s) "(set_color normal)"Save"(set_color normal)" option $chosen_method_char) for "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$argv"(set_color normal)(set_color $fish_color_comment)"  # reset with 'man --reconfigure $argv'"(set_color normal)
+				echo "  7|s) "(set_color normal)"Save"(set_color normal)" option $chosen_method_char) for "(set_color $fish_color_command)"man "(set_color $fish_color_param)"$argv"(set_color normal)(set_color $fish_color_comment)"  # reset with 'man --reconfigure $argv'"(set_color normal)
 			end
-			echo "  q) quit"
+			echo "  q)   quit"
 			echo
 			set -l onman_urls (onman --urls $argv)
 			if test "$onman_urls" != ""
@@ -202,7 +208,25 @@ function __sp_man_page
 			echo
 		end
 		switch $_sp_choice
-			case 1 h
+			case 1 o
+				onman $argv
+				set -l cmd_status $status
+				set chosen_method o
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 2 t
+				onman --txt $argv
+				set -l cmd_status $status
+				set chosen_method t
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 3 c
+				cheat $search_cmd
+				set -l cmd_status $status
+				set chosen_method c
+				set chosen_method_char $_sp_choice
+				test $interactive_mode = yes; and continue; or return $cmd_status
+			case 4 h
 				if ! type -q $search_cmd
 					__sp_error "Not a valid command: $search_cmd"
 					test $interactive_mode = yes; and continue; or return 1
@@ -217,7 +241,7 @@ function __sp_man_page
 				set chosen_method hh
 				set chosen_method_char $_sp_choice
 				test $interactive_mode = yes; and continue; or return $cmd_status
-			case 2
+			case 5 hh
 				if ! type -q $search_cmd
 					__sp_error "Not a valid command: $search_cmd"
 					continue
@@ -232,32 +256,29 @@ function __sp_man_page
 				set chosen_method h
 				set chosen_method_char $_sp_choice
 				test $interactive_mode = yes; and continue; or return $cmd_status
-			case 3 o 
-				onman $argv
+			case 6 help
+				if ! type -q $search_cmd
+					__sp_error "Not a valid command: $search_cmd"
+					continue
+				end
+				begin
+					echo (set_color --bold brwhite)"NOTE:"(set_color normal)" Showing '$search_cmd help'"(set_color normal)
+					echo ""
+					# close STDIN on search_cmd so any interactive input is cancelled
+					echo -n | $search_cmd help 2>&1
+				end | $pager
 				set -l cmd_status $status
-				set chosen_method o
+				set chosen_method help
 				set chosen_method_char $_sp_choice
 				test $interactive_mode = yes; and continue; or return $cmd_status
-			case 4 t 
-				onman --txt $argv
-				set -l cmd_status $status
-				set chosen_method t
-				set chosen_method_char $_sp_choice
-				test $interactive_mode = yes; and continue; or return $cmd_status
-			case 5 c
-				cheat $search_cmd
-				set -l cmd_status $status
-				set chosen_method c
-				set chosen_method_char $_sp_choice
-				test $interactive_mode = yes; and continue; or return $cmd_status
-			case 6 s
+			case 7 s
 				if test -z "$chosen_method"
 					__sp_error "Attempt to persist without making a choice first"
 					return 2
 				end
 				
 				# remove from any other method list first
-				for _method in hh h o t c
+				for _method in $persistable_methods
 					set -l _var __sp_man_page_saved_$_method
 					if set -q $_var && contains -- $search_cmd $$_var
 						set -U $_var (string match --invert --entire --regex '^'(string escape --style=regex -- $search_cmd)'$' -- $$_var)
