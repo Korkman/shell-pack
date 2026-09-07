@@ -279,6 +279,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_wget_has_no_use_server_timestamps "__sp_cap_wget_has_no_use_server_timestamps"
 	set -g __cap_wget_has_verbose "__sp_cap_wget_has_verbose"
 	set -g __cap_stat_has_c_format "__sp_cap_stat_has_c_format"
+	set -g __cap_italics "__sp_cap_italics"
 end
 
 function __sp_tweak_keybinds \

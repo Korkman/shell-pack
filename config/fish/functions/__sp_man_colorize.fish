@@ -1,10 +1,25 @@
 function __sp_man_colorize -d \
 	'Convert man/groff overstrike sequences and plain bold/underline/italic SGR into colored ANSI, standing in for bat man-page syntax highlighting'
-
+	argparse 'color=' -- $argv
+	or return 1
+	
+	if ! set -q _flag_color
+		if set -q COLOR
+			set _flag_color $COLOR
+		else
+			set _flag_color auto
+		end
+	end
+	
+	if test $_flag_color = "never"
+		cat
+		return 0
+	end
+	
 	# reuse fish's own command/param/comment colors, merged with the actual text attribute
 	set -l bold_on (set_color --bold $fish_color_command)
-	set -l under_on (set_color --underline $fish_color_param)
-	set -l italic_on (set_color --italics $fish_color_comment)
+	set -l under_on (set_color --underline $fish_color_quote)
+	set -l italic_on (set_color --italics $fish_color_quote)
 	set -l reset (set_color normal)
 
 	awk -v bold_on="$bold_on" -v under_on="$under_on" -v italic_on="$italic_on" -v reset="$reset" '

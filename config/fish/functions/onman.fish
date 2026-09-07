@@ -479,7 +479,14 @@ function onman -d \
 				# inline html mode (only formatting and some escapes, from manned.org/txt/)
 				echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' sed'
 				set -l esc (printf '\033')
-				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc"[4m/g; s/<\/i>/"$esc"[24m/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile \
+				set -l italic_s "[4m"
+				set -l italic_e "[24m"
+				# enable true italics if supported
+				if set -q __cap_italics && $__cap_italics
+					set italic_s "[3m"
+					set italic_e "[23m"
+				end
+				sed "s/<b>/"$esc"[1m/g; s/<\/b>/"$esc"[22m/g; s/<i>/"$esc""$italic_s"/g; s/<\/i>/"$esc""$italic_e"/g; s/<[^>]*>//g; s/\&amp;/\&/g; s/\&lt;/</g; s/\&gt;/>/g" $tmpfile \
 				| __sp_man_colorize
 			else if test "$url_mode" = html
 				# full html mode, render with lynx or w3m?

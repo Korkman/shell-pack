@@ -5,7 +5,12 @@ function __sp_man_page
 		set do_reconfigure yes
 		set argv (string match --invert --entire --regex '^--reconfigure$' -- $argv)
 	end
-
+	
+	# enable italics if you have them
+	if set -q __cap_italics && $__cap_italics
+		set -x MANROFFOPT '-P-i'
+	end
+	
 	# if no backup exists, proxy to "man"
 	if ! functions -q __sp_man_page_default
 		function __sp_man_page_default

@@ -430,4 +430,7 @@ function __spt_track_term -v TERM
 	else
 		set -gx __cap_colors 8
 	end
+	
+	# reset lazyloader
+	set -g __cap_italics "__sp_cap_italics"
 end
