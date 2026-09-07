@@ -59,6 +59,14 @@
       "action": "goto_line"
     },
     {
+      "key": "f7",
+      "action": "search"
+    },
+    {
+      "modifiers": [ "shift" ], "key": "f7",
+      "action": "search"
+    },
+    {
       "modifiers": ["alt"], "key": "n",
       "action": "find_next"
     },
@@ -86,7 +94,7 @@
     },
     {
       "key": "F8",
-      "action": "delete_line"
+      "action": "delete_line_or_selection"
     },
     {
       "key": "F9",

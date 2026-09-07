@@ -107,3 +107,17 @@ function shellpack_close_tab_if_not_term() : void {
 registerHandler("shellpack_close_tab_if_not_term", shellpack_close_tab_if_not_term);
 // to be actually available, we must use editor.registerCommand, which also makes the function visible in palette
 editor.registerCommand("Close tab if not terminal", "Closes tab if not terminal", "shellpack_close_tab_if_not_term");
+
+// F8 (config.json) mirrors Midnight Commander's delete key: with an active
+// selection it should only remove that selection, not the whole line it sits on.
+function delete_line_or_selection() : void {
+  const cursor = editor.getPrimaryCursor();
+  if (cursor && cursor.selection && cursor.selection.start !== cursor.selection.end) {
+    editor.deleteRange(editor.getActiveBufferId(), cursor.selection.start, cursor.selection.end);
+  } else {
+    editor.executeAction("delete_line");
+  }
+};
+
+registerHandler("delete_line_or_selection", delete_line_or_selection);
+editor.registerCommand("Delete line or selection", "Deletes the selection, or the current line if nothing is selected", "delete_line_or_selection");
