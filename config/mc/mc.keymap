@@ -92,8 +92,19 @@ SearchForwardContinue = n
 SearchBackwardContinue = N
 
 [diffviewer]
-# added alt-* keys for more intuitive merging
-Merge = f5; alt-left
-MergeOther = f15; alt-right
+# added alt-* keys for more intuitive merging, -l and -r for terminal compatibility
+Merge = f5; alt-left; alt-l
+MergeOther = f15; alt-right; alt-r
+Edit = f4; alt-shift-l
+EditOther = f4; alt-shift-r
 HunkNext = n; enter; space; alt-down
-HunkPrev = p; backspace; alt-up
+HunkPrev = p; backspace; alt-up; shift-n
+Goto = g; shift-g; ctrl-l
+Save = f2; ctrl-s
+# redo as in "reload files and re-apply"
+Redo = ctrl-r; r
+# why go slow by default? let's go fast
+LeftQuick = left
+RightQuick = right
+Left = shift-left
+Right = shift-right
