@@ -22,7 +22,7 @@ shell_patterns=0
 #   %0f   don't quote expanded macro
 ##############################################################################
 
-.       Pass selected item(s) to ...
+.       Pass selected items to ...
         CMD=%{Enter command (fish shell)}
         set -- %s
         echo $CMD "$@" | fish -i
@@ -87,9 +87,14 @@ g       Search text in selected items
         PATTERN=%{Search pattern (regex)}
         fishcall rrg %s -- "$PATTERN"
 
-+ t rdl
-f       Follow selected items with tail | grasp
++ t rl
+f       Follow selected files with tail | grasp
         echo "following %s"
         set -- %s
         export STDIN_FILENAME=$1
-        tail -n200 -f %s | grasp --syntax
+        tail -n200 -f %s | fishcall grasp --syntax
+
++ t rl
+b       Page file with bat syntax highlighting
+        echo "paging %f"
+        fishcall ppage --syntax %s
