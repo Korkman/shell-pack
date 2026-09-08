@@ -194,6 +194,10 @@ function __sp_tweak_aliases
 	alias one "mmux one --exclusive"
 	alias shareone "mmux one --exclusive --share"
 	alias forceone "mmux one --exclusive --force"
+	
+	# edit and page
+	alias e __sp_editor
+	alias p __sp_pager
 
 	mmux --aliases
 end
