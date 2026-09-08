@@ -206,16 +206,16 @@ function grasp -d \
 	set -a fzf_defaults --highlight-line \
 		--multi --exact --ansi \
 		--no-sort --bind "$fzf_binds" \
-		'--height=~100%' --history "$GRASP_HIST_FILE"
+		--history "$GRASP_HIST_FILE" \
+		--height=-1
+	# adaptive height options removed as they hang indefinitely with small, open stdin (tail -n10 -f /etc/services)
 	
 	if not set -q GRASP_PAGER
 		# pager mode already bounds memory via the byte-size limit applied to its input
 		set -a fzf_defaults --tail=$GRASP_TAIL
 	end
 	
-	# changed to ~100% as it interfered with docker-fastexec (broke input)
-	# --height=-1
-	
+		
 	# start in compact mode with invisible search (q exits), unless a query was pre-filled
 	set -l start_bind 'start:trigger(esc)+hide-header'
 	if set -q _flag_search

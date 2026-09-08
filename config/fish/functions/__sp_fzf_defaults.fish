@@ -2,12 +2,13 @@ function __sp_fzf_defaults -S -d \
 	"Set default options for fzf in \$fzf_defaults. Pass title as argument."
 	argparse e/exact c/compact -- $argv
 	
-
-	set fzf_defaults --info inline-right --input-border=line --height=~80% --reverse \
+	set fzf_defaults --info inline-right --input-border=line --reverse \
 		"--color=dark hl:bright-yellow:reverse selected-hl:bright-yellow:reverse current-hl:bright-yellow:reverse header:#00ff87 header-label:#ffffff:bold" \
 		"--color=selected-fg:#ffff00:bold selected-bg:#333300" \
-		"--bind=esc:cancel,ctrl-left:backward-word,ctrl-right:forward-word,ctrl-backspace:backward-kill-word,ctrl-delete:kill-word"
-
+		"--bind=esc:cancel,ctrl-left:backward-word,ctrl-right:forward-word,ctrl-backspace:backward-kill-word,ctrl-delete:kill-word" \
+		"--height=-1"
+	# adaptive height options removed as they hang indefinitely with small, open stdin (tail -n10 -f /etc/services)
+	
 	set -l ghost_add
 	if set -q _flag_compact
 		set ghost_add "$ghost_add, alt-b for more"
