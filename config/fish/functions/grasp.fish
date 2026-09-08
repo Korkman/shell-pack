@@ -315,7 +315,7 @@ function grasp -d \
 		set skip_bat 0
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
-			set -l cfd_type (cfd --get-type $argv[1] 2>/dev/null)
+			set -l cfd_type (cfd --get-type --deep $argv[1] 2>/dev/null)
 			
 			if test ! -t 1
 				# STDOUT is not a terminal! Someone is using us as a pipe
