@@ -108,3 +108,6 @@ LeftQuick = left
 RightQuick = right
 Left = shift-left
 Right = shift-right
+# so undo doesn't exist, but you probably don't want to suspend the program
+# (assigned ctrl-z to the closest "undo" we have)
+Quit = f10; q; shift-q; esc; ctrl-z
