@@ -22,24 +22,24 @@ shell_patterns=0
 #   %0f   don't quote expanded macro
 ##############################################################################
 
-+ ! t t
-@       Do something on current file
-        CMD=%{Enter command}
-        $CMD %f
+.       Pass selected item(s) to ...
+        CMD=%{Enter command (fish shell)}
+        set -- %s
+        echo $CMD "$@" | fish -i
 
 n       New file with template (create)
         FNAME=%{New file name, or space for README.md}
         [ "$FNAME" = " " ] && FNAME=README.md
         fishcall create "$FNAME" || (touch "$FNAME" && fishcall __sp_editor "$FNAME")
 
-Z       Compress current subdirectory (cfc)
-        Pwd=$(basename %d /)
-        DEST=%{New file, format (tar.xz, ...), or space for tar.zst}
-        [ "$DEST" = " " ] && DEST=tar.zst
-        cd .. && fishcall cfc "$Pwd" "$DEST"
++ f \.zip$ | f \.tar$ | f \.tar\.[^.]+$ | f \.tgz$ | f \.tb2$ | f \.tbz$ | f \.tbz2$ | f \.tz2$ | f \.taz$ | f \.tlz$ | f \.txz$ | f \.tZ$ | f \.taZ$ | f \.tzst$ | f \.cpio$ | f \.7z$ | f \.gz$ | f \.zst$ | f \.bz2$ | f \.lz4$ | f \.lz$ | f \.lzma$ | f \.lzo$ | f \.xz$ | f \.Z$ & t r
+x       Extract selected items
+        for i in %s ; do
+            fishcall cfd "$i" || exit
+        done
 
-+ t rd
-z       Compress each selected item (cfc)
++ t rd & ! f \.zip$ & ! f \.tar\.[^.]+$ & ! f \.tgz$ & ! f \.tb2$ & ! f \.tbz$ & ! f \.tbz2$ & ! f \.tz2$ & ! f \.taz$ & ! f \.tlz$ & ! f \.txz$ & ! f \.tZ$ & ! f \.taZ$ & ! f \.tzst$ & ! f \.cpio$ & ! f \.7z$ & ! f \.gz$ & ! f \.zst$ & ! f \.bz2$ & ! f \.lz4$ & ! f \.lz$ & ! f \.lzma$ & ! f \.lzo$ & ! f \.xz$ & ! f \.Z$
+z       Compress each selected item
         DEST=%{Format: (tar.gz, xz) or space for (tar.)zst}
         for i in %s ; do
             if [ "$DEST" = " " ]; then
@@ -47,14 +47,14 @@ z       Compress each selected item (cfc)
             else
                 d="$DEST"
             fi
-            fishcall cfc "$i" "$d"
+            fishcall cfc "$i" "$d" || exit
         done
 
-+ f \.zip$ | f \.tar$ | f \.tar\.[^.]+$ | f \.tgz$ | f \.tb2$ | f \.tbz$ | f \.tbz2$ | f \.tz2$ | f \.taz$ | f \.tlz$ | f \.txz$ | f \.tZ$ | f \.taZ$ | f \.tzst$ | f \.cpio$ | f \.7z$ | f \.gz$ | f \.zst$ | f \.bz2$ | f \.lz4$ | f \.lz$ | f \.lzma$ | f \.lzo$ | f \.xz$ | f \.Z$ & t r
-x       Extract selected items (cfd)
-        for i in %s ; do
-            fishcall cfd "$i"
-        done
+Z       Compress current subdirectory
+        Pwd=$(basename %d /)
+        DEST=%{New file, format (tar.xz, ...), or space for tar.zst}
+        [ "$DEST" = " " ] && DEST=tar.zst
+        cd .. && fishcall cfc "$Pwd" "$DEST"
 
 + t rl
 d       diff tagged / opposing files
@@ -70,20 +70,26 @@ d       diff tagged / opposing files
         fi
 
 + t rl
-m       merge tagged / opposing files (mcdiff)
+m       merge tagged / opposing files with mcdiff
         set -- %t
         if [ $# -gt 2 ]; then
             echo "Tag at most two files to diff" >&2
             exit 1
         fi
         if [ $# -eq 2 ]; then
-            mcdiff -u "$1" "$2"
+            fishcall mcdiff -u "$1" "$2"
         else
-            mcdiff -u %f %D/%F
+            fishcall mcdiff -u %f %D/%F
         fi
 
 + t rdl
-g       Ripgrep in selected items (rrg)
-        PATTERN=%{Search term}
+g       Search text in selected items
+        PATTERN=%{Search pattern (regex)}
         fishcall rrg %s -- "$PATTERN"
 
++ t rdl
+f       Follow selected items with tail | grasp
+        echo "following %s"
+        set -- %s
+        export STDIN_FILENAME=$1
+        tail -n200 -f %s | grasp --syntax
