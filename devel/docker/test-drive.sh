@@ -261,6 +261,7 @@ echo "Package ${srcdir}"
 	'--exclude=bin/rg' \
 	'--exclude=bin/fzf' \
 	'--exclude=bin/fresh' \
+	'--exclude=bin/bat' \
 	'--exclude=bin/dool.d' \
 	-czf "${tmpdir}/${download_file}" \
 ".")
@@ -274,7 +275,7 @@ mkdir -p "$cachedir"
 
 echo "Run $docker"
 
-CACHED_FILES="rg fzf fresh dool.d"
+CACHED_FILES="rg fzf fresh bat dool.d"
 if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
 then
 	echo "Copy over available cached files …"

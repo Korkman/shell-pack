@@ -21,10 +21,14 @@ if [ -e ~/Downloads/fresh ]
 then
 	mv ~/Downloads/fresh /usr/local/bin/fresh
 fi
+if [ -e ~/Downloads/bat ]
+then
+	mv ~/Downloads/bat /usr/local/bin/bat
+fi
 
 onexit_copy_downloads() {
 	# copy back downloaded files for later use
-	CACHED_FILES="rg fzf fresh dool.d"
+	CACHED_FILES="rg fzf fresh bat dool.d"
 	for cached_file in $CACHED_FILES
 	do
 		if [ -e ~/.local/share/shell-pack/bin/$cached_file ]
