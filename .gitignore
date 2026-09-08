@@ -6,7 +6,14 @@ bin/dool.d
 bin/fresh
 bin/bat
 devel/test-qmount-files
-# for when config/fresh is symlinked to $HOME during development 
+# for when config/fresh is symlinked to $HOME during development
 config/fresh/types/fresh.d.ts
 config/fresh/types/plugins.d.ts
 config/fresh/tsconfig.json
+# Ignore VS Code user data, allow shared team settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
