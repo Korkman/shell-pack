@@ -217,13 +217,6 @@ function __sp_tweak_polyfills -d \
 			stat -f %m "$file"
 		end
 	end
-
-	# tac: reverse cat
-	if ! command -sq tac
-		function tac
-			tail -r -- $argv
-		end
-	end
 	
 	# test if the command 'kill' is available. if not, improvise!
 	# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
@@ -284,6 +277,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_wget_has_verbose "__sp_cap_wget_has_verbose"
 	set -g __cap_stat_has_c_format "__sp_cap_stat_has_c_format"
 	set -g __cap_italics "__sp_cap_italics"
+	set -g __cap_tail_has_r "__sp_cap_tail_has_r"
 end
 
 function __sp_tweak_keybinds \

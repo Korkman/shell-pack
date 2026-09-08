@@ -859,7 +859,7 @@ function __qssh_db_mru_read --no-scope-shadowing -d \
 	# taking care to match heavily escaped strings as key
 	set -l match ""
 	if [ -e "$__qssh_db_mru_file" ]
-		for line in (tac "$__qssh_db_mru_file")
+		for line in (tac -- "$__qssh_db_mru_file")
 			set -l line (string split -- \t $line)
 			set -l lkey (string unescape -- $line[1])
 			if [ "$lkey" = "$val" ]
@@ -992,7 +992,7 @@ function __qssh_db_mru_table -d \
 	if [ ! -e "$__qssh_db_mru_file" ]
 		return 0
 	end
-	for line in (tac "$__qssh_db_mru_file")
+	for line in (tac -- "$__qssh_db_mru_file")
 		if [ "$line" != "" ] # ignore blank lines
 			set line (string split -- \t $line)
 			if ! contains -- "$line[1]" $makeuniq

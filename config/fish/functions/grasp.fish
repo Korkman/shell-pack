@@ -137,7 +137,7 @@ function grasp -d \
 	if set -q GRASP_PAGER
 		set recat_cmd "(_f={*f}; cat \"\$_f\"; rm -f \"\$_f\")"
 	else
-		set recat_cmd "(_f={*f}; if [ -x tac ]; then tac \"\$_f\"; else fishcall tac \"\$_f\"; fi; rm -f \"\$_f\")"
+		set recat_cmd "(_f={*f}; if [ -x tac ]; then tac -- \"\$_f\"; else fishcall tac -- \"\$_f\"; fi; rm -f \"\$_f\")"
 	end
 
 	set -l columns_margin 2
