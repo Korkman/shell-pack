@@ -32,14 +32,14 @@ n       New file with template (create)
         [ "$FNAME" = " " ] && FNAME=README.md
         fishcall create "$FNAME" || (touch "$FNAME" && fishcall __sp_editor "$FNAME")
 
-C       Compress current subdirectory (cfc)
+Z       Compress current subdirectory (cfc)
         Pwd=$(basename %d /)
         DEST=%{New file, format (tar.xz, ...), or space for tar.zst}
         [ "$DEST" = " " ] && DEST=tar.zst
         cd .. && fishcall cfc "$Pwd" "$DEST"
 
 + t rd
-c       Compress each selected item (cfc)
+z       Compress each selected item (cfc)
         DEST=%{Format: (tar.gz, xz) or space for (tar.)zst}
         for i in %s ; do
             if [ "$DEST" = " " ]; then
@@ -51,26 +51,26 @@ c       Compress each selected item (cfc)
         done
 
 + f \.zip$ | f \.tar$ | f \.tar\.[^.]+$ | f \.tgz$ | f \.tb2$ | f \.tbz$ | f \.tbz2$ | f \.tz2$ | f \.taz$ | f \.tlz$ | f \.txz$ | f \.tZ$ | f \.taZ$ | f \.tzst$ | f \.cpio$ | f \.7z$ | f \.gz$ | f \.zst$ | f \.bz2$ | f \.lz4$ | f \.lz$ | f \.lzma$ | f \.lzo$ | f \.xz$ | f \.Z$ & t r
-d       Decompress selected items (cfd)
+x       Extract selected items (cfd)
         for i in %s ; do
             fishcall cfd "$i"
         done
 
 + t rl
-p       diff tagged / opposing files
+d       diff tagged / opposing files
         set -- %t
         if [ $# -gt 2 ]; then
             echo "Tag at most two files to diff" >&2
             exit 1
         fi
         if [ $# -eq 2 ]; then
-            diff -u "$1" "$2" | ${PAGER:-less}
+            diff --ignore-all-space --color=always -u "$1" "$2" | ${PAGER:-less}
         else
-            diff -u %f %D/%F | ${PAGER:-less}
+            diff --ignore-all-space --color=always -u %f %D/%F | ${PAGER:-less}
         fi
 
 + t rl
-p       mcdiff (merge) tagged / opposing files
+m       merge tagged / opposing files (mcdiff)
         set -- %t
         if [ $# -gt 2 ]; then
             echo "Tag at most two files to diff" >&2
@@ -81,3 +81,9 @@ p       mcdiff (merge) tagged / opposing files
         else
             mcdiff -u %f %D/%F
         fi
+
++ t rdl
+g       Ripgrep in selected items (rrg)
+        PATTERN=%{Search term}
+        fishcall rrg %s -- "$PATTERN"
+
