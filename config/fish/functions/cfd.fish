@@ -1,14 +1,22 @@
 function cfd -d \
 'Compressed file decompression'
 	
-	if set -q argv[1] && test "$argv[1]" = "--help"
+	argparse 'h/help' 'get-type' 'deep' -- $argv
+	or return 1
+	
+	if set -q _flag_help
 		echo "Usage: cfd FILE [ DESTINATION ]"
+		echo "       cfd --get-type [--deep] FILE"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
 		echo "Decompress FILE in the current directory or at DESTINATION."
 		echo "If the archive supports directories, DESTINATION is a directory."
 		echo "If not, DESTINATION is the uncompressed filename."
+		echo
+		echo "--get-type  Print FILE's detected archive/compression format and exit."
+		echo "--deep      With --get-type, also use 'file' magic detection when the"
+		echo "            extension is not recognized."
 		return 1
 	end >&2
 	
@@ -69,9 +77,23 @@ function cfd -d \
 		set format gz
 	end
 
-	# Fall back to file(1) magic detection when extension gives no match
+	# Fall back to file(1) magic detection when extension gives no match.
+	# For --get-type, this is only attempted with --deep.
+	set -l try_magic 0
 	if test -z "$format"
+		if set -q _flag_get_type
+			if set -q _flag_deep
+				set try_magic 1
+			end
+		else
+			set try_magic 1
+		end
+	end
+	if test $try_magic -eq 1
 		if ! command -q file
+			if set -q _flag_get_type
+				return 1
+			end
 			echo "Unsupported file type (install 'file' for magic-based detection)" >&2
 			return 1
 		end
@@ -101,9 +123,20 @@ function cfd -d \
 		else if string match -q 'application/x-cpio' -- "$mime"
 			set format cpio
 		else
+			if set -q _flag_get_type
+				return 1
+			end
 			echo "Unsupported file type (MIME: $mime)" >&2
 			return 1
 		end
+	end
+
+	if set -q _flag_get_type
+		if test -z "$format"
+			return 1
+		end
+		echo "$format"
+		return 0
 	end
 
 	# Dispatch to the appropriate decompressor

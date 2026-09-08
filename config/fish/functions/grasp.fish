@@ -315,9 +315,15 @@ function grasp -d \
 		set skip_bat 0
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
+			set -l cfd_type (cfd --get-type $argv[1] 2>/dev/null)
+			
 			if test ! -t 1
 				# STDOUT is not a terminal! Someone is using us as a pipe
-				cat $argv[1]
+				if set -q cfd_type[1]
+					cfd $argv[1] -
+				else
+					cat $argv[1]
+				end
 				return
 			end
 			
@@ -349,13 +355,21 @@ function grasp -d \
 			end
 			
 			# read tail from file
-			if set -q GRASP_PAGER
+			if set -q cfd_type[1]
+				# supported archive/compression format: decompress to stdout instead of tailing raw bytes
+				set cmd cfd $argv[1] -
+			else if set -q GRASP_PAGER
 				set cmd $GRASP_CUT_HEAD_OR_TAIL -c $GRASP_PAGER_MAX_SIZE $argv[1]
 			else
 				# in stream mode, follow the file
 				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
 			set bat_filename $argv[1]
+			if set -q cfd_type[1]
+				# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
+				set bat_filename (string replace -r -i "\.$cfd_type\$" '' -- $bat_filename)
+				set bat_filename (string replace -r '\.[0-9]+$' '' -- $bat_filename)
+			end
 			if test -n "$file_size" && test "$file_size" -gt $GRASP_BAT_MAX_SIZE
 				set skip_bat 1
 			end
