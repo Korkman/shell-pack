@@ -3,8 +3,14 @@ function __sp_editor -d \
 
 	argparse 'line=' -- $argv
 	or return
-
-	set filename $argv[1]
+	
+	set -l filename
+	if set -q argv[1]
+		set filename $argv[1]
+	else if ! isatty stdin
+		set filename '-'
+	end
+	
 
 	if set -q VISUAL
 		set EDITOR $VISUAL
