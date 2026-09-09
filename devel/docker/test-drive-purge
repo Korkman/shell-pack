@@ -1,7 +1,7 @@
 #! /usr/bin/env fish
 
 # lets you pick, via fzf, which "shell-pack:test-drive-*" images (built by
-# test-drive.sh) to remove from podman / docker.
+# test-drive) to remove from podman / docker.
 
 set -l FORCE_DOCKER "$FORCE_DOCKER"
 test -z "$FORCE_DOCKER"; and set FORCE_DOCKER no
@@ -11,7 +11,7 @@ test -z "$FORCE_NO_SUDO"; and set FORCE_NO_SUDO no
 function __test_drive_purge_usage
 	echo "Usage: test-drive-purge.sh [-f | --force]"
 	echo ""
-	echo "Lists podman/docker images built by test-drive.sh (repository"
+	echo "Lists podman/docker images built by test-drive (repository"
 	echo "'shell-pack') in fzf; select one or more (tab to multi-select) and"
 	echo "press enter to remove them."
 	echo ""

@@ -26,12 +26,12 @@ function __test_drive_tmux_table
 end
 
 function __test_drive_tmux_usage
-	echo "Usage: test-drive-tmux [tmux-version] [--debian] [--alpine] [test-drive.sh args...]"
+	echo "Usage: test-drive-tmux [tmux-version] [--debian] [--alpine] [test-drive args...]"
 	echo ""
 	echo "Looks up the Docker distro/release matching a tmux version and proxies "
-	echo "to ./test-drive.sh with it."
+	echo "to ./test-drive with it."
 	echo "If the first argument is not a known tmux version, it defaults to 'latest' and"
-	echo "all arguments are passed through to test-drive.sh unchanged."
+	echo "all arguments are passed through to test-drive unchanged."
 	echo ""
 	echo "Options:"
 	echo "  -d, --debian   Force the Debian release for this tmux version"
@@ -137,7 +137,7 @@ if set -q _flag_arch
 		exit 1
 	end
 	echo "test-drive-tmux: tmux $arg_version -> archlinux:latest"
-	exec "$script_dir/test-drive.sh" archlinux:latest $passthrough
+	exec "$script_dir/test-drive" archlinux:latest $passthrough
 end
 
 set -l distro
@@ -174,4 +174,4 @@ else
 end
 
 echo "test-drive-tmux: tmux $arg_version -> $distro_tag"
-exec "$script_dir/test-drive.sh" $distro_tag $passthrough
+exec "$script_dir/test-drive" $distro_tag $passthrough

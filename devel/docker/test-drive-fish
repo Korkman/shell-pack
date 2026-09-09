@@ -15,13 +15,13 @@ function __test_drive_fish_table
 end
 
 function __test_drive_fish_usage
-	echo "Usage: test-drive-fish [fish-version] [--debian] [--alpine] [test-drive.sh args...]"
+	echo "Usage: test-drive-fish [fish-version] [--debian] [--alpine] [test-drive args...]"
 	echo ""
 	echo "Looks up the Docker distro/release that packages a given fish version and"
-	echo "proxies to ./test-drive.sh with it, using INSTALL_FISH=distro (i.e. install"
+	echo "proxies to ./test-drive with it, using INSTALL_FISH=distro (i.e. install"
 	echo "fish from the distro package manager rather than a static binary)."
 	echo "If the first argument is not a known fish version, it defaults to 'latest' and"
-	echo "all arguments are passed through to test-drive.sh unchanged."
+	echo "all arguments are passed through to test-drive unchanged."
 	echo ""
 	echo "Options:"
 	echo "  -d, --debian   Force the Debian release for this fish version"
@@ -128,7 +128,7 @@ if set -q _flag_arch
 	end
 	echo "test-drive-fish: fish $arg_version -> archlinux:latest (INSTALL_FISH=distro)"
 	set -gx INSTALL_FISH distro
-	exec "$script_dir/test-drive.sh" archlinux:latest $passthrough
+	exec "$script_dir/test-drive" archlinux:latest $passthrough
 end
 
 set -l distro
@@ -166,4 +166,4 @@ end
 
 echo "test-drive-fish: fish $arg_version -> $distro_tag (INSTALL_FISH=distro)"
 set -gx INSTALL_FISH distro
-exec "$script_dir/test-drive.sh" $distro_tag $passthrough
+exec "$script_dir/test-drive" $distro_tag $passthrough
