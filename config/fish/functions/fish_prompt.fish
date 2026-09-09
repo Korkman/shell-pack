@@ -140,7 +140,7 @@ function fish_prompt -d \
 				set -eg __sp_disable_df_prompt
 			end
 		else
-			if ! set __sp_fs_df_result (timeout 1s df .)
+			if ! set __sp_fs_df_result (timeout 1 df .)
 				set -g __sp_disable_df_prompt 20
 				__sp_error "Failed to run 'df'. Free space warning temporarily disabled."
 			end

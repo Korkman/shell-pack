@@ -292,6 +292,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_italics "__sp_cap_italics"
 	set -g __cap_tail_has_r "__sp_cap_tail_has_r"
 	set -g __cap_hexdump_has_color "__sp_cap_hexdump_has_color"
+	set -g __cap_timeout_has_t "__sp_cap_timeout_has_t"
 end
 
 function __sp_tweak_keybinds \
