@@ -93,6 +93,11 @@ if set -q _flag_help
 	exit 0
 end
 
+if test (count $argv) -eq 0
+	__test_drive_fish_usage
+	exit 0
+end
+
 # no recognized version given -> default to "latest", pass all args through untouched
 set -l arg_version latest
 set -l passthrough $argv
