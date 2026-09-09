@@ -20,10 +20,7 @@ set -eu
 USER=${USER:-$(id -un)}
 
 main() {
-	installer_log="$HOME/fish_installer.log"
-	echo "fish installer started, logging to '$installer_log'"
-	touch "$installer_log"
-	echo "args: $0" >> "$installer_log"
+	echo "args: $0"
 	cmake_version="3.27.0"
 	MAKE_J=${MAKE_J:-1} # NOTE: going beyond 1 sometimes deadlocks, 2 gives OOM in default podman machines
 	deploy_channel="release"
@@ -31,7 +28,7 @@ main() {
 	fish_version="unknown"
 
 	INSTALL_FISH="${INSTALL_FISH:-static-latest}"
-	echo "INSTALL_FISH=$INSTALL_FISH" >> "$installer_log"
+	echo "INSTALL_FISH=$INSTALL_FISH"
 
 	case "$INSTALL_FISH" in
 		none)
@@ -40,6 +37,10 @@ main() {
 			;;
 		static-latest)
 			fish_version=$(get_latest_fish_version) || fish_version="4.1.2"
+			if [ "$fish_version" = "" ]; then
+				echo "fish_version empty?!"
+				exit 1
+			fi
 			run_installer "Static"
 			;;
 		static-*)
@@ -71,9 +72,9 @@ main() {
 
 download() {
 	if command -v curl > /dev/null; then
-		curl -fSsL "$1"
+		curl -fSsL "$1" || (echo "Download failed ($?), cannot continue: $1" >&2 && exit 1)
 	elif command -v wget > /dev/null; then
-		wget -qO- "$1"
+		wget -qO- "$1" || (echo "Download failed ($?), cannot continue: $1" >&2 && exit 1)
 	else
 		echo "Neither curl nor wget is available, please install one of them and re-run" >&2
 		exit 1
@@ -110,7 +111,8 @@ install_cmake() {
 
 get_latest_fish_version() {
 	# get latest release version from github api
-	download "https://api.github.com/repos/fish-shell/fish-shell/releases/latest" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
+	result=$(download "https://api.github.com/repos/fish-shell/fish-shell/releases/latest") || exit
+	echo "$result" | grep '"tag_name":' | sed -E 's/.*: "([^"]+)".*/\1/'
 }
 
 read_os_release() {
@@ -120,14 +122,14 @@ read_os_release() {
 		distro_version=$(. /etc/os-release; echo "${VERSION_ID:-}" | cut -d. -f1)
 		distro_like=$(. /etc/os-release; echo "${ID_LIKE:-}")
 	else
-		echo "Distro unsupported by fish-installer.sh - check list for release file" >> "$installer_log"
-		ls "/etc" >> "$installer_log"
+		echo "Distro unsupported by fish-installer.sh - check list for release file"
+		ls "/etc"
 		exit 1
 	fi
-	echo "detected os: $distro-$distro_version" >> "$installer_log"
+	echo "detected os: $distro-$distro_version"
 	if [ "$distro_like" != "" ]
 	then
-		echo "os like: $distro_like" >> "$installer_log"
+		echo "os like: $distro_like"
 	fi
 }
 
@@ -239,8 +241,8 @@ run_installer() {
 		'Debian-Make') # deprecated method, use static binary build by default
 			apt-get -y install build-essential gettext libncurses5-dev git
 			cd /usr/local/src
-			install_cmake >> "$installer_log" 2>&1
-			build_fish "$fish_version" >> "$installer_log" 2>&1
+			install_cmake 2>&1
+			build_fish "$fish_version" 2>&1
 		;;
 		'Ubuntu-Any')
 			sudo apt-get -y install software-properties-common
@@ -337,12 +339,14 @@ run_installer() {
 			fi
 
 			static_release_file="https://github.com/fish-shell/fish-shell/releases/download/$fish_version/fish-$fish_version-linux-$install_arch.tar.xz"
-			echo "installing static release from $static_release_file" | tee -a "$installer_log"
+			echo "installing static release from $static_release_file"
 			# test if /usr/local/bin is writable, cd and install there
 			if [ -w /usr/local/bin ]
 			then
+				echo "... to /usr/local/bin"
 				cd /usr/local/bin
 			else
+				echo "... to $HOME/.local/bin"
 				# mkdir .local/bin if needed, cd there
 				mkdir -p "$HOME/.local/bin"
 				cd "$HOME/.local/bin"
@@ -357,10 +361,12 @@ run_installer() {
 			fi
 			
 			# download static release
+			echo "Downloading ..."
 			download "$static_release_file" > fish-static.tar.xz
 
 			# extract and install
-			tar -xJf fish-static.tar.xz
+			echo "Extracting ..."
+			tar -xJf fish-static.tar.xz || (echo "Failed to extract" && exit 1)
 			ls -al
 			rm fish-static.tar.xz
 		;;
@@ -370,10 +376,14 @@ run_installer() {
 		;;
 	esac
 
-	echo "installer completed" >> "$installer_log"
+	echo "installer completed"
 }
 
-main
+installer_log="$HOME/fish_installer.log"
+echo "fish installer started, logging to '$installer_log'"
+touch "$installer_log" || (echo "cannot write to $HOME/fish_installer.log" && exit 55)
+
+main 2>&1 | tee "$installer_log"
 
 exit
 }
