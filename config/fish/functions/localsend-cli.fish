@@ -5,8 +5,8 @@ function localsend-cli -d "LocalSend CLI wrapper with on-demand installation"
 	set argv $argv_copy
 	
 	if not command -q localsend-cli
-		echo "localsend-cli is not installed."
-		__sp_deps_install_localsend_cli; or return $status
+		__sp_test_product_version "localsend-cli" "1.18.2" "localsend-cli --version" "Run: shell-pack-deps install localsend-cli v\$minver"
+		or return $status
 	end
 
 	if command -q localsend-cli

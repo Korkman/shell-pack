@@ -50,11 +50,6 @@ function __sp_deps_install_localsend_cli -d "Install localsend-cli"
 		set tag "v$pversion"
 	end
 	
-	read -P "OK to download and execute release file for $tag? (Y/n)" answer; or set answer n
-	if test -n "$answer"; and test "$answer" != "y"; and test "$answer" != "Y"
-		return 1
-	end
-	
 	set -l dldir ~/.cache/shell-pack-downloads
 	mkdir -p "$dldir"; or return 2
 	cd "$dldir"; or return 2

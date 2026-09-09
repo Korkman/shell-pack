@@ -28,11 +28,6 @@ function __sp_deps_install_bat
 		return 1
 	end
 	
-	read -P "OK to download and execute release file? (Y/n)" answer || set answer n
-	if test "$answer" != "" && test "$answer" != "y" && test "$answer" != "Y"
-		return 1
-	end
-	
 	set dldir ~/.cache/shell-pack-downloads
 	mkdir -p "$dldir" || return 2
 	cd "$dldir" || return 2
