@@ -99,6 +99,19 @@ b       Page file with bat syntax highlighting
         echo "paging %f"
         fishcall ppage --syntax %f
 
+r       Receive (and send) files here with localsend-cli
+        export LOCALSEND_DESTINATION=%d
+        fishcall localsend-cli
+
++ t rdl
+s       Send selected with localsend-cli
+        SERVER_CMD="fishcall localsend-cli"
+        set -- %s
+        for i in "$@" ; do
+            SERVER_CMD="$SERVER_CMD --file '$i'"
+        done
+        eval "$SERVER_CMD"
+
 + t rl
 v       Page file with mcview
         echo "paging %f"

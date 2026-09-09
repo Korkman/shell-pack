@@ -13,6 +13,8 @@ function shell-pack-deps -d \
 			__sp_deps_install_fresh $argv[3] || echo "Failed with status $status"
 		else if test "$argv[2]" = "bat"
 			__sp_deps_install_bat $argv[3] || echo "Failed with status $status"
+		else if test "$argv[2]" = "localsend-cli"
+			__sp_deps_install_localsend_cli $argv[3] || echo "Failed with status $status"
 		else
 			echo "Invalid argument"
 			return 2
