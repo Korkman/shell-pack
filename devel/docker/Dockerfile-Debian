@@ -36,7 +36,7 @@ RUN apt-get install -y python3 || true
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
-RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (less -R "/root/fish_installer.log" && exit 1))
+RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (cat "/root/fish_installer.log" && exit 1))
 
 # nerdlevel 3 by default
 ENV LC_NERDLEVEL=3

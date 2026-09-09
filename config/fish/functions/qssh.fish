@@ -1546,7 +1546,7 @@ function __qssh_multipick -d \
 			if string match -q -- '--quit' $fzf_answer[1]
 				return
 			else if string match -q -- '--help' $fzf_answer[1]
-				__qssh_multipick_help | less -R
+				__qssh_multipick_help | __sp_pager
 				continue
 			else
 				set -e hostlist
