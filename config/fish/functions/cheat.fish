@@ -36,10 +36,18 @@ function cheat
 
 	if [ "$argv[1]" = "--chtsh" ]
 		set -e argv[1]
+		set -l response
 		if test -z "$argv[1]"
-			dl --cache=7d --cache-allow-stale --silent https://cheat.sh | __sp_pager -R
+			dl --cache=7d --cache-allow-stale --silent https://cheat.sh 2>&1 | read -z response
 		else
-			dl --cache=7d --cache-allow-stale --silent https://cheat.sh/$argv[1] | __sp_pager -R
+			dl --cache=7d --cache-allow-stale --silent https://cheat.sh/$argv[1] 2>&1 | read -z response
+		end
+		set -l exit_status $status
+		if test $status -eq 0
+			echo -- $response | __sp_pager -R
+		else
+			echo -- "Error connecting to cheat.sh"
+			return $exit_status
 		end
 		return
 	end
