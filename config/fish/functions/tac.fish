@@ -2,10 +2,10 @@ function tac -d \
 	"tac polyfill when native binary is absent."
 	argparse -- $argv
 	
-	if command -sq tac
+	if command -q tac
 		#echo "native" >&2
-		# erase self so future calls use native tac
-		functions -e tac
+		# skip check for future calls
+		alias tac "command tac"
 		command tac -- $argv
 		return
 	end

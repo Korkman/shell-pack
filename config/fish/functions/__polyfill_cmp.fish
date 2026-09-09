@@ -6,7 +6,7 @@ function __polyfill_cmp -d \
 			
 			# the polyfill self-destructs when the native command becomes available
 			if command -q cmp
-				functions -e cmp
+				alias cmp "command cmp"
 				command cmp $argv
 				return
 			end

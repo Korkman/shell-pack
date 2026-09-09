@@ -1,7 +1,7 @@
 function hostname
 	# the polyfill self-destructs when the native command becomes available
 	if command -q hostname
-		functions -e hostname
+		alias hostname "command hostname"
 		command hostname $argv
 		return
 	end
