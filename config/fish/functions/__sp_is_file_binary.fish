@@ -1,7 +1,8 @@
 function __sp_is_file_binary
 	set -l file (path resolve -- $argv[1])
 	if command -q file
-		if test (file -b --mime-encoding -- $file) = binary
+		set -l result (file -b -s --mime-encoding -- $file)
+		if test "$result" = binary
 			return 0
 		end
 	else
