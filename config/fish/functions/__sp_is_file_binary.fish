@@ -5,8 +5,15 @@ function __sp_is_file_binary
 			return 0
 		end
 	else
-		# no 'file' available: fall back to scanning the first MiB for a NUL byte, stopping at the first one found
-		if tail -c 1048576 -- $file | awk -- 'BEGIN{RS="\0"; nul=0} NR==2{nul=1; exit} END{exit (nul?0:1)}'
+		# no 'file' available: fall back to scanning the first MiB for a NUL byte, reading NUL-delimited records
+		set -l records 0
+		tail -c 1048576 -- $file | while read -z -l chunk
+			set records (math $records + 1)
+			if test $records -gt 1
+				break
+			end
+		end
+		if test $records -gt 1
 			return 0
 		end
 	end
