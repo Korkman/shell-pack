@@ -4,7 +4,7 @@ function qunchroot -d "Tear down bind mounts in chroot"
 	else
 		set targetDir $PWD
 	end
-	set targetDir (realpath "$targetDir")
+	set targetDir (path resolve -- "$targetDir")
 	if ! [ -d "$targetDir" ]
 		echo "Not a valid directory"
 		return 1

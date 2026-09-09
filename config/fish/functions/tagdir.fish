@@ -31,7 +31,7 @@ function tagdir -d "tag cwd to shorten name"
 		return 1
 	end
 	
-	#set tagged_dir (realpath "$tagged_dir")
+	#set tagged_dir (path resolve -- "$tagged_dir")
 	if [ ! -e "$tagged_dir" ]
 		echo "Directory does not exist: $tagged_dir"
 		return 2

@@ -143,7 +143,7 @@ function qmount -d \
 				if test -f "$_flag_tmp_rw"
 					# overlay already exists — verify it still points to the same backing file
 					set -l overlay_backing (qemu-img info --output=json "$_flag_tmp_rw" | grep -oP '"backing-filename":\s*"\K[^"\']+')
-					set -l devdisk_real (realpath "$devdisk")
+					set -l devdisk_real (path resolve -- "$devdisk")
 					if test "$overlay_backing" != "$devdisk_real"
 						echo "Overlay $_flag_tmp_rw exists but its backing file ($overlay_backing) does not match $devdisk_real — refusing to reuse"
 						return 1
@@ -151,7 +151,7 @@ function qmount -d \
 					echo "Reusing existing overlay $_flag_tmp_rw (backing file matches)"
 				else
 					# create a qcow2 overlay at the specified path
-					qemu-img create -f qcow2 -F $qemu_img_format -b (realpath "$devdisk") "$_flag_tmp_rw"
+					qemu-img create -f qcow2 -F $qemu_img_format -b (path resolve -- "$devdisk") "$_flag_tmp_rw"
 					or echo "failed to create overlay at $_flag_tmp_rw" && return 1
 				end
 				set qemu_extra_flags

@@ -18,7 +18,7 @@ function __sp_env_to_fish
 		exit 1
 	end
 
-	set -l sourcefile (builtin realpath $argv[1])
+	set -l sourcefile (path resolve -- $argv[1])
 
 	# Capture environment before sourcing
 	set -l old_env (sh -c 'env -0' | string split0)

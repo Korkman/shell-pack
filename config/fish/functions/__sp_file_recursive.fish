@@ -119,7 +119,7 @@ function __sp_file_recursive -d \
 
 	for i in $result
 		if [ "$paste_absolute_path" = "yes" ]
-			commandline -it -- (string escape -- (realpath -- "$i"))
+			commandline -it -- (string escape -- (path resolve -- "$i"))
 		else
 			commandline -it -- (string escape -- $i)
 		end

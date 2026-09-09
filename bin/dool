@@ -10,7 +10,7 @@
 # this does not load keybinds for non-interactive cases
 load_shell_pack
 
-set realfilename (realpath (status filename))
+set realfilename (path resolve -- (status filename))
 set scriptname (status basename)
 
 # despite all caution, infinite loops can still happen for weird setups (like my dev station)
@@ -24,7 +24,7 @@ set forced_bytes_arg
 # if dstat is available, run it - it might be a different tool (the Red Hat disaster)
 if [ "$scriptname" = "dstat" ]
 	for search in (command -a dstat)
-		if [ (realpath "$search") != "$realfilename" ]
+		if [ (path resolve -- "$search") != "$realfilename" ]
 			set -l cmd $search $argv
 			exec $cmd
 			exit 10 # this should never execute
@@ -43,7 +43,7 @@ if [ -x "$__sp_dir/bin/dool.d/dool" ]
 else
 	# try find globally installed dool, run that
 	for search in (command -a dool)
-		if [ (realpath "$search") != "$realfilename" ]
+		if [ (path resolve -- "$search") != "$realfilename" ]
 			set -l cmd $search $forced_bytes_arg $argv
 			exec $cmd
 			exit 10 # this should never execute
@@ -51,7 +51,7 @@ else
 	end
 	# if not available, fall back to any installed dstat
 	for search in (command -a dstat)
-		if [ (realpath "$search") != "$realfilename" ]
+		if [ (path resolve -- "$search") != "$realfilename" ]
 			set -l cmd $search $argv
 			exec $cmd
 			exit 10 # this should never execute

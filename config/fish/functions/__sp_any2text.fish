@@ -53,7 +53,7 @@ Options:
 			echo -- "Binary file: $input"
 			echo (set_color --bold brwhite)'Content type:'(set_color normal)''
 			if command -sq file
-				set filetype (file -b -- (realpath -- $input))
+				set filetype (file -b -- (path resolve -- $input))
 				echo $filetype
 			else
 				echo "Undetermined ('file' not installed)"

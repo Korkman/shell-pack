@@ -96,7 +96,7 @@ function cfc -d \
 		
 		# if not arg given, prompt for a filename to compress to
 		if test (count $argv) -eq 0
-			read -c '../'(basename (realpath .))".tar.$defext" -P "Compress current dir to filename: " -l answer
+			read -c '../'(basename (path resolve -- .))".tar.$defext" -P "Compress current dir to filename: " -l answer
 			set argv[1] "$answer"
 		end
 		
@@ -105,11 +105,11 @@ function cfc -d \
 			
 			if string match -q -r "^$comprext" "$argv[1]"
 				# only arg is a compressor spec - compressing pwd to a file in the parent dir
-				set src (realpath .)
-				set filename ../(basename (realpath .))".$argv[1]"
+				set src (path resolve -- .)
+				set filename ../(basename (path resolve -- .))".$argv[1]"
 			else if ! string match -q -r "\.$comprext" "$argv[1]"
 				# only arg is a src dir or file (does not end with a compressor ext) - compressing to a file in pwd
-				set src (realpath "$argv[1]")
+				set src (path resolve -- "$argv[1]")
 				if test "$src" = "/"
 					set filename "/rootfs.$defdirext"
 				else if test -d "$src"
@@ -121,17 +121,17 @@ function cfc -d \
 				# only arg is a destination file (name does end with a compressor ext) - compressing pwd to a file
 				if not string match -q -r '/' "$argv[1]"
 					# filename with no path - compressing pwd to specified filename in the parent dir
-					set src (realpath .)
+					set src (path resolve -- .)
 					set filename ../"$argv[1]"
 				else
 					# filename with path - compressing pwd to specified filename
-					set src (realpath .)
+					set src (path resolve -- .)
 					set filename "$argv[1]"
 				end
 			end
 		else if test (count $argv) -eq 2
 			# two args given - src and dest - compressing src to dest
-			set src (realpath "$argv[1]")
+			set src (path resolve -- "$argv[1]")
 			set filename "$argv[2]"
 		else
 			echo "Too many arguments" >&2
@@ -165,10 +165,10 @@ function cfc -d \
 			if string match -q -r "^$comprext" "$argv[1]"
 				# only arg is a compressor spec - compressing pwd to stdout with specified compressor
 				set ext "$argv[1]"
-				set src (realpath .)
+				set src (path resolve -- .)
 			else
 				# only arg is a dir or file - compressing to stdout with matching default compressor
-				set src (realpath "$argv[1]")
+				set src (path resolve -- "$argv[1]")
 				if test -d "$src"
 					set ext "$defdirext"
 				else
@@ -177,7 +177,7 @@ function cfc -d \
 			end
 		else if test (count $argv) -eq 2
 			# two args given - src and compressor spec - compressing src to stdout with specified compressor
-			set src (realpath "$argv[1]")
+			set src (path resolve -- "$argv[1]")
 			set ext "$argv[2]"
 		else
 			echo "Too many arguments" >&2

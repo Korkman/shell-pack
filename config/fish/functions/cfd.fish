@@ -20,7 +20,7 @@ function cfd -d \
 		return 1
 	end >&2
 	
-	set filename (realpath "$argv[1]")
+	set filename (path resolve -- "$argv[1]")
 	set dst "$argv[2]"
 	
 	if ! test -e "$filename"

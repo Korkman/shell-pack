@@ -5,7 +5,7 @@ load_shell_pack
 echo "This script will modify the version number and move tags vX.XX, devel and latest"
 
 set -l cur_ver (shell-pack-version)
-set -l func_path (realpath (functions --details shell-pack-version))
+set -l func_path (path resolve -- (functions --details shell-pack-version))
 
 if ! test -e "$func_path"
 	echo "Something is wrong. You should be driving the shell to update."

@@ -1,5 +1,5 @@
 function __sp_is_file_binary
-	set -l file (realpath -- $argv[1])
+	set -l file (path resolve -- $argv[1])
 	if command -q file
 		if test (file -b --mime-encoding -- $file) = binary
 			return 0

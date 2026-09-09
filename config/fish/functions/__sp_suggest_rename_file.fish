@@ -80,7 +80,7 @@ function __sp_suggest_rename_file -d \
 			set auto_extension "tar.$auto_extension"
 		end
 		
-		set new_output_dir (dirname (realpath "$output_file"))
+		set new_output_dir (dirname (path resolve -- "$output_file"))
 		set new_output_file $new_output_dir"/"(string replace --regex '(\.tar){0,1}\.[^\.]+$' '' -- (basename "$output_file"))".$auto_extension"
 		
 		echo "Filename does not match content type: $mime_type -> .$auto_extension" >&2

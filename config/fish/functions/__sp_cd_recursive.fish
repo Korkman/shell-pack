@@ -71,7 +71,7 @@ function __sp_cd_recursive -d \
 				# paste result
 				set result (string replace --regex '^//paste:' '' -- "$result")
 				if [ "$paste_absolute_path" = "yes" ]
-					set result (realpath "$result")
+					set result (path resolve -- "$result")
 				end
 				commandline --insert (string escape -- "$result")
 				cd -- "$original_dir"

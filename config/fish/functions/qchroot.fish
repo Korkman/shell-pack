@@ -49,7 +49,7 @@ Do not speficy DIRECTORY to use current directory.
 		set su_args $su_args "$_flag_user"
 	end
 	
-	set targetDir (realpath "$targetDir")
+	set targetDir (path resolve -- "$targetDir")
 	if ! [ -d "$targetDir" ]
 		echo "Not a valid directory"
 		return 1
