@@ -38,7 +38,7 @@ x       Extract selected items
             fishcall cfd "$i" || exit
         done
 
-+ t rd & ! f \.zip$ & ! f \.tar\.[^.]+$ & ! f \.tgz$ & ! f \.tb2$ & ! f \.tbz$ & ! f \.tbz2$ & ! f \.tz2$ & ! f \.taz$ & ! f \.tlz$ & ! f \.txz$ & ! f \.tZ$ & ! f \.taZ$ & ! f \.tzst$ & ! f \.cpio$ & ! f \.7z$ & ! f \.gz$ & ! f \.zst$ & ! f \.bz2$ & ! f \.lz4$ & ! f \.lz$ & ! f \.lzma$ & ! f \.lzo$ & ! f \.xz$ & ! f \.Z$
++ t rd & ! f ^\.\.$ & ! f \.zip$ & ! f \.tar\.[^.]+$ & ! f \.tgz$ & ! f \.tb2$ & ! f \.tbz$ & ! f \.tbz2$ & ! f \.tz2$ & ! f \.taz$ & ! f \.tlz$ & ! f \.txz$ & ! f \.tZ$ & ! f \.taZ$ & ! f \.tzst$ & ! f \.cpio$ & ! f \.7z$ & ! f \.gz$ & ! f \.zst$ & ! f \.bz2$ & ! f \.lz4$ & ! f \.lz$ & ! f \.lzma$ & ! f \.lzo$ & ! f \.xz$ & ! f \.Z$
 z       Compress each selected item
         DEST=%{Format: (tar.gz, xz) or space for (tar.)zst}
         for i in %s ; do
@@ -99,12 +99,13 @@ b       Page file with bat syntax highlighting
         echo "paging %f"
         fishcall ppage --syntax %f
 
-r       Receive (and send) files here with localsend-cli
++ ! f ^\.\.$
+r       Receive and send files here (localsend)
         export LOCALSEND_DESTINATION=%d
         fishcall localsend-cli
 
-+ t rdl
-s       Send selected with localsend-cli
++ t rl
+s       Send files (localsend)
         SERVER_CMD="fishcall localsend-cli"
         set -- %s
         for i in "$@" ; do
