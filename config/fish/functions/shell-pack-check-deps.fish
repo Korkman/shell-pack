@@ -31,14 +31,14 @@ function shell-pack-check-deps -d \
 	
 	set __shp_outdated_deps ""
 		
-	__sp_test_product_version "ripgrep" "15.1.0" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
-	__sp_test_product_version "fzf"     "0.70.0" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
-	__sp_test_product_version "fish"    "3.2.1"  "fish --version"     "See https://fishshell.com/"
+	__sp_test_product_version "ripgrep" "15.2.0" "rg --version"       "Run: shell-pack-deps install ripgrep \$minver"
+	__sp_test_product_version "fzf"     "0.74.3" "fzf --version"      "Run: shell-pack-deps install fzf \$minver"
+	__sp_test_product_version "fish"    "3.5.1"  "fish --version"     "Run: upgrade-fish"
 	# skip dool if python3 is not present or outdated
 	if command -q python3 && __sp_test_product_version "python3" "3.6.0" "python3 --version"
 		__sp_test_product_version "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	end
-	__sp_test_product_version "fresh"   "0.4.10" "fresh --version"    "Run: shell-pack-deps install fresh latest"
+	__sp_test_product_version "fresh"   "0.5.1" "fresh --version"    "Run: shell-pack-deps install fresh \$minver"
 	__sp_test_product_version "bat"     "0.26.1"  "bat --version"     "Run: shell-pack-deps install bat \$minver"
 	
 	if test "$__shp_outdated_deps" != ""

@@ -1,10 +1,15 @@
 #! /bin/sh
 {
+	
+if [ "$SHELL" = "" ]
+then
+	SHELL=$(command -v bash || command -v zsh || command -v ksh || command -v sh)
+fi
 
 command -v fish > /dev/null || {
 	echo "Fish not in PATH, installer failed!"
 	cat "$HOME/fish_installer.log"
-	bash -l
+	$SHELL -l
 	exit
 }
 
@@ -50,11 +55,6 @@ onexit_copy_downloads() {
 }
 
 trap onexit_copy_downloads EXIT TERM
-
-if [ "$SHELL" = "" ]
-then
-	SHELL=$(command -v bash || command -v zsh || command -v ksh || command -v sh)
-fi
 
 # autorun installer
 if [ "$AUTOSTART" = "yes" ]; then
