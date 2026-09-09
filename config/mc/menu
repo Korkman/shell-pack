@@ -99,9 +99,12 @@ b       Page file with bat syntax highlighting
         echo "paging %f"
         fishcall ppage --syntax %f
 
-+ ! f ^\.\.$
 r       Receive and send files here (localsend)
-        export LOCALSEND_DESTINATION=%d
+        DEST=%d
+        if [ "$DEST" = ".." ]; then
+            DEST="$PWD"
+        fi
+        export LOCALSEND_DESTINATION="$DEST"
         fishcall localsend-cli
 
 + t rl
@@ -109,6 +112,7 @@ s       Send files (localsend)
         SERVER_CMD="fishcall localsend-cli"
         set -- %s
         for i in "$@" ; do
+            [ "$i" != ".." ] || continue
             SERVER_CMD="$SERVER_CMD --file '$i'"
         done
         eval "$SERVER_CMD"
