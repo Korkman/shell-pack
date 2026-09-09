@@ -1,7 +1,7 @@
 function __sp_pager -d \
 	'Invoke the configured pager'
 
-	argparse 'line=' 'search=' 'prompt=' 'R/raw' 'clear-screen' -- $argv
+	argparse 'line=' 'search=' 'prompt=' 'R/raw' 'clear-screen' 'syntax=?' -- $argv
 	or return
 
 	set -l filename $argv[1]
@@ -51,6 +51,9 @@ function __sp_pager -d \
 			end
 			if set -q _flag_search
 				set -a opts --search="$_flag_search"
+			end
+			if set -q _flag_syntax
+				set -a opts --syntax="$_flag_syntax"
 			end
 			# -R/--raw and --clear-screen are no-ops here: ansi colors are always on and
 			# fzf owns screen redraws; --prompt has no equivalent, so it is dropped

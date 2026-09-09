@@ -97,4 +97,14 @@ f       Follow selected files with tail | grasp
 + t rl
 b       Page file with bat syntax highlighting
         echo "paging %f"
-        fishcall ppage --syntax %s
+        fishcall ppage --syntax %f
+
++ t rl
+v       Page file with mcview
+        echo "paging %f"
+        fishcall mcview %f
+
++ t rl
+e       Edit file with mcedit
+        echo "paging %f"
+        fishcall mcedit %f

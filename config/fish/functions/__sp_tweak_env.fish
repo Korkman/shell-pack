@@ -128,6 +128,7 @@ function __sp_tweak_user_defaults -d \
 		LESS \
 		LESS_TERMCAP_so \
 		LESS_TERMCAP_se \
+		LESSOPEN LESSCLOSE \
 		VIRTUAL_ENV_DISABLE_PROMPT \
 		RIPGREP_CONFIG_PATH \
 	;
@@ -172,6 +173,18 @@ function __sp_tweak_user_defaults -d \
 				set -x -g LESS_TERMCAP_so (set_color -b "ff0" && set_color "black")
 			case LESS_TERMCAP_se
 				set -x -g LESS_TERMCAP_se (set_color normal)
+			case LESSOPEN
+				if command -sq lesspipe
+					set -x -g LESSOPEN "| "(command -s lesspipe)" %s"
+				else
+					set -x -g LESSOPEN ""
+				end
+			case LESSCLOSE
+				if command -sq lesspipe
+					set -x -g LESSCLOSE ""(command -s lesspipe)" %s %s"
+				else
+					set -x -g LESSCLOSE ""
+				end
 			case VIRTUAL_ENV_DISABLE_PROMPT
 				# prompt already sports VIRTUAL_ENV support, disable activate.fish version
 				set -g VIRTUAL_ENV_DISABLE_PROMPT yes
@@ -278,6 +291,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_stat_has_c_format "__sp_cap_stat_has_c_format"
 	set -g __cap_italics "__sp_cap_italics"
 	set -g __cap_tail_has_r "__sp_cap_tail_has_r"
+	set -g __cap_hexdump_has_color "__sp_cap_hexdump_has_color"
 end
 
 function __sp_tweak_keybinds \
