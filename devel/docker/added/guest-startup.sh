@@ -25,10 +25,14 @@ if [ -e ~/Downloads/bat ]
 then
 	mv ~/Downloads/bat /usr/local/bin/bat
 fi
+if [ -e ~/Downloads/localsend-cli ]
+then
+	mv ~/Downloads/localsend-cli /usr/local/bin/localsend-cli
+fi
 
 onexit_copy_downloads() {
 	# copy back downloaded files for later use
-	CACHED_FILES="rg fzf fresh bat dool.d"
+	CACHED_FILES="rg fzf fresh bat localsend-cli dool.d"
 	for cached_file in $CACHED_FILES
 	do
 		if [ -e ~/.local/share/shell-pack/bin/$cached_file ]
