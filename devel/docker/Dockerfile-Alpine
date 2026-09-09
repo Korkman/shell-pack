@@ -14,6 +14,8 @@ RUN apk add openssh-server || true
 RUN apk add 7zip || true
 RUN apk add zstd || true
 RUN apk add shadow || true
+# ancient busybox wget cannot connect to github anymore, so we must install a true release
+#RUN wget -O- https://api.github.com/repos/fish-shell/fish-shell/releases/latest >/dev/null || apk add wget
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
