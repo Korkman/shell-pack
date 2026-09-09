@@ -164,7 +164,11 @@ function __spt -d \
 			echo -n "00ff87"
 			return
 		case unavailable_option
-			$scolor --dim --strikethrough
+			if test (__sp_vercmp "$FISH_VERSION" "4.4.0") -gt 0
+				$scolor --dim --strikethrough
+			else
+				$scolor --dim
+			end
 			return
 		case link
 			$scolor --underline "00afff"
