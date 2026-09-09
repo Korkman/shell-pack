@@ -50,10 +50,10 @@ Options:
 		set -l filetype
 		set -l fileintro
 		begin
-			echo -- $input
-			echo (set_color --bold brwhite)'Binary file type:'(set_color normal)''
+			echo -- "Binary file: $input"
+			echo (set_color --bold brwhite)'Content type:'(set_color normal)''
 			if command -sq file
-				set filetype (file -b -- $input)
+				set filetype (file -b -- (realpath -- $input))
 				echo $filetype
 			else
 				echo "Undetermined ('file' not installed)"
