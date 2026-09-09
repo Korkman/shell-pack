@@ -38,7 +38,7 @@ function shell-pack-check-deps -d \
 	if command -q python3 && __sp_test_product_version "python3" "3.6.0" "python3 --version"
 		__sp_test_product_version "dool"    "1.3.8"  "dool --version"       "Run: shell-pack-deps install dool \$minver"
 	end
-	__sp_test_product_version "fresh"   "0.5.1" "fresh --version"    "Run: shell-pack-deps install fresh \$minver"
+	__sp_test_product_version "fresh"   "0.5.1" "fresh --version"    "Run: shell-pack-deps install fresh v\$minver"
 	__sp_test_product_version "bat"     "0.26.1"  "bat --version"     "Run: shell-pack-deps install bat \$minver"
 	
 	if test "$__shp_outdated_deps" != ""
