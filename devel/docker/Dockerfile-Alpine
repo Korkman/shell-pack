@@ -7,19 +7,19 @@ RUN apk update
 # shell-pack does run with nothing but busybox if it has to.
 # comment out these packages for a "survival mode" container.
 # some packages are attempted individually as they don't exist in ancient releases.
-RUN apk add coreutils procps findutils wget mc htop curl netcat-openbsd bash ncurses \
-    openssh-client tmux screen xz zip gzip bzip2 tar git
-RUN apk add python3 || true
-RUN apk add openssh-server || true
-RUN apk add 7zip || true
-RUN apk add zstd || true
-RUN apk add shadow || true
-# ancient busybox wget cannot connect to github anymore, so we must install a true release
-#RUN wget -O- https://api.github.com/repos/fish-shell/fish-shell/releases/latest >/dev/null || apk add wget
+#RUN apk add coreutils procps findutils wget mc htop curl netcat-openbsd bash ncurses \
+#    openssh-client tmux screen xz zip gzip bzip2 tar git
+#RUN apk add python3 || true
+#RUN apk add openssh-server || true
+#RUN apk add 7zip || true
+#RUN apk add zstd || true
+#RUN apk add shadow || true
+# ancient busybox wget cannot connect to github anymore, so we must install curl
+RUN wget -O- https://api.github.com/repos/fish-shell/fish-shell/releases/latest >/dev/null || apk add curl
 
 COPY added/fish-installer.sh /fish-installer.sh
 ARG INSTALL_FISH=static-latest
-RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh || (cat "/root/fish_installer.log" && exit 1))
+RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fish-installer.sh)
 
 # nerdlevel 3 by default, shell-pack pager
 ENV LC_NERDLEVEL=3
