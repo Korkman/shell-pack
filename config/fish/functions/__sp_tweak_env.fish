@@ -197,6 +197,29 @@ function __sp_tweak_user_defaults -d \
 			set -g __sp_tweaked_env_vars (string join ' ' (string match -v -- "$var" (string split ' ' -- $__sp_tweaked_env_vars)))
 		end
 	end
+	
+	# initial run to set / unset SYSTEMD_PAGERSECURE
+	__sp_tweak_systemd_pagersecure
+end
+
+function __sp_tweak_systemd_pagersecure -v SYSTEMD_PAGER -v PAGER -d \
+	"Keep SYSTEMD_PAGERSECURE in sync with internal whitelist of secure pagers"
+	
+	# "secure" in the sense that the pager won't allow the user to spawn arbitrary processes (grasp / ppage are not designed to do so)
+	# see https://www.freedesktop.org/software/systemd/man/latest/systemd-inhibit.html#%24SYSTEMD_PAGERSECURE
+	
+	if test -z "$SYSTEMD_PAGER"
+		set --no-event -f SYSTEMD_PAGER "$PAGER"
+	end
+	
+	# blacklist:
+	# 'more' from util-linux allows command execution with '!'
+	# whitelist:
+	if contains -- "$SYSTEMD_PAGER" less ppage grasp
+		set -x -g SYSTEMD_PAGERSECURE 1
+	else
+		set -e -g SYSTEMD_PAGERSECURE
+	end
 end
 
 function __sp_tweak_aliases
