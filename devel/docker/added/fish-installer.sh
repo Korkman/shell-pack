@@ -72,9 +72,9 @@ main() {
 
 download() {
 	if command -v curl > /dev/null; then
-		curl -fSsL "$1" || echo "Download failed ($?), cannot continue: $1" >&2 && exit 1
+		curl -fSsL "$1" || (echo "Download failed ($?), cannot continue: $1"; exit 1)
 	elif command -v wget > /dev/null; then
-		wget -qO- "$1" || echo "Download failed ($?), cannot continue: $1" >&2 && exit 1
+		wget -qO- "$1" || (echo "Download failed ($?), cannot continue: $1"; exit 1)
 	else
 		echo "Neither curl nor wget is available, please install one of them and re-run" >&2
 		exit 1
@@ -361,7 +361,7 @@ run_installer() {
 			fi
 			
 			# download static release
-			echo "Downloading ..."
+			echo "Downloading $static_release_file ..."
 			download "$static_release_file" > fish-static.tar.xz
 			echo "Result: $?"
 
@@ -381,7 +381,7 @@ run_installer() {
 }
 
 echo "fish installer started"
-main
+main 2>&1
 
 exit
 }
