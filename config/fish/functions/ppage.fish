@@ -10,8 +10,8 @@ function ppage -d \
 		echo
 		echo "Options:"
 		echo
-		echo "  --tail=[BYTES], -t[BYTES]"
-		echo "      Change input limit to BYTES."
+		echo "  --tail=[COUNT], -t[COUNT]"
+		echo "      Set a tail limit to COUNT (default for ppage is none)."
 		echo
 		echo "  --line-number, -n"
 		echo "      Add line numbers."

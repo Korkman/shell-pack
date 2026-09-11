@@ -56,7 +56,7 @@ function grasp -d \
 		set GRASP_PAGER yes
 	end
 	
-	if ! set -q GRASP_PAGER
+	if ! set -q GRASP_PAGER || set -q _flag_tail
 		if set -q _flag_tail
 			set GRASP_TAIL $_flag_tail
 		else if not set -q GRASP_TAIL
@@ -202,12 +202,11 @@ function grasp -d \
 		--height=100%
 	# adaptive height options removed as they hang indefinitely with small, open stdin (tail -n10 -f /etc/services)
 	
-	if not set -q GRASP_PAGER
-		# pager mode already bounds memory via the byte-size limit applied to its input
+	if not set -q GRASP_PAGER || set -q _flag_tail
+		# pager mode uses tail cmd
 		set -a fzf_defaults --tail=$GRASP_TAIL
 	end
 	
-		
 	# start in compact mode with invisible search (q exits), unless a query was pre-filled
 	set -l start_bind 'start:trigger(esc)+hide-header'
 	if set -q _flag_search

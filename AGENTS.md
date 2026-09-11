@@ -63,6 +63,7 @@ To compare numeric values in fish:
 ## Other hints
 
 - `wc -c` is not the preferred method to determine filesize, delegate to `__sp_get_filesize` instead
+- `mktemp` has a richer, more portable equivalent __sp_mkuniq
 
 ## Repository layout
 

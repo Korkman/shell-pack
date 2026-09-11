@@ -131,6 +131,7 @@ function __sp_tweak_user_defaults -d \
 		LESSOPEN LESSCLOSE \
 		VIRTUAL_ENV_DISABLE_PROMPT \
 		RIPGREP_CONFIG_PATH \
+		SYSTEMD_PAGER \
 	;
 	
 	# collect unset variables (user did not set them, we take control)
@@ -160,6 +161,8 @@ function __sp_tweak_user_defaults -d \
 				# and nothing else, people may rely on that.
 				#set -x -g PAGER "less"
 				set -x -g PAGER "ppage"
+			case SYSTEMD_PAGER
+				set -x -g SYSTEMD_PAGER "ppage-if-much"
 			case LESS
 				# less configured in a "git log" compatible way
 				# (it uses $LESS internally, but uses our $LESS if defined)
@@ -215,7 +218,7 @@ function __sp_tweak_systemd_pagersecure -v SYSTEMD_PAGER -v PAGER -d \
 	# blacklist:
 	# 'more' from util-linux allows command execution with '!'
 	# whitelist:
-	if contains -- "$SYSTEMD_PAGER" less ppage grasp
+	if contains -- "$SYSTEMD_PAGER" less ppage grasp ppage-if-much
 		set -x -g SYSTEMD_PAGERSECURE 1
 	else
 		set -e -g SYSTEMD_PAGERSECURE
