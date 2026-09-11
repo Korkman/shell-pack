@@ -14,16 +14,16 @@ function ppage-if-much -d \
 	set -l cnt 0
 	set -l must_page 0
 	while read -l chunk
-		# instant output to shell
-		echo "$chunk"
-		# secondary output to buffer
+		# instant output to shell. cheating with stderr as stdout seems to be buffered.
 		echo "$chunk" >&2
+		# secondary output to buffer
+		echo "$chunk"
 		set cnt (math $cnt + 1)
 		if test $cnt -gt $max_lines
 			set must_page 1
 			break
 		end
-	end 2>| read -z -l buffered
+	end | read -z -l buffered
 	
 	if test $must_page = 1
 		# more input is still pending: hand off the buffered lines plus the rest of stdin to the pager
