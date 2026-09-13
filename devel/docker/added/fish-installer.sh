@@ -126,10 +126,10 @@ read_os_release() {
 		ls "/etc"
 		exit 1
 	fi
-	echo "detected os: $distro-$distro_version"
+	echo "detected os: $distro-$distro_version" >&2
 	if [ "$distro_like" != "" ]
 	then
-		echo "os like: $distro_like"
+		echo "os like: $distro_like" >&2
 	fi
 }
 
