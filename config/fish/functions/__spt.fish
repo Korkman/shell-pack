@@ -158,7 +158,7 @@ function __spt -d \
 			$scolor "ff0"
 			return
 		case fish_command_fg linenumber
-			$scolor "00ff87"
+			$scolor "888888"
 			return
 		case fish_command_color
 			echo -n "00ff87"

@@ -36,6 +36,9 @@ function grasp -d \
 		echo "      Force bat syntax highlighting, ignoring the size threshold and stream-mode skip."
 		echo "      Optionally pass LANGUAGE to bat's -l flag (e.g. --syntax=json)."
 		echo
+		echo "  --no-syntax"
+		echo "      Disable bat syntax highlighting."
+		echo
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
@@ -52,7 +55,7 @@ function grasp -d \
 	#argparse --move-unknown --stop-nonopt 'F/quit-if-one-screen'
 	# TODO: proxy through ppage-if-much with all options passed throuh. incompatible with --search and --line.
 	
-	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'search=' -- $argv
+	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' -- $argv
 	
 	if set -q _flag_line && ! string match -qr '^[1-9][0-9]*$' -- $_flag_line
 		echo "Error: --line requires a positive integer argument" >&2
@@ -307,6 +310,7 @@ function grasp -d \
 		
 		# leave cmd execution (and killing of it) to fzf
 		__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
+		set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
 	end
 	
 	# restrict grasptitle to 80% of terminal width
@@ -322,7 +326,9 @@ function grasp -d \
 	
 	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
 		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
-		if test -n "$_flag_syntax"
+		if set -q _flag_no_syntax
+			set -a bat_cmd -l txt
+		else if test -n "$_flag_syntax"
 			set -a bat_cmd -l $_flag_syntax
 		else if test -n $bat_filename
 			set -a bat_cmd --file-name=$bat_filename
@@ -332,20 +338,28 @@ function grasp -d \
 		end
 	end
 	if set -q FZF_DEFAULT_COMMAND
-		# file mode
+		# file mode: pass FZF_DEFAULT_COMMAND for fish to invoke (enables refresh)
+
+		# add preprocessors to pipe
 		if set -q bat_cmd
 			set bat_cmd (__sp_quote_args $bat_cmd)
-			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | $bat_cmd 2>&1"
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | $bat_cmd 2>&1"
 		else if set -q _flag_line_number
-			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | fishcall __sp_linenumbers -w auto 2>&1"
+			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND | fishcall __sp_linenumbers 2>&1"
 		end
 		fzf
 	else
-		# stream mode
+		# stream mode: pass STDIN to fzf
+		
+		# add preprocessors to pipe
 		if set -q bat_cmd
 			$bat_cmd 2>&1 | fzf
 		else
-			fzf
+			if set -q _flag_line_number
+				__sp_linenumbers 2>&1 | fzf
+			else
+				fzf
+			end
 		end
 	end
 	
