@@ -1,10 +1,7 @@
 function ppage-if-much -d \
-	'Print stdin as-is if it fits within $LINES, otherwise page it through ppage, restricted to PPAGE_IF_MUCH_TAIL lines (default: 500000)'
+	'Print stdin as-is if it fits within $LINES, otherwise page it through ppage'
 	# specifically passing to ppage so this pager can safely be used for systemd
 	# caveat: line wrap is not detected (maybe possible with `fold`, if it supports ANSI)
-	
-	test -n "$PPAGE_IF_MUCH_TAIL"
-	or set -l PPAGE_IF_MUCH_TAIL 500000
 	
 	set -l max_lines 24
 	test -z "$LINES"
@@ -35,7 +32,7 @@ function ppage-if-much -d \
 		set -l tmp (__sp_mkuniq --xdg-runtime ppage-if-much)
 		printf '%s' $buffered > "$tmp"
 		# concat buffer and combine with stdin
-		cat "$tmp" - | ppage --tail=$PPAGE_IF_MUCH_TAIL
+		cat "$tmp" - | ppage
 		rm -f "$tmp"
 	else
 		return 0

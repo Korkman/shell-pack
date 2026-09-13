@@ -1,28 +1,35 @@
 function grasp -d \
-"Pipe live stream or file through 'fzf' for searching and filtering."
-	if test "$argv[1]" = "--help"
-		echo "Usage: grasp FILE [ OPTIONS ]"
-		echo "   or: cat FILE | grasp [ OPTIONS ]"
-		echo
+"Pipe live stream or page file through 'bat' and 'fzf' for searching and filtering."
+	set -l default_lines 10000
+	set -l default_lines_pager 500000
+	set -l default_bat_max_size 1048576
+
+	begin
 		echo -e (functions -vD (status current-function))[5]
 		echo
-		echo "Limited to 10000 lines by default (GRASP_TAIL)."
+		echo "Usage: grasp [...OPTIONS] COMMAND [...ARGS]"
+		echo "       grasp [...OPTIONS] FILE"
+		echo "       cat | grasp [...OPTIONS]"
+		echo " Shortcut for --pager"
+		echo "       ppage [...OPTIONS] FILE"
+		echo
+		echo "COMMAND will only be executed if it is not a FILE. Otherwise, FILE will be tailed."
+		echo
+		echo "Limited to $default_lines lines by default ($default_lines_pager when --pager)."
 		echo
 		echo "Options:"
 		echo
 		echo "  --tail=[COUNT], -t[COUNT]"
-		echo "      Change line limit to COUNT."
+		echo "      Change line limit to COUNT.."
 		echo
 		echo "  --line-number, -n"
 		echo "      Add line numbers."
-		echo "      When reading from STDIN, use 'alt-l' hotkey instead (works on a snapshot)."
 		echo
 		echo "  --line=N, -lN"
 		echo "      Jump to line N on startup."
 		echo
 		echo "  --pager, -p"
-		echo "      Use as pager. Starts at the top and limits memory use by bytes instead of lines."
-		echo "      If the input exceeds the byte limit, offers to open it in \$VISUAL/\$EDITOR or 'less' instead."
+		echo "      Use as pager. Starts at the top."
 		echo "      'ppage' is a shorthand for this."
 		echo
 		echo "  --syntax[=LANGUAGE]"
@@ -32,14 +39,19 @@ function grasp -d \
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
-		echo "When launched, hit 'alt-b' for a list of keybinds. 'q' quits, '/' opens search."
-		return 1
+		echo "Once launched, hit 'alt-b' for a list of keybinds. 'q' quits, '/' opens search."
+	end | read -z -l usage
+	
+	if test "$argv[1]" = "--help"
+		echo $usage
+		return 0
 	end >&2
 	
-	set -l default_lines 10000
-	set -l default_bat_max_size 1048576
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
+	#argparse --move-unknown --stop-nonopt 'F/quit-if-one-screen'
+	# TODO: proxy through ppage-if-much with all options passed throuh. incompatible with --search and --line.
+	
 	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'search=' -- $argv
 	
 	if set -q _flag_line && ! string match -qr '^[1-9][0-9]*$' -- $_flag_line
@@ -56,14 +68,16 @@ function grasp -d \
 		set GRASP_PAGER yes
 	end
 	
-	if ! set -q GRASP_PAGER || set -q _flag_tail
-		if set -q _flag_tail
-			set GRASP_TAIL $_flag_tail
-		else if not set -q GRASP_TAIL
+	if set -q _flag_tail
+		set GRASP_TAIL $_flag_tail
+	else if not set -q GRASP_TAIL
+		if set -q GRASP_PAGER
+			set GRASP_TAIL $default_lines_pager
+		else
 			set GRASP_TAIL $default_lines
 		end
 	end
-
+	
 	# above this many bytes, skip bat (no syntax highlighting) for a file
 	if not set -q GRASP_BAT_MAX_SIZE
 		set GRASP_BAT_MAX_SIZE $default_bat_max_size
@@ -77,20 +91,7 @@ function grasp -d \
 	end
 	
 	if test (count $argv) -eq 0 && test -t 0
-		begin
-			echo "Usage: grasp [...OPTIONS] COMMAND [...ARGS]"
-			echo "       grasp [...OPTIONS] FILE"
-			echo "       cat | grasp [...OPTIONS]"
-			echo
-			echo "COMMAND will only be executed if it is not a FILE. Otherwise, FILE will be tailed."
-			echo 
-			echo "Options:"
-			echo "  -nN, --tail=N   Max number of lines in memory (default: $default_lines)"
-			echo "  -p, --pager     'pager' mode: behave more like a pager with search (voids --tail)"
-			echo "  --line=N        Jump to line N on startup"
-			echo
-			echo "Alias ppage invokes grasp with --pager."
-		end >&2
+		echo $usage >&2
 		return 1
 	end
 	
@@ -104,7 +105,6 @@ function grasp -d \
 		echo 'alt-q:exit f1:help-syntax'
 		echo 'alt-c:clear-query'
 		echo 'alt-w:word-wrap alt-o:sort-best'
-		echo 'alt-l:line-numbers'
 		echo 'alt-up/dn:jump-selected'
 		echo 'f2/f3/alt-p/-n:jump-match'
 		echo 'alt-page-up/dn:begin/end'
@@ -124,31 +124,11 @@ function grasp -d \
 	# start off with generic defaults
 	__sp_fzf_defaults --exact --compact
 	
-	# what command to use for repeatedly cat'ing the input
-	set -l recat_cmd
-	if set -q GRASP_PAGER
-		set recat_cmd "(_f={*f}; cat \"\$_f\"; rm -f \"\$_f\")"
-	else
-		set recat_cmd "(_f={*f}; if [ -x tac ]; then tac -- \"\$_f\"; else fishcall tac -- \"\$_f\"; fi; rm -f \"\$_f\")"
-	end
-
-	set -l columns_margin 2
 	if set -q _flag_line_number
-		# increase columns_margin to accommodate line numbers when enabled, so `ppage man man` doesn't wrap
-		set columns_margin 8
-		set GRASP_LN 1
+		# reduce $COLUMS to accommodate line numbers when enabled, so `ppage man man` doesn't wrap
+		set -x COLUMNS (math $COLUMNS - 8)
 	end
 	
-	# fzf toggle command for line numbers
-	set -l linenumber_cmd
-	if test "$GRASP_LN" = "1"
-		# line numbers present, must be undone
-		set linenumber_cmd 'fishcall eval "__sp_linenumbers --undo | GRASP_LN=0 ppage"'
-	else
-		# line numbers not preset, adds them via ripgrep
-		set linenumber_cmd 'fishcall eval "__sp_linenumbers -w auto -t $FZF_TOTAL_COUNT | GRASP_LN=1 ppage"'
-	end
-
 	# fzf command for adding query history
 	set -l write_history_cmd
 	if test -e "$GRASP_HIST_FILE" && test ! -w "$GRASP_HIST_FILE"
@@ -182,7 +162,6 @@ function grasp -d \
 		'f2,p,N:up-match+track-current,' \
 		'f3,n,ctrl-g:down-match+track-current,' \
 		'tab:toggle+down+track-current,' \
-		'alt-l,l:become('$recat_cmd' | '$linenumber_cmd'),' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q,f10:abort,' \
 		'alt-up,alt-.:prev-history,' \
@@ -341,12 +320,15 @@ function grasp -d \
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
-	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; end
+	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
 		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
 		if test -n "$_flag_syntax"
 			set -a bat_cmd -l $_flag_syntax
 		else if test -n $bat_filename
 			set -a bat_cmd --file-name=$bat_filename
+		end
+		if set -q _flag_line_number
+			set -a bat_cmd --number
 		end
 	end
 	if set -q FZF_DEFAULT_COMMAND
@@ -354,8 +336,7 @@ function grasp -d \
 		if set -q bat_cmd
 			set bat_cmd (__sp_quote_args $bat_cmd)
 			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | $bat_cmd 2>&1"
-		end
-		if set -q _flag_line_number
+		else if set -q _flag_line_number
 			set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1 | fishcall __sp_linenumbers -w auto 2>&1"
 		end
 		fzf

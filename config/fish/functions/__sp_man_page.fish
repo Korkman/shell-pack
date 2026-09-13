@@ -5,6 +5,11 @@ function __sp_man_page
 		set do_reconfigure yes
 		set argv (string match --invert --entire --regex '^--reconfigure$' -- $argv)
 	end
+	# same for --line-number
+	if contains -- --line-number $argv
+		set _flag_line_number
+		set argv (string match --invert --entire --regex '^--line-number$' -- $argv)
+	end
 	
 	# enable italics if you have them
 	if set -q __cap_italics && $__cap_italics
@@ -53,6 +58,12 @@ function __sp_man_page
 		set pager $PAGER
 	else
 		set pager ppage
+	end
+	
+	if test "$pager" = 'ppage'
+		if set -q _flag_line_number
+			set -a pager --line-number
+		end
 	end
 	
 	if command -q man
