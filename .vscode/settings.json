@@ -1,4 +1,7 @@
 {
 	"editor.tabSize": 3,
-	"files.defaultLanguage": "fish"
+	"files.defaultLanguage": "fish",
+	"files.associations": {
+		"**/fresh/config.json": "jsonc"
+	}
 }

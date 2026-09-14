@@ -229,5 +229,13 @@
       "use_tabs": false
     }
   },
-  "theme": "shell-pack"
+  "theme": "shell-pack",
+  "plugins": {
+    "welcome": {
+      "enabled": false
+    },
+    "welcome_screen": {
+      "enabled": false
+    }
+  }
 }
