@@ -105,17 +105,18 @@ r       Receive and send files here (localsend)
             DEST="$PWD"
         fi
         export LOCALSEND_DESTINATION="$DEST"
-        fishcall localsend-cli
+        fish -i -c "localsend-cli"
 
 + t rl
 s       Send files (localsend)
-        SERVER_CMD="fishcall localsend-cli"
+        SERVER_CMD="localsend-cli"
         set -- %s
         for i in "$@" ; do
             [ "$i" != ".." ] || continue
-            SERVER_CMD="$SERVER_CMD --file '$i'"
+            esc=$(printf '%%s' "$i" | sed "s/'/'\\\\''/g")
+            SERVER_CMD="$SERVER_CMD --file '$esc'"
         done
-        eval "$SERVER_CMD"
+        fish -i -c "$SERVER_CMD"
 
 + t rl
 v       Page file with mcview
