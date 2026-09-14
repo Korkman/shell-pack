@@ -3,6 +3,42 @@ function grasp -d \
 	set -l default_lines 10000
 	set -l default_lines_pager 500000
 	set -l default_bat_max_size 1048576
+	begin
+		echo "  space, /, :          New search"
+		echo "  +                    Edit search"
+		echo "  esc                  Clear query, hide search box, quit"
+		echo "  alt-q, q, f10        Quit"
+		echo "  alt-w, w             Toggle word-wrap"
+		echo "  alt-a                Select all lines"
+		echo "  alt-x                Deselect all lines"
+		echo "  alt-s, s             Print selected line(s) and exit"
+		echo "  alt-S, S             Save selected line(s) to \$GRASP_DUMPFILE"
+		echo "  alt-m, m             Print all matched (filtered) line(s) and exit"
+		echo "  alt-M, M             Select and save all matched lines to \$GRASP_DUMPFILE"
+		echo "  alt-f, f             Toggle filter showing only matched lines"
+		echo "  alt-o                Toggle sort best up (only when filtered)"
+		echo "  alt-t, t             Toggle tracking of current line as new input arrives"
+		echo "  tab                  Toggle selection of current line, move down"
+		echo "  up / down            Move selection up/down"
+		echo "  shift-up / shift-down  Page up/down"
+		echo "  page-up / page-down  Page up/down"
+		echo "  alt-up / alt-down    Move selection up/down without moving cursor"
+		echo "  g, alt-shift-up, shift-page-up, alt-page-up        Jump to first line"
+		echo "  G, alt-shift-down, shift-page-down, alt-page-down  Jump to last line"
+		echo "  p, N, f2, alt-p, alt-N   Jump to previous fzf match"
+		echo "  n, f3, ctrl-g, alt-n     Jump to next fzf match"
+		echo "  alt-l                Jump to the line number typed at the end of the query"
+		echo "  alt-up / alt-.       Previous query from search history (search box shown)"
+		echo "  alt-down / alt-,     Next query from search history (search box shown)"
+		echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
+		echo "  alt-h, f1            Open a cheat-sheet search for the current query"
+		echo "  alt-b, b             Toggle this keybind list"
+		echo "  ctrl-r, f5           Reload (when FILE or COMMAND was passed)"
+		echo "  alt-e, f4            Edit current line in \$EDITOR (when FILE was passed)"
+		echo
+		echo "  Solo keys (q, c, w, ...) are only usable when the search box is hidden;"
+		echo "  otherwise use their alt- combo (alt-q, alt-c, alt-w, ...)."
+	end | read -z -l usage_keybinds
 
 	begin
 		echo -e (functions -vD (status current-function))[5]
@@ -42,20 +78,31 @@ function grasp -d \
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
-		echo "Once launched, hit 'alt-b' for a list of keybinds. 'q' quits, '/' opens search."
+		echo "Once launched, hit 'alt-b' for a condensed list of these keybinds:"
+		echo
+		echo $usage_keybinds
+		echo
 	end | read -z -l usage
-	
-	if test "$argv[1]" = "--help"
-		echo $usage
-		return 0
-	end >&2
 	
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
 	#argparse --move-unknown --stop-nonopt 'F/quit-if-one-screen'
 	# TODO: proxy through ppage-if-much with all options passed throuh. incompatible with --search and --line.
 	
-	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' -- $argv
+	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	
+	# these keys are only bound while the search input is hidden
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+'
+	
+	if set -q _flag_fzf_callback
+		eval "$_flag_fzf_callback"
+		return
+	end
+	
+	if set -q _flag_help
+		echo $usage
+		return 0
+	end >&2
 	
 	if set -q _flag_line && ! string match -qr '^[1-9][0-9]*$' -- $_flag_line
 		echo "Error: --line requires a positive integer argument" >&2
@@ -104,17 +151,17 @@ function grasp -d \
 	end
 	
 	begin
-		echo 'slash/spc:show-search esc:hide-search'
+		echo 'slash/spc:show-search esc:cancel'
 		echo 'alt-q:exit f1:help-syntax'
-		echo 'alt-c:clear-query'
 		echo 'alt-w:word-wrap alt-o:sort-best'
 		echo 'alt-up/dn:jump-selected'
 		echo 'f2/f3/alt-p/-n:jump-match'
+		echo 'alt-l:jump-to-line-in-query'
 		echo 'alt-page-up/dn:begin/end'
 		echo 'alt-f:(un)filter'
 		echo 'alt-s/-S:print-/save-selected'
 		echo 'alt-m/-M:print-/save-matched'
-		echo 'alt-a:select-all alt-n:deselect-all'
+		echo 'alt-a:select-all alt-x:deselect-all'
 		echo 'alt-up/dn:query-history'
 		echo 'alt-y/dbl-clk:to-clipboard'
 		if test (count $argv) -gt 0
@@ -142,11 +189,12 @@ function grasp -d \
 		set write_history_cmd '+execute-silent([ -z {q} ] && exit; [ ! -e "$GRASP_HIST_FILE" ] && last="" || last=$(tail -n1 "$GRASP_HIST_FILE"); [ "$last" = {q} ] && exit; echo {q} >> "$GRASP_HIST_FILE")'
 	end
 
-	# these keys are only bound while the search input is hidden
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r'
+	# command to loop back to this function for callbacks
+	set -l callback_cmd 'fishcall grasp --fzf-callback'
+	
 	# main fzf keybinds
 	set -l fzf_binds (printf %s \
-		'f1,alt-h:execute(fishcall cheat --fzf-query),' \
+		'f1,alt-h:execute('$callback_cmd' __sp_grasp_callback_help),' \
 		'alt-w,w:toggle-wrap-word,' \
 		'alt-t,t:toggle-track-current,' \
 		'alt-S,S:execute-silent(cat {+f} > "$GRASP_DUMPFILE")+become(printf %s\\\\n "Saved to $GRASP_DUMPFILE"; exit 50),' \
@@ -154,7 +202,7 @@ function grasp -d \
 		'alt-s,s:accept,' \
 		'alt-m,m:disable-raw+select-all+accept,' \
 		'alt-a:select-all,' \
-		'alt-n:deselect-all,' \
+		'alt-x:deselect-all,' \
 		'alt-o:toggle-sort,' \
 		'shift-up:page-up+track-current,shift-down:page-down+track-current,' \
 		'alt-shift-up,shift-page-up,alt-page-up,g:first+track-current,alt-shift-down,shift-page-down,alt-page-down,G:last+track-current,' \
@@ -162,16 +210,18 @@ function grasp -d \
 		'page-up:page-up+track-current,page-down:page-down+track-current,' \
 		'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
 		'left-click:track-current,right-click:select+track-current,' \
-		'f2,p,N:up-match+track-current,' \
-		'f3,n,ctrl-g:down-match+track-current,' \
+		'alt-N,alt-p,f2,p,N:up-match+track-current,' \
+		'alt-n,f3,n,ctrl-g:down-match+track-current,' \
+		'alt-l:transform('$callback_cmd' __sp_grasp_callback_line_jump),' \
 		'tab:toggle+down+track-current,' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q,f10:abort,' \
 		'alt-up,alt-.:prev-history,' \
 		'alt-down,alt-,:next-history,' \
-		'enter,esc:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
-		':,/,space,ctrl-f,f7:show-input+unbind('$pager_mode_keys'),' \
-		'alt-c,c:show-input+clear-query+hide-input+rebind('$pager_mode_keys'),' \
+		'esc:transform('$callback_cmd' __sp_grasp_callback_escape),' \
+		'enter:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
+		':,/,space,ctrl-f,f7:show-input+clear-query+unbind('$pager_mode_keys'),' \
+		'+:show-input+unbind('$pager_mode_keys'),' \
 		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n")),' \
 		'alt-b,b:toggle-header' \
 	)
@@ -371,3 +421,34 @@ function grasp -d \
 	
 	return 0
 end
+
+function __sp_grasp_callback_escape --no-scope-shadowing
+	if test "$FZF_INPUT_STATE" = "enabled"
+		if test "$FZF_QUERY" = ""
+			echo 'hide-input+rebind('$pager_mode_keys')'
+		else
+			echo 'clear-query'
+		end
+	else
+		echo 'abort'
+	end
+end
+
+function __sp_grasp_callback_help --no-scope-shadowing
+	echo "$usage_keybinds" | __sp_pager
+end
+
+function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
+	"Given a query string, walk it in reverse, strip the trailing run of digits from the query and jump to that line."
+	
+	# TODO: no action when STDIN is open (how to find out?) so "wait" doesn't apply
+	if test "$FZF_INPUT_STATE" = "enabled"
+		set -l digits (string match -r "[0-9]+\$" -- $FZF_QUERY)
+		if test -n "$digits"
+			echo "search()+wait+pos($digits)+hide-input+rebind($pager_mode_keys)"
+		end
+	else
+		echo "show-input+clear-query+unbind($pager_mode_keys)"
+	end
+end
+
