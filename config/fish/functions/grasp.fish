@@ -3,41 +3,61 @@ function grasp -d \
 	set -l default_lines 10000
 	set -l default_lines_pager 500000
 	set -l default_bat_max_size 1048576
+	set -x GRASP_DUMPFILE "$HOME/grasp-saved.txt"
+	# escaping gets difficult when quotes or backslashes are in $HOME. workaround for now.
+	if string match -q --regex -- '(\\\\|")' $GRASP_DUMPFILE
+		echo "Warning: \$HOME has backslashes or quotes" >&2
+		set -x GRASP_DUMPFILE "/tmp/grasp-saved.txt"
+	end
+	
 	begin
+		echo (set_color brwhite --bold)"  PAGING"(set_color normal)
+		echo "  up / down            Move line selection up/down"
+		echo "  pgup/-dn             Page up/down"
+		echo "                       (also: shift-up/-down)"
+		echo "  g, alt-g             Jump to first line"
+		echo "                       (also: alt-shift-up, shift-page-up, alt-page-up)"
+		echo "  G, alt-G             Jump to last line (and follow new input)"
+		echo "                       (also: alt-shift-down, shift-page-down, alt-page-down)"
+		echo "  alt-l                Use search input to jump to line number"
+		echo "                       (also: esc, f10)"
+		echo "  w, alt-w             Toggle word-wrap"
+		echo "  t, alt-t             Toggle tracking of current line on new input"
+		echo "  ctrl-r, f5           Reload content (when FILE or COMMAND was passed)"
+		echo "  alt-e, f4            Edit file in \$EDITOR (when FILE was passed)"
+		echo "  q, alt-q             Quit"
+		echo
+		echo (set_color brwhite --bold)"  MATCHING"(set_color normal)
+		echo
 		echo "  space, /, :          New search"
-		echo "  +                    Edit search"
-		echo "  esc                  Clear query, hide search box, quit"
-		echo "  alt-q, q, f10        Quit"
-		echo "  alt-w, w             Toggle word-wrap"
+		echo "                       (also: ctrl-f)"
+		echo "  +                    Edit search input"
+		echo "  alt-up/-down         Recall search history"
+		echo "                       (also: alt-., alt-,)"
+		echo "  enter                Hide search input"
+		echo "  n, alt-n             Jump to next match"
+		echo "                       (also: f3, ctrl-g)"
+		echo "  p, N, alt-N          Jump to previous match"
+		echo "                       (also: f2, alt-p)"
+		echo "  esc                  Clear query, hide search box"
+		echo "  f, alt-f             Toggle filter showing only matched lines"
+		echo "  o, alt-o             Toggle sort best up (only when filtered)"
+		echo "  m, alt-m             Print all matched (filtered) line(s) and exit"
+		echo
+		echo (set_color brwhite --bold)"  SELECTING"(set_color normal)
 		echo "  alt-a                Select all lines"
 		echo "  alt-x                Deselect all lines"
-		echo "  alt-s, s             Print selected line(s) and exit"
-		echo "  alt-S, S             Save selected line(s) to \$GRASP_DUMPFILE"
-		echo "  alt-m, m             Print all matched (filtered) line(s) and exit"
-		echo "  alt-M, M             Select and save all matched lines to \$GRASP_DUMPFILE"
-		echo "  alt-f, f             Toggle filter showing only matched lines"
-		echo "  alt-o                Toggle sort best up (only when filtered)"
-		echo "  alt-t, t             Toggle tracking of current line as new input arrives"
 		echo "  tab                  Toggle selection of current line, move down"
-		echo "  up / down            Move selection up/down"
-		echo "  shift-up / shift-down  Page up/down"
-		echo "  page-up / page-down  Page up/down"
-		echo "  alt-up / alt-down    Move selection up/down without moving cursor"
-		echo "  g, alt-shift-up, shift-page-up, alt-page-up        Jump to first line"
-		echo "  G, alt-shift-down, shift-page-down, alt-page-down  Jump to last line"
-		echo "  p, N, f2, alt-p, alt-N   Jump to previous fzf match"
-		echo "  n, f3, ctrl-g, alt-n     Jump to next fzf match"
-		echo "  alt-l                Jump to the line number typed at the end of the query"
-		echo "  alt-up / alt-.       Previous query from search history (search box shown)"
-		echo "  alt-down / alt-,     Next query from search history (search box shown)"
+		echo "  s, alt-s             Print selected line(s) and exit"
+		echo "  S, alt-S             Save selected line(s) to $GRASP_DUMPFILE"
+		echo "  M, alt-M             Select and save all matched lines to $GRASP_DUMPFILE"
+		echo "  alt-up/-down         Jump between selected lines"
 		echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
-		echo "  alt-h, f1            Open a cheat-sheet search for the current query"
-		echo "  alt-b, b             Toggle this keybind list"
-		echo "  ctrl-r, f5           Reload (when FILE or COMMAND was passed)"
-		echo "  alt-e, f4            Edit current line in \$EDITOR (when FILE was passed)"
+		echo 
+		echo (set_color brwhite --bold)"  OTHER"(set_color normal)
+		echo "  f1, alt-h            Show keybinds"
+		echo "  b, alt-b             Show condensed keybinds list"
 		echo
-		echo "  Solo keys (q, c, w, ...) are only usable when the search box is hidden;"
-		echo "  otherwise use their alt- combo (alt-q, alt-c, alt-w, ...)."
 	end | read -z -l usage_keybinds
 
 	begin
@@ -78,7 +98,7 @@ function grasp -d \
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
-		echo "Once launched, hit 'alt-b' for a condensed list of these keybinds:"
+		echo "Keybinds:"
 		echo
 		echo $usage_keybinds
 		echo
@@ -92,7 +112,7 @@ function grasp -d \
 	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
 	
 	# these keys are only bound while the search input is hidden
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o'
 	
 	if set -q _flag_fzf_callback
 		eval "$_flag_fzf_callback"
@@ -133,13 +153,6 @@ function grasp -d \
 		set GRASP_BAT_MAX_SIZE $default_bat_max_size
 	end
 
-	set -x GRASP_DUMPFILE "$HOME/grasp-saved.txt"
-	# escaping gets difficult when quotes or backslashes are in $HOME. workaround for now.
-	if string match -q --regex -- '(\\\\|")' $GRASP_DUMPFILE
-		echo "Warning: \$HOME has backslashes or quotes" >&2
-		set -x GRASP_DUMPFILE "/tmp/grasp-saved.txt"
-	end
-	
 	if test (count $argv) -eq 0 && test -t 0
 		echo $usage >&2
 		return 1
@@ -201,11 +214,12 @@ function grasp -d \
 		'alt-M,M:select-all+execute-silent(cat {+f} > "$GRASP_DUMPFILE")+become(printf %s\\\\n "Saved to $GRASP_DUMPFILE"; exit 50),' \
 		'alt-s,s:accept,' \
 		'alt-m,m:disable-raw+select-all+accept,' \
-		'alt-a:select-all,' \
-		'alt-x:deselect-all,' \
-		'alt-o:toggle-sort,' \
+		'alt-a,a:select-all,' \
+		'alt-x,x:deselect-all,' \
+		'alt-o,o:toggle-sort,' \
 		'shift-up:page-up+track-current,shift-down:page-down+track-current,' \
-		'alt-shift-up,shift-page-up,alt-page-up,g:first+track-current,alt-shift-down,shift-page-down,alt-page-down,G:last+track-current,' \
+		'alt-shift-up,shift-page-up,alt-page-up,g,alt-g:first+track-current,' \
+		'alt-shift-down,shift-page-down,alt-page-down,G,alt-G:last+track-current,' \
 		'up:up+track-current,down:down+track-current,' \
 		'page-up:page-up+track-current,page-down:page-down+track-current,' \
 		'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
@@ -430,12 +444,21 @@ function __sp_grasp_callback_escape --no-scope-shadowing
 			echo 'clear-query'
 		end
 	else
-		echo 'abort'
+		if test "$FZF_QUERY" = ""
+			echo 'abort'
+		else
+			echo 'show-input+clear-query'
+		end
 	end
 end
 
 function __sp_grasp_callback_help --no-scope-shadowing
+	if set -q __sp_grasp_callback_help_loop
+		return
+	end
+	set -x __sp_grasp_callback_help_loop 1
 	echo "$usage_keybinds" | __sp_pager
+	set -e __sp_grasp_callback_help_loop
 end
 
 function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
