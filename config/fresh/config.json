@@ -217,6 +217,11 @@
     {
       "modifiers": ["ctrl"], "key": "w",
       "action": "shellpack_close_tab_if_not_term"
+    },
+    // close_tab, but only when the active buffer isn't a terminal (see init.ts)
+    {
+      "key": "escape",
+      "action": "shellpack_keybind_esc"
     }
   ],
   "languages": {

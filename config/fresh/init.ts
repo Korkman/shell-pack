@@ -3,20 +3,25 @@
 // declaring "editor" so IDEs don't throw errors
 declare const editor: any;
 
+// START: auto nerd_font_icons
 // LC_NERDLEVEL 3 indicates nerd font is installed in the terminal emulator
 if (editor.getEnv("LC_NERDLEVEL") === "3") {
   editor.setSetting("editor.nerd_font_icons", true);
 } else {
   editor.setSetting("editor.nerd_font_icons", false);
 }
+// END: auto nerd_font_icons
 
+// START: auto theme
 // fall back to a high-contrast 16 and 8 colors compatible theme when the terminal lacks 256-color support
 if (!(editor.getEnv("TERM") ?? "").endsWith("-256color")) {
   editor.setSetting("theme", "shell-pack-16-colors");
 } else {
   editor.setSetting("theme", "shell-pack");
 }
+// END: auto theme
 
+// START: shellpack_toggle_selection_mode
 // "selection mode": alt-space starts a selection, plain arrow keys then
 // expand it, alt-space/escape again ends it. Uses defineMode/setEditorMode
 // (like the bundled vi plugin's insert/normal toggle) rather than
@@ -90,7 +95,9 @@ editor.on("after_delete", shellpackExitSelectionModeIfActive);
 // should not leave it active over whatever buffer the user lands on next.
 editor.on("buffer_activated", shellpackExitSelectionModeIfActive);
 editor.on("buffer_deactivated", shellpackExitSelectionModeIfActive);
+// END: shellpack_toggle_selection_mode
 
+// START: shellpack_close_tab_if_not_term
 // there's no bindKey/unbindKey API to attach ctrl-w to close_tab only on
 // non-terminal buffers, so ctrl-w is bound statically (config.json) to this
 // handler, which queries the active buffer's terminal-ness and only closes the
@@ -107,7 +114,9 @@ function shellpack_close_tab_if_not_term() : void {
 registerHandler("shellpack_close_tab_if_not_term", shellpack_close_tab_if_not_term);
 // to be actually available, we must use editor.registerCommand, which also makes the function visible in palette
 editor.registerCommand("Close tab if not terminal", "Closes tab if not terminal", "shellpack_close_tab_if_not_term");
+// END: shellpack_close_tab_if_not_term
 
+// START: delete_line_or_selection
 // F8 (config.json) mirrors Midnight Commander's delete key: with an active
 // selection it should only remove that selection, not the whole line it sits on.
 function delete_line_or_selection() : void {
@@ -121,3 +130,17 @@ function delete_line_or_selection() : void {
 
 registerHandler("delete_line_or_selection", delete_line_or_selection);
 editor.registerCommand("Delete line or selection", "Deletes the selection, or the current line if nothing is selected", "delete_line_or_selection");
+// END: delete_line_or_selection
+
+// START: shellpack_keybind_esc
+function shellpack_keybind_esc(): void {
+  if (editor.getAllCursors().length > 1) {
+    editor.executeAction("remove_secondary_cursors");
+  } else {
+    editor.executeAction("quit");
+  }
+}
+
+registerHandler("shellpack_keybind_esc", shellpack_keybind_esc);
+editor.registerCommand("Remove secondary cursors or quit", "Removes secondary cursors if there are any or quit", "shellpack_keybind_esc");
+// END: shellpack_keybind_esc
