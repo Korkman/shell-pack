@@ -15,7 +15,7 @@
     "whitespace_spaces_trailing": false,
     "auto_close": true,
     "line_wrap": false,
-    "indentation_guide": "none",
+    "indentation_guide": "active",
     "indentation_guide_glyph": "│",
     "rainbow_indentation": true,
     "rulers": [72, 120],
