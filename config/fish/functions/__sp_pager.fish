@@ -1,7 +1,7 @@
 function __sp_pager -d \
-	'Invoke the configured pager'
+	'Invoke the configured pager, adapt flags if possible'
 
-	argparse 'line=' 'search=' 'prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
+	argparse 'F/quit-if-one-screen' 'line=' 'search=' 'prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
 	or return
 
 	set -l filename $argv[1]
@@ -33,6 +33,9 @@ function __sp_pager -d \
 			if set -q _flag_clear_screen
 				set -a opts --clear-screen
 			end
+			if set -q _flag_quit_if_one_screen
+				set -a opts --quit-if-one-screen
+			end
 			if set -q _flag_prompt
 				set -a opts -P "$_flag_prompt"
 				# force less to read the whole (piped) input upfront, so paging/searching
@@ -57,6 +60,9 @@ function __sp_pager -d \
 			end
 			if set -q _flag_line_number
 				set -a opts --line-number
+			end
+			if set -q _flag_quit_if_one_screen
+				set -a opts --quit-if-one-screen
 			end
 			# -R/--raw and --clear-screen are no-ops here: ansi colors are always on and
 			# fzf owns screen redraws; --prompt has no equivalent, so it is dropped

@@ -95,6 +95,9 @@ function grasp -d \
 		echo "  --no-syntax"
 		echo "      Disable bat syntax highlighting."
 		echo
+		echo "  --quit-if-one-screen, -F"
+		echo "      Output content without pager when it fits one screen"
+		echo
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo 
@@ -106,10 +109,8 @@ function grasp -d \
 	
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
-	#argparse --move-unknown --stop-nonopt 'F/quit-if-one-screen'
-	# TODO: proxy through ppage-if-much with all options passed throuh. incompatible with --search and --line.
-	
-	argparse --stop-nonopt p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	set -l argv_copy $argv
+	argparse --stop-nonopt 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
 	
 	# these keys are only bound while the search input is hidden
 	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o'
@@ -161,6 +162,39 @@ function grasp -d \
 	if test (count $argv) -gt 0 && test ! -t 0
 		echo "Error: must have controlling terminal when passing command arguments." >&2
 		return 2
+	end
+	
+	if set -q _flag_quit_if_one_screen
+		# quit-if-one-screen is complex:
+		#
+		# - grasp can decompress files on the fly or apply lesspipe, so we need to
+		#   use grasp as input generator and at the same time as output formatter.
+		#   so we split off post-processing args and use grasp twice in the pipe.
+		#
+		# - limitation: since the passed FILE or COMMAND is transformed into
+		#   STDIN, extra functionality like reload and edit does not apply
+		
+		# reparse original argv from copy and strip --quit-if-one-screen
+		set argv (string match --invert --entire --regex -- '^(--quit-if-one-screen|-F)$' $argv_copy)
+		set -l postprocess_args
+		if set -q _flag_tail
+			# tail processing in post ensures syntax highlighting stays intact
+			set -a postprocess_args --tail=$_flag_tail
+		end
+		if set -q _flag_pager
+			set -a postprocess_args --pager
+		end
+		if set -q _flag_line
+			set -a postprocess_args --line=$_flag_line
+		end
+		if set -q _flag_search
+			set -a postprocess_args --search=$_flag_search
+		end
+		# syntax highlighting is done in pre-processing, so we can skip it in post
+		set -a postprocess_args --no-syntax
+		# fishcall: to get unbuffered parallel processing, we need to force spawning a subprocess
+		fishcall grasp $argv | __sp_grasp_one_screen_lead $postprocess_args
+		return
 	end
 	
 	begin
@@ -293,12 +327,6 @@ function grasp -d \
 	if test ! -t 0
 		# read from stdin which is not a terminal
 		
-		if test ! -t 1
-			# STDOUT is not a terminal,! Someone is using us as a pipe (`man sh | less` on BSD)
-			cat
-			return
-		end
-
 		if set -q STDIN_FILENAME
 			set bat_filename $STDIN_FILENAME
 			set grasptitle $STDIN_FILENAME
@@ -308,6 +336,21 @@ function grasp -d \
 		else
 			set grasptitle STDIN
 		end
+		
+		# setup bat
+		__sp_grasp_set_bat_cmd
+		
+		if test ! -t 1
+			# STDOUT is not a terminal,! Someone is using us as a pipe (`man sh | less` on BSD)
+			if set -q bat_cmd
+				$bat_cmd
+			else
+				cat
+			end
+			return
+		end
+
+		
 	else
 		# read from file
 		
@@ -315,16 +358,6 @@ function grasp -d \
 		if test (count $argv) -eq 1 && test -e $argv[1]
 			
 			set -l cfd_type (cfd --get-type --deep $argv[1] 2>/dev/null)
-			
-			if test ! -t 1
-				# STDOUT is not a terminal! Someone is using us as a pipe
-				if set -q cfd_type[1]
-					cfd $argv[1] -
-				else
-					cat $argv[1]
-				end
-				return
-			end
 			
 			# read tail from file
 			if set -q cfd_type[1]
@@ -336,6 +369,7 @@ function grasp -d \
 				# in stream mode, follow the file
 				set cmd tail -fn $GRASP_TAIL $argv[1]
 			end
+			
 			set bat_filename $argv[1]
 			if set -q cfd_type[1]
 				# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
@@ -345,15 +379,36 @@ function grasp -d \
 			if test (__sp_get_filesize $argv[1]) -gt $GRASP_BAT_MAX_SIZE
 				set skip_bat 1
 			end
+			
+			# setup bat
+			__sp_grasp_set_bat_cmd
+			
+			if test ! -t 1
+				# STDOUT is not a terminal! Someone is using us as a pipe
+				if set -q bat_cmd
+					$cmd | $bat_cmd
+				else
+					$cmd
+				end
+				return
+			end
+			
 			set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
 		else if type -q $argv[1]
 			# run passed command
 			set cmd $argv
 			# no FZF_EDIT_COMMAND, would be a weird workflow
 			
+			# setup bat
+			__sp_grasp_set_bat_cmd
+			
 			if test ! -t 1
 				# STDOUT is not a terminal! Someone is using us as a pipe
-				$cmd
+				if set -q bat_cmd
+					$cmd | $bat_cmd
+				else
+					$cmd
+				end
 				return
 			end
 		else
@@ -388,19 +443,6 @@ function grasp -d \
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
-	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
-		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
-		if set -q _flag_no_syntax
-			set -a bat_cmd -l txt
-		else if test -n "$_flag_syntax"
-			set -a bat_cmd -l $_flag_syntax
-		else if test -n $bat_filename
-			set -a bat_cmd --file-name=$bat_filename
-		end
-		if set -q _flag_line_number
-			set -a bat_cmd --number
-		end
-	end
 	if set -q FZF_DEFAULT_COMMAND
 		# file mode: pass FZF_DEFAULT_COMMAND for fish to invoke (enables refresh)
 
@@ -475,3 +517,59 @@ function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
 	end
 end
 
+function __sp_grasp_one_screen_lead -d \
+	'Print stdin as-is if it fits within $LINES, otherwise page it'
+	# specifically passing to ppage so this pager can safely be used for systemd
+	# caveat: line wrap is not detected (maybe possible with `fold`, if it supports ANSI)
+	
+	set -l max_lines 24
+	test -z "$LINES"
+	or set max_lines $LINES
+	set max_lines (math $max_lines - 3)
+	
+	set -l cnt 0
+	set -l must_page 0
+	while read -l chunk
+		# instant output to shell. cheating with stderr as stdout seems to be buffered.
+		echo "$chunk" >&2
+		# secondary output to buffer
+		echo "$chunk"
+		set cnt (math $cnt + 1)
+		if test $cnt -gt $max_lines
+			set must_page 1
+			break
+		end
+	end | read -z -l buffered
+	
+	if test $must_page = 1
+		# more input is still pending: hand off the buffered lines plus the rest of stdin to the pager
+
+		# move cursor up over the lines already streamed to the terminal, then erase them
+		printf '\033[%dA\033[J' $cnt
+
+		# use a temporary file to dump the head buffer to
+		set -l tmp (__sp_mkuniq --xdg-runtime ppage-if-much)
+		printf '%s' $buffered > "$tmp"
+		# concat buffer and combine with stdin
+		cat "$tmp" - | grasp $argv
+		rm -f "$tmp"
+	else
+		return 0
+	end
+end
+
+function __sp_grasp_set_bat_cmd --no-scope-shadowing
+	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
+		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
+		if set -q _flag_no_syntax
+			set -a bat_cmd -l txt
+		else if test -n "$_flag_syntax"
+			set -a bat_cmd -l $_flag_syntax
+		else if test -n $bat_filename
+			set -a bat_cmd --file-name=$bat_filename
+		end
+		if set -q _flag_line_number
+			set -a bat_cmd --number
+		end
+	end
+end
