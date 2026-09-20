@@ -19,6 +19,11 @@ function cheat
 		return
 	end
 
+	if contains -- "$argv[1]" --fresh
+		__sp_cheat_fresh
+		return
+	end
+
 	if [ "$argv[1]" = "--mc" ]
 		__sp_cheat_mc
 		return
@@ -72,16 +77,16 @@ Shell-pack "(shell-pack-version)" integrated cheat sheets and cht.sh client
 
 ========= Cheat sheets =========
 
-Show this cheatsheet          cheat
+Show this help                cheat --help
 Show glyphs cheatsheet        cheat --glyphs
 Show mc cheatsheet            cheat --mc
 Show tmux cheatsheet          cheat --tmux
+Show fresh editor cheatsheet  cheat --fresh
 Show fzf query syntax         cheat --fzf-query
 Show 256-color chart          cheat --colors (--colours)
 Show color INDEX as RGB/hex   cheat --color=INDEX
 Query cheat.sh for TOPIC      cheat TOPIC
   More information            cheat --chtsh
-Show this help                cheat --help
 
 
 ========= Keymappings =========
@@ -131,6 +136,11 @@ Clear line, exit shell        F10
 
 ========= Quick commands =========
 
+Run \$PAGER                    p FILE
+                              cat | p
+
+Run \$EDITOR / \$VISUAL         e FILE
+
 Launch POSIX-compliant shell  oldshell
 
 Change LC_NERDLEVEL           nerdlevel LEVEL
@@ -149,10 +159,10 @@ Untag current directory       untagdir
 ... specified directory       untagdir [ NAME | PATH ]
 List tagged directories       lsdirtags
 
-Search files for content       rrg REGEX
-... pass rg options            rrg --option ... -- REGEX
-... see also                   rrg-help
-Search in file for content     rrg-in-file -f FILE REGEX
+Search files for content      rrg REGEX
+... pass rg options           rrg --option ... -- REGEX
+... see also                  rrg-help
+Search in file for content    rrg-in-file -f FILE REGEX
 
 (Re)open tmux / screen
   for user X                  $__multiplexer_names
@@ -169,8 +179,8 @@ Toggle full private mode      private
 
 ========== utilities ==========
 
-Grasp a stream or file with fzf    grasp CMD [ ARGS ]
-Use fzf as pager                   ppage CMD [ ARGS ]
+Use bat + fzf as pager             ppage [ OPTS.. ] FILE|CMD
+Search a stream window             grasp [ OPTS.. ] FILE|CMD
 List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports
 List established connections       lsnet

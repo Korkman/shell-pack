@@ -6,6 +6,7 @@ complete -c cheat -d "Show 256-color chart" -a "--colours" --no-files
 complete -c cheat -d "Show color INDEX as RGB/hex" -a "--color=" --no-files
 complete -c cheat -d "Show mc cheatsheet" -a "--mc" --no-files
 complete -c cheat -d "Show tmux cheatsheet" -a "--tmux" --no-files
+complete -c cheat -d "Show fresh-editor cheatsheet" -a "--fresh" --no-files
 complete -c cheat -d "Show fzf query syntax" -a "--fzf-query" --no-files
 complete -c cheat -d "Query cheat.sh for TOPIC" -a "--chtsh" --no-files
 complete -c cheat -d "Show shell-pack cheatsheet" -a "--shell-pack" --no-files
