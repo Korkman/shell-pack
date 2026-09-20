@@ -62,6 +62,7 @@ editor.defineMode(
 
 function shellpack_toggle_selection_mode() :void {
   if (editor.getEditorMode() === SELECTION_MODE) {
+    editor.executeAction("remove_secondary_cursors");
     editor.setEditorMode(null);
     editor.setStatus("");
   } else {

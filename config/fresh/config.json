@@ -222,6 +222,34 @@
     {
       "key": "escape",
       "action": "shellpack_keybind_esc"
+    },
+    // for when shift-tab is unavailable, chord ctrl-k tab
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "tab" }
+      ],
+      "action": "dedent_selection"
+    },
+    // more keys to quick_open_files (default is cumbersome on german layout)
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "o" }
+      ],
+      "action": "quick_open_files"
+    },
+    {
+      "modifiers": ["ctrl", "alt"], "key": "o",
+      "action": "quick_open_files"
+    },
+    // keys to detach from daemon
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "d" }
+      ],
+      "action": "detach"
     }
   ],
   "languages": {
