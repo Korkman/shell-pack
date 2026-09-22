@@ -393,6 +393,7 @@ then
 		-e TERM="$TERM" \
 		--hostname "test-${tagname}" \
 		--volume "$tmpdir:/root/Downloads:rw" \
+		--volume "$srcdir:/repo:ro" \
 		--volume "./added/guest-startup.sh:/guest-startup.sh:ro" \
 		$extra_mounts_args \
 		$PLATFORM_ARG \

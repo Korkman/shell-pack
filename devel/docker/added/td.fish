@@ -1,38 +1,49 @@
+function __sp_td_subcommands -d \
+	"List td-* subcommands, used for both completion and the td usage text"
+	for fn in (functions -a)
+		if string match -q 'td-*' -- $fn
+			string replace -r '^td-' '' -- $fn
+		end
+	end
+end
+
 function td -d \
 	"Test-drive functions for development"
 	argparse --stop-nonopt 'h/help' -- $argv
-	if test $status -ne 0
-		return 2
-	end
-
+	or return 2
 	set -l verb $argv[1]
 	if set -q _flag_help
 		set verb help
 	end
 
-	switch $verb
-		case user
-			td-user $argv[2..-1]
-		case ggit
-			td-ggit $argv[2..-1]
-		case no-man
-			td-no-man $argv[2..-1]
-		case '*'
-			printf 'Usage: td [user|ggit|no-man]\n' >&2
-	end
+	set fname "td-$verb"
+	if set -q _flag_help || ! functions -q "$fname"
+		echo "Usage: td SUBCOMMAND [args...]"
+		echo
+		echo "Subcommands:"
+		for subcommand in (__sp_td_subcommands | sort)
+			# functions --details --verbose always emits 5 fields; the 5th is the description
+			set -l desc (functions --details --verbose "td-$subcommand")[5]
+			printf '  %-10s %s\n' "$subcommand" "$desc"
+		end
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+	$fname $argv[2..-1]
 end
 
 function td-no-man -d \
 	"Uninstall manpages with any available package manager"
 	argparse 'h/help' -- $argv
-	if test $status -ne 0
-		return 2
-	end
-
+	or return 2
 	if set -q _flag_help
-		printf 'Usage: td no-man\n'
-		return 0
-	end
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td no-man"
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
 
 	if command -q apk
 		apk del --purge man-pages mdocml mandoc man-db 2>/dev/null
@@ -53,14 +64,15 @@ end
 function td-ggit -d \
 	"Create a Git test repository"
 	argparse 'h/help' -- $argv
-	if test $status -ne 0
-		return 2
-	end
+	or return 2
 
 	if set -q _flag_help
-		printf 'Usage: td ggit\n'
-		return 0
-	end
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td ggit"
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
 
 	mkdir -p "$HOME/ggit-test"
 	cd "$HOME/ggit-test"; or return 1
@@ -73,21 +85,21 @@ end
 function td-user -d \
 	"Create and switch to the test-drive user"
 	argparse 'h/help' 'sudo' 'pw=' 'rm' 'chsh' -- $argv
-	if test $status -ne 0
-		return 2
-	end
+	or return 2
 
 	if set -q _flag_help
-		printf '%s\n' \
-			'Usage: td user [--sudo] [--pw PASSWORD]' \
-			'       td user --rm' \
-			'' \
-			'  --chsh         Change shell to fish.' \
-			'  --sudo         Grant shpuser sudo access.' \
-			'  --pw PASSWORD  Set the shpuser password. With --sudo, require it for sudo.' \
-			'  --rm           Delete the shpuser test user, including its home directory.'
-		return 0
-	end
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td user [--sudo] [--pw PASSWORD]"
+		echo "       td user --rm"
+		echo
+		echo "  --chsh         Change shell to fish."
+		echo "  --sudo         Grant shpuser sudo access."
+		echo "  --pw PASSWORD  Set the shpuser password. With --sudo, require it for sudo."
+		echo "  --rm           Delete the shpuser test user, including its home directory."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
 
 	if set -q _flag_rm
 		if id shpuser >/dev/null 2>&1
@@ -170,4 +182,97 @@ function td-user -d \
 	cd ~shpuser && su -l shpuser
 	echo "Returning to root"
 	cd ~
+end
+
+function td-version -d \
+	"Checkout a specific version of shell-pack"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td version [TAG]"
+		echo
+		echo "  Reinstall shell-pack from the /repo checkout using get.sh's local"
+		echo "  git detection. TAG defaults to 'worktree' (a snapshot of /repo's"
+		echo "  current working tree, including uncommitted/untracked changes)."
+		echo "  Any other TAG is checked out via git in a scratch copy."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+
+	if ! test -e /repo/get.sh
+		echo "/repo/get.sh not found, was the repo mounted read-only as /repo?" >&2
+		return 1
+	end
+
+	rm -rf $HOME/.local/share/shell-pack/src
+	/repo/get.sh $argv
+	echo "maybe run:"
+	echo shell-pack-check-deps
+	echo reinstall-shell-pack-prefs
+end
+
+function td-override -d \
+	"Override a shell-pack function in .config/fish/functions"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help || ! set -q argv[1]
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td override [FUNCTION]"
+		echo
+		echo "  Override and edit function FUNCTION."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+	
+	set fn $argv[1]
+	
+	mkdir -p "$HOME/.config/fish/functions"
+	# copy over or create new function
+	if test -e "$HOME/.local/share/shell-pack/config/fish/functions/$fn.fish"
+		cp "$HOME/.local/share/shell-pack/config/fish/functions/$fn.fish" "$HOME/.config/fish/functions/$fn.fish"
+	else
+		echo "NOTE: $fn.fish does not exist, creating a new file"
+	end
+	# prepend user config to fish_function_path to allow overrides
+	if ! string match -q "set -p fish_function_path*" < "$HOME/.config/fish/config.fish"
+		echo 'set -p fish_function_path "$HOME/.config/fish/functions"' >> "$HOME/.config/fish/config.fish"
+	end
+	# start editor
+	__sp_editor "$HOME/.config/fish/functions/$fn.fish"
+end
+
+function td-edit-live -d \
+	"Symlink shell-pack's src dir to /repo for live editing from the host"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td edit-live"
+		echo
+		echo "  Replace \$HOME/.local/share/shell-pack/src with a symlink to /repo,"
+		echo "  so edits made on the host (outside the container) take effect"
+		echo "  immediately, without needing to rerun td version."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+
+	if ! test -e /repo/get.sh
+		echo "/repo/get.sh not found, was the repo mounted read-only as /repo?" >&2
+		return 1
+	end
+
+	set -l srcdir "$HOME/.local/share/shell-pack/src"
+	rm -rf "$srcdir"
+	ln -s /repo "$srcdir"
+	echo "Linked $srcdir -> /repo"
+	echo "maybe run:"
+	echo shell-pack-check-deps
+	echo reinstall-shell-pack-prefs
 end

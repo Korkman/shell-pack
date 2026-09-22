@@ -28,7 +28,9 @@ ENV PAGER=ppage
 ENV LC_ALL=C.UTF-8
 
 COPY added/guest-startup.sh /guest-startup.sh
-COPY added/td.fish /etc/fish/functions/td.fish
+RUN mkdir -p /etc/fish/functions /etc/fish/completions \
+	&& ln -s /repo/devel/docker/added/td.fish /etc/fish/functions/td.fish \
+	&& ln -s /repo/devel/docker/added/td.completions.fish /etc/fish/completions/td.fish
 COPY added/test-populate-qssh.sh /usr/local/bin/test-populate-qssh.sh
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

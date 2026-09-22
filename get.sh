@@ -68,9 +68,41 @@ if [ -d "${SHELL_PACK_SRCDIR}/.git" ]; then
 	exit 1
 fi
 
+# ---------------------------------------------
+# Detect whether get.sh itself lives inside a git checkout of shell-pack
+# (e.g. the user used 'git clone' instead of piping this script). If so,
+# there is no release tarball to fetch, we can just copy the already
+# present working tree into SHELL_PACK_SRCDIR.
+# ---------------------------------------------
+LOCAL_REPO_DIR=""
+if SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P) && [ -f "${SCRIPT_DIR}/get.sh" ] && command -v git > /dev/null 2>&1; then
+	if GIT_TOPLEVEL=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null); then
+		if [ -f "${GIT_TOPLEVEL}/get.sh" ] && [ -e "${GIT_TOPLEVEL}/README.md" ]; then
+			LOCAL_REPO_DIR="${GIT_TOPLEVEL}"
+		fi
+	fi
+fi
+# never treat the install destination itself as the source to copy from
+if [ -n "${LOCAL_REPO_DIR}" ] && [ "${LOCAL_REPO_DIR}" = "${SHELL_PACK_SRCDIR}" ]; then
+	LOCAL_REPO_DIR=""
+fi
+# an explicit request for a pre-downloaded tarball overrides a detected local git checkout
+if [ -n "${LOCAL_REPO_DIR}" ] && [ "${FORCE_PRE_DOWNLOADED:-n}" != "n" ]; then
+	LOCAL_REPO_DIR=""
+fi
+# no tag given? local checkouts default to 'worktree' instead of 'latest'
+if [ -n "${LOCAL_REPO_DIR}" ] && [ -z "${1:-}" ]; then
+	DOWNLOAD_TAG="worktree"
+fi
+if [ -n "${LOCAL_REPO_DIR}" ]; then
+	echo "Detected local git checkout at ${LOCAL_REPO_DIR}, will use tag '${DOWNLOAD_TAG}' instead of downloading."
+fi
+
 DOWNLOAD_FILENAME="korkman-shell-pack-${DOWNLOAD_TAG}.tar.gz"
 
-if [ "${FORCE_PRE_DOWNLOADED:-n}" = "n" ]
+if [ -n "${LOCAL_REPO_DIR}" ]; then
+	PRE_DOWNLOADED=n
+elif [ "${FORCE_PRE_DOWNLOADED:-n}" = "n" ]
 then
 	PRE_DOWNLOADED=n
 	if [ -t 0 ] && [ -e "${DOWNLOAD_FILENAME}" ]; then
@@ -101,7 +133,7 @@ mktmptemp() {
 	mktemp -p "$RUNTIME_TMP" "$@"
 }
 
-if [ "${PRE_DOWNLOADED}" = "n" ]; then
+if [ -z "${LOCAL_REPO_DIR}" ] && [ "${PRE_DOWNLOADED}" = "n" ]; then
 	DOWNLOAD_TMPDIR=$(mktmptemp -d "shell-pack-get-XXXXXX")
 	DOWNLOAD_FILENAME="${DOWNLOAD_TMPDIR}/${DOWNLOAD_FILENAME}"
 	DOWNLOAD_URL="https://github.com/Korkman/shell-pack/archive/refs/tags/${DOWNLOAD_TAG}.tar.gz"
@@ -117,10 +149,24 @@ if [ "${PRE_DOWNLOADED}" = "n" ]; then
 	fi
 fi
 
-echo "Verifying archive ${DOWNLOAD_FILENAME} ..."
-tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -O > /dev/null
-
-echo "Extracting ${DOWNLOAD_FILENAME} ..."
+# prepare the new source, verified in a scratch location, before touching any previous install
+if [ -n "${LOCAL_REPO_DIR}" ]; then
+	LOCAL_CLONE_TMPDIR=$(mktmptemp -d "shell-pack-get-local-XXXXXX")
+	echo "Snapshotting working tree of ${LOCAL_REPO_DIR} ..."
+	# copy (not clone) so untracked files are included, then commit them so
+	# they can be checked out like any other tag, never touching the original repo
+	cp -a "${LOCAL_REPO_DIR}/." "${LOCAL_CLONE_TMPDIR}/"
+	git -C "${LOCAL_CLONE_TMPDIR}" add -A
+	git -C "${LOCAL_CLONE_TMPDIR}" -c user.name="shell-pack get.sh" -c user.email="get.sh@localhost" commit --quiet --allow-empty -m "shell-pack get.sh: snapshot of working tree"
+	git -C "${LOCAL_CLONE_TMPDIR}" tag -f worktree
+	
+	git -C "${LOCAL_CLONE_TMPDIR}" checkout --quiet "${DOWNLOAD_TAG}"
+	# drop anything .gitignore excludes so the copy matches the tag's tree exactly
+	git -C "${LOCAL_CLONE_TMPDIR}" clean -fdx --quiet
+else
+	echo "Verifying archive ${DOWNLOAD_FILENAME} ..."
+	tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -O > /dev/null
+fi
 
 # purging previous install if present
 if [ -d "${SHELL_PACK_SRCDIR}" ]; then
@@ -130,7 +176,14 @@ fi
 # creating install dir
 mkdir -p "${SHELL_PACK_SRCDIR}"
 
-tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
+if [ -n "${LOCAL_REPO_DIR}" ]; then
+	echo "Copying ${LOCAL_CLONE_TMPDIR} -> ${SHELL_PACK_SRCDIR} ..."
+	cp -a "${LOCAL_CLONE_TMPDIR}/." "${SHELL_PACK_SRCDIR}/"
+	rm -rf "${SHELL_PACK_SRCDIR}/.git" "${LOCAL_CLONE_TMPDIR}"
+else
+	echo "Extracting ${DOWNLOAD_FILENAME} ..."
+	tar --strip-components=1 -xzf "${DOWNLOAD_FILENAME}" -C "${SHELL_PACK_SRCDIR}"
+fi
 
 # sanity check: if README.md does not manifest in src dir, something failed
 if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
@@ -138,11 +191,13 @@ if [ ! -e "${SHELL_PACK_SRCDIR}/README.md" ]; then
 	exit 57
 fi
 
-if [ "${KEEP_DOWNLOAD:-n}" = "n" ]; then
-	rm "${DOWNLOAD_FILENAME}"
-fi
-if [ "${DOWNLOAD_TMPDIR:-}" != "" ]; then
-	rmdir "${DOWNLOAD_TMPDIR}"
+if [ -z "${LOCAL_REPO_DIR}" ]; then
+	if [ "${KEEP_DOWNLOAD:-n}" = "n" ]; then
+		rm "${DOWNLOAD_FILENAME}"
+	fi
+	if [ "${DOWNLOAD_TMPDIR:-}" != "" ]; then
+		rmdir "${DOWNLOAD_TMPDIR}"
+	fi
 fi
 
 # ---------------------------------------------
