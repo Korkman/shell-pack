@@ -1,0 +1,39 @@
+name: Create release on version tag
+
+on:
+  push:
+    tags:
+      - "v[0-9]*.[0-9]*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine if tag matches latest
+        id: latest
+        run: |
+          tag_sha="$(git rev-parse "${{ github.ref_name }}")"
+          latest_sha="$(git rev-parse latest 2>/dev/null || true)"
+          if [ "$tag_sha" = "$latest_sha" ]; then
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            --latest=${{ steps.latest.outputs.is_latest }}
