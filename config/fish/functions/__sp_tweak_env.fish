@@ -244,18 +244,8 @@ end
 function __sp_tweak_polyfills -d \
 	"Sets up polyfills for missing commands"
 	
-	# not a polyfill per se, but called often so it is placed here to reduce stat calls
-	function __sp_getmtime -a file -d \
-		'Get modification time of a file'
-		if $__cap_ls_has_time_style
-			set -l output (command ls -nl --time-style=+%s "$file" | string split --no-empty ' ')
-			and echo "$output[6]"
-		else if $__cap_stat_has_c_format
-			stat -c '%Y' "$file"
-		else
-			stat -f %m "$file"
-		end
-	end
+	# lower stat calls on these source files by sourcing them here, making them non-self-updating
+	source "$__sp_config_fish_dir/functions/__sp_getmtime.fish"
 	
 	# test if the command 'kill' is available. if not, improvise!
 	# mc fish_prompt issues 'kill -STOP %self' to give control back to mc
