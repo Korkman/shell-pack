@@ -464,6 +464,10 @@ function onman -d \
 					echo (set_color --bold brwhite)'Rendered with:'(set_color normal)' '$roff_renderer
 					switch $roff_renderer
 						case man
+							# enable italics if you have them (not all roff postprocessors understand -i)
+							if $__cap_italics && $__cap_man_roff_has_italics
+								set -x MANROFFOPT '-P-i'
+							end
 							# advantage: macro packages are best-effort automatically
 							# NOTE: man may fail in containers when host apparmor interferes (opensuse tumbleweed)
 							MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat command man $tmpfile
