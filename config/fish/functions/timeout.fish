@@ -6,7 +6,7 @@ function timeout -d \
 	if command -q gnutimeout
 		command gnutimeout $argv
 	else if command -q timeout
-		if $__cap_timeout_has_t
+		if set -q __cap_timeout_has_t && $__cap_timeout_has_t
 			# ancient busybox requires -t
 			command timeout -t $argv
 		else
