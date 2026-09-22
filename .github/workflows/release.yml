@@ -28,13 +28,19 @@ jobs:
             echo "is_latest=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Delete existing release with same tag
+      - name: Delete existing release with same name
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete "${{ github.ref_name }}" \
+          existing_tag="$(gh release list \
             --repo "${{ github.repository }}" \
-            --yes --cleanup-tag=false || true
+            --json name,tagName \
+            --jq ".[] | select(.name == \"${{ github.ref_name }}\") | .tagName")"
+          if [ -n "$existing_tag" ]; then
+            gh release delete "$existing_tag" \
+              --repo "${{ github.repository }}" \
+              --yes --cleanup-tag=false
+          fi
 
       - name: Create GitHub release
         env:
