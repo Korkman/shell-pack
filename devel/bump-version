@@ -63,12 +63,12 @@ end
 
 echo "Moving tags"
 
-if test $move_version = "yes"
-	git_move_tag "v$new_ver"
-end
 if test $move_latest = "yes"
 	git_move_tag "latest"
 end
 if test $move_devel = "yes"
 	git_move_tag "devel"
+end
+if test $move_version = "yes"
+	git_move_tag "v$new_ver"
 end
