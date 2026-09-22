@@ -11,8 +11,8 @@ function __sp_man_page
 		set argv (string match --invert --entire --regex '^--line-number$' -- $argv)
 	end
 	
-	# enable italics if you have them
-	if set -q __cap_italics && $__cap_italics
+	# enable italics if you have them (not all roff postprocessors understand -i)
+	if set -q __cap_italics && $__cap_italics && set -q __cap_man_roff_has_italics && $__cap_man_roff_has_italics
 		set -x MANROFFOPT '-P-i'
 	end
 	
