@@ -100,6 +100,12 @@ function grasp -d \
 		echo
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
+		echo
+		echo "  --cmd"
+		echo "      Passed argument is strictly a command"
+		echo
+		echo "  --file"
+		echo "      Passed argument is strictly a file"
 		echo 
 		echo "Keybinds:"
 		echo
@@ -110,7 +116,7 @@ function grasp -d \
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
 	set -l argv_copy $argv
-	argparse --stop-nonopt 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	argparse --stop-nonopt 'cmd' 'file' 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
 	or begin
 		echo "grasp --help for usage"
 		return 1
@@ -323,7 +329,46 @@ function grasp -d \
 	set -l file_opener fishcall __sp_any2text
 	# in stream mode (piped stdin), bat is skipped by default; only man output keeps highlighting
 	set -l skip_bat 1
-	if test (count $argv) -eq 1 && test -e $argv[1]
+
+	# --cmd/--file override auto-detection; otherwise infer from the passed argument
+	set -l processing_mode
+	if set -q _flag_file
+		if not set -q argv[1]
+			__sp_error "--file: missing file argument"
+			return 2
+		else if test (count $argv) -gt 1
+			__sp_error "--file: too many arguments"
+			return 2
+		else if not test -e $argv[1]
+			__sp_error "--file: not a file: '"$argv[1]"'"
+			return 2
+		end
+		set processing_mode file
+	else if set -q _flag_cmd
+		if not set -q argv[1]
+			__sp_error "--cmd: missing command argument"
+			return 2
+		else if not type -q -- $argv[1]
+			__sp_error "--cmd: not a command: '"$argv[1]"'"
+			return 2
+		end
+		set processing_mode cmd
+	else if test (count $argv) -eq 1 && test -e $argv[1]
+		set processing_mode file
+	else if test (count $argv) -ge 1 && type -q -- $argv[1]
+		set processing_mode cmd
+	else if set -q argv[1]
+		__sp_error "Neither command nor file: '"$argv[1]"'"
+		return 2
+	else if test ! -t 0
+		set processing_mode stdin
+	else
+		echo $usage
+		return 1
+	end >&2
+
+	switch $processing_mode
+	case file
 		# read from file
 		
 		set -l cfd_type (cfd --get-type --deep $argv[1] 2>/dev/null)
@@ -365,7 +410,7 @@ function grasp -d \
 		
 		set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
 		__sp_grasp_set_fzf_default_cmd
-	else if type -q -- $argv[1]
+	case cmd
 		# run passed command
 		set cmd $argv
 		
@@ -409,7 +454,7 @@ function grasp -d \
 		
 		# no FZF_EDIT_COMMAND, would be a weird workflow
 		__sp_grasp_set_fzf_default_cmd
-	else if test ! -t 0
+	case stdin
 		# read from stdin which is not a terminal
 		
 		if set -q STDIN_FILENAME
@@ -434,14 +479,6 @@ function grasp -d \
 			end
 			return
 		end
-	else
-		if set -q argv[1]
-			__sp_error "Neither command nor file: '"$argv[1]"'"
-			return 2
-		else
-			echo $usage
-			return 1
-		end >&2
 	end
 	
 	# restrict grasptitle to 80% of terminal width

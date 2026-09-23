@@ -9,3 +9,5 @@ complete -c grasp -l syntax -x -d "Force bat syntax highlighting, optionally ind
 complete -c grasp -l no-syntax -x -d "Disable bat syntax highlighting"
 complete -c grasp -l search -x -d "Pre-fill the search box with QUERY on startup"
 complete -c grasp -s F -l quit-if-one-screen -x -d "Output content without pager when it fits one screen"
+complete -c grasp -l cmd -d "Passed argument is strictly a command"
+complete -c grasp -l file -d "Passed argument is strictly a file"
