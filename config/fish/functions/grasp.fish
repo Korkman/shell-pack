@@ -182,10 +182,8 @@ function grasp -d \
 	end
 	
 	if not set -q GRASP_MAX_FZF_RSS_KB
-		set -l mem_available_kb (awk '/^MemAvailable:/ { print $2 }' /proc/meminfo 2>/dev/null)
-		if set -q mem_available_kb[1] && test -n "$mem_available_kb"
-			set -x GRASP_MAX_FZF_RSS_KB (math -s0 "$mem_available_kb * 0.1")
-		end
+		set -l mem_available_kb (__sp_mem_available)
+		and set -x GRASP_MAX_FZF_RSS_KB (math -s0 "$mem_available_kb * 0.1")
 	end
 
 	if test (count $argv) -eq 0 && test -t 0
