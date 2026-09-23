@@ -73,7 +73,9 @@ function grasp -d \
 		echo
 		echo "COMMAND will only be executed if it is not a FILE. Otherwise, FILE will be tailed."
 		echo
-		echo "Limited to $default_lines lines by default ($default_lines_pager when --pager)."
+		echo "Limited to $default_lines lines by default (not applied when --pager)."
+		echo
+		echo "A dynamic memory limit is in place which allows at max 10% of available memory to be consumed."
 		echo
 		echo "Options:"
 		echo
