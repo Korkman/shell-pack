@@ -111,6 +111,10 @@ function grasp -d \
 
 	set -l argv_copy $argv
 	argparse --stop-nonopt 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	or begin
+		echo "grasp --help for usage"
+		return 1
+	end >&2
 	
 	# these keys are only bound while the search input is hidden
 	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o'
@@ -157,11 +161,6 @@ function grasp -d \
 	if test (count $argv) -eq 0 && test -t 0
 		echo $usage >&2
 		return 1
-	end
-	
-	if test (count $argv) -gt 0 && test ! -t 0
-		echo "Error: must have controlling terminal when passing command arguments." >&2
-		return 2
 	end
 	
 	if set -q _flag_quit_if_one_screen
@@ -324,7 +323,93 @@ function grasp -d \
 	set -l file_opener fishcall __sp_any2text
 	# in stream mode (piped stdin), bat is skipped by default; only man output keeps highlighting
 	set -l skip_bat 1
-	if test ! -t 0
+	if test (count $argv) -eq 1 && test -e $argv[1]
+		# read from file
+		
+		set -l cfd_type (cfd --get-type --deep $argv[1] 2>/dev/null)
+		
+		# read tail from file
+		if set -q cfd_type[1]
+			# supported archive/compression format: decompress to stdout instead of tailing raw bytes
+			set cmd cfd $argv[1] -
+		else if set -q GRASP_PAGER
+			set cmd $file_opener $argv[1]
+		else
+			# in stream mode, follow the file
+			set cmd tail -fn $GRASP_TAIL $argv[1]
+		end
+		
+		# setup bat
+		set skip_bat 0
+		set bat_filename $argv[1]
+		if set -q cfd_type[1]
+			# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
+			set bat_filename (string replace -r -i "\.$cfd_type\$" '' -- $bat_filename)
+			set bat_filename (string replace -r '\.[0-9]+$' '' -- $bat_filename)
+		end
+		if test (__sp_get_filesize $argv[1]) -gt $GRASP_BAT_MAX_SIZE
+			set skip_bat 1
+		end
+		
+		__sp_grasp_set_bat_cmd
+		
+		if test ! -t 1
+			# STDOUT is not a terminal! Someone is using us as a pipe
+			if set -q bat_cmd
+				$cmd | $bat_cmd
+			else
+				$cmd
+			end
+			return
+		end
+		
+		set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
+		__sp_grasp_set_fzf_default_cmd
+	else if type -q -- $argv[1]
+		# run passed command
+		set cmd $argv
+		
+		# export some color capability indicators for invoked commands
+		if test $__cap_colors -ge 256
+			set -x SYSTEMD_COLORS 256
+			set -x MAN_KEEP_FORMATTING 1
+			# for iostat
+			set -x S_COLORS always
+			# ai rumors these are for modern tools in general
+			set -x FORCE_COLOR 2
+			set -x CLICOLOR_FORCE 1
+		end
+		
+		# setup bat
+		set skip_bat 0
+		__sp_grasp_set_bat_cmd
+		
+		if test ! -t 0
+			# STDIN is not a terminal, it must be piped to the passed command
+			# recursing here, passing original args minus cmd
+			# options precede cmd due to --stop-nonopt, so we can simply count the difference
+			set -l recusion_argv
+			set -l cnt_flags (math (count $argv_copy) - (count $argv))
+			if test $cnt_flags -gt 0
+				set recusion_argv $argv_copy[1..$cnt_flags]
+			end
+			$cmd | grasp $recusion_argv
+			return
+		end
+		
+		if test ! -t 1
+			# STDOUT is not a terminal! Someone is using us as a pipe
+			if set -q bat_cmd
+				$cmd | $bat_cmd
+			else
+				$cmd
+			end
+			return
+		end
+		
+		# no FZF_EDIT_COMMAND, would be a weird workflow
+		__sp_grasp_set_fzf_default_cmd
+	else if test ! -t 0
 		# read from stdin which is not a terminal
 		
 		if set -q STDIN_FILENAME
@@ -349,87 +434,14 @@ function grasp -d \
 			end
 			return
 		end
-
-		
 	else
-		# read from file
-		
-		set skip_bat 0
-		if test (count $argv) -eq 1 && test -e $argv[1]
-			
-			set -l cfd_type (cfd --get-type --deep $argv[1] 2>/dev/null)
-			
-			# read tail from file
-			if set -q cfd_type[1]
-				# supported archive/compression format: decompress to stdout instead of tailing raw bytes
-				set cmd cfd $argv[1] -
-			else if set -q GRASP_PAGER
-				set cmd $file_opener $argv[1]
-			else
-				# in stream mode, follow the file
-				set cmd tail -fn $GRASP_TAIL $argv[1]
-			end
-			
-			set bat_filename $argv[1]
-			if set -q cfd_type[1]
-				# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
-				set bat_filename (string replace -r -i "\.$cfd_type\$" '' -- $bat_filename)
-				set bat_filename (string replace -r '\.[0-9]+$' '' -- $bat_filename)
-			end
-			if test (__sp_get_filesize $argv[1]) -gt $GRASP_BAT_MAX_SIZE
-				set skip_bat 1
-			end
-			
-			# setup bat
-			__sp_grasp_set_bat_cmd
-			
-			if test ! -t 1
-				# STDOUT is not a terminal! Someone is using us as a pipe
-				if set -q bat_cmd
-					$cmd | $bat_cmd
-				else
-					$cmd
-				end
-				return
-			end
-			
-			set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
-		else if type -q $argv[1]
-			# run passed command
-			set cmd $argv
-			# no FZF_EDIT_COMMAND, would be a weird workflow
-			
-			# setup bat
-			__sp_grasp_set_bat_cmd
-			
-			if test ! -t 1
-				# STDOUT is not a terminal! Someone is using us as a pipe
-				if set -q bat_cmd
-					$cmd | $bat_cmd
-				else
-					$cmd
-				end
-				return
-			end
-		else
-			echo "Neither command nor file: '"$argv[1]"'" >&2
+		if set -q argv[1]
+			__sp_error "Neither command nor file: '"$argv[1]"'"
 			return 2
-		end
-		
-		set grasptitle $cmd
-		
-		set -a fzf_defaults \
-			--bind 'r,ctrl-r,f5:become(exec fzf)'
-		
-		if set -q FZF_EDIT_COMMAND
-			__sp_quote_args $FZF_EDIT_COMMAND | read -z -x FZF_EDIT_COMMAND
-			set -a fzf_defaults \
-				--bind 'alt-e,f4:enable-raw+execute(eval $FZF_EDIT_COMMAND)'
-		end
-		
-		# leave cmd execution (and killing of it) to fzf
-		__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
-		set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
+		else
+			echo $usage
+			return 1
+		end >&2
 	end
 	
 	# restrict grasptitle to 80% of terminal width
@@ -572,4 +584,21 @@ function __sp_grasp_set_bat_cmd --no-scope-shadowing
 			set -a bat_cmd --number
 		end
 	end
+end
+
+function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
+	set grasptitle $cmd
+	
+	set -a fzf_defaults \
+		--bind 'r,ctrl-r,f5:become(exec fzf)'
+	
+	if set -q FZF_EDIT_COMMAND
+		__sp_quote_args $FZF_EDIT_COMMAND | read -z -x FZF_EDIT_COMMAND
+		set -a fzf_defaults \
+			--bind 'alt-e,f4:enable-raw+execute(eval $FZF_EDIT_COMMAND)'
+	end
+	
+	# leave cmd execution (and killing of it) to fzf
+	__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
+	set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
 end
