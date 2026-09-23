@@ -19,7 +19,7 @@ function grasp -d \
 		echo "                       (also: alt-shift-up, shift-page-up, alt-page-up)"
 		echo "  G, alt-G             Jump to last line (and follow new input)"
 		echo "                       (also: alt-shift-down, shift-page-down, alt-page-down)"
-		echo "  alt-l                Use search input to jump to line number"
+		echo "  l, alt-l, :          Prompt for a line number to jump to"
 		echo "                       (also: esc, f10)"
 		echo "  w, alt-w             Toggle word-wrap"
 		echo "  t, alt-t             Toggle tracking of current line on new input"
@@ -28,7 +28,7 @@ function grasp -d \
 		echo "  q, alt-q             Quit"
 		echo
 		echo (set_color brwhite --bold)"  MATCHING"(set_color normal)
-		echo "  space, /, :          New fzf search (see also FZF QUERY SYNTAX below)"
+		echo "  space, /             New fzf search (see also FZF QUERY SYNTAX below)"
 		echo "                       (also: ctrl-f)"
 		echo "  +                    Edit search input"
 		echo "  alt-up/-down         Recall search history"
@@ -119,6 +119,11 @@ function grasp -d \
 	end | read -z -l usage
 	
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
+	if not set -q GRASP_JUMP_FILE
+		# only generate once per fzf session: callback invocations (execute/transform) are separate
+		# processes and must inherit the same path, not regenerate their own
+		set -x GRASP_JUMP_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-jump)
+	end
 
 	set -l argv_copy $argv
 	argparse --stop-nonopt 'P/prompt=' 'cmd' 'file' 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
@@ -254,7 +259,7 @@ function grasp -d \
 		'left-click:track-current,right-click:select+track-current,' \
 		'alt-N,alt-p,f2,p,N:up-match+track-current,' \
 		'alt-n,f3,n,ctrl-g:down-match+track-current,' \
-		'alt-l:transform('$callback_cmd' line_jump),' \
+		':,alt-l,l:execute('$callback_cmd' line_jump_read)+clear-screen+transform('$callback_cmd' line_jump_apply),' \
 		'tab:toggle+down+track-current,' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q,f10:abort,' \
@@ -262,7 +267,7 @@ function grasp -d \
 		'alt-down,alt-,:next-history,' \
 		'esc:transform('$callback_cmd' escape),' \
 		'enter:show-header+hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
-		':,/,space,ctrl-f,f7:hide-header+show-input+clear-query+unbind('$pager_mode_keys'),' \
+		'/,space,ctrl-f,f7:hide-header+show-input+clear-query+unbind('$pager_mode_keys'),' \
 		'+:hide-header+show-input+unbind('$pager_mode_keys'),' \
 		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))' \
 	)
@@ -550,18 +555,14 @@ function __sp_grasp_callback_escape --no-scope-shadowing
 	exec __sp_grasp_callback escape
 end
 
-function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
-	"Given a query string, walk it in reverse, strip the trailing run of digits from the query and jump to that line."
-	
-	# TODO: no action when STDIN is open (how to find out?) so "wait" doesn't apply
-	if test "$FZF_INPUT_STATE" = "enabled"
-		set -l digits (string match -r "[0-9]+\$" -- $FZF_QUERY)
-		if test -n "$digits"
-			echo "search()+wait+pos($digits)+show-header+hide-input+rebind($pager_mode_keys)"
-		end
-	else
-		echo "hide-header+show-input+clear-query+unbind($pager_mode_keys)"
-	end
+function __sp_grasp_callback_line_jump_read --no-scope-shadowing
+	# backwards compatible wrapper 2026-09-23
+	exec __sp_grasp_callback line_jump_read
+end
+
+function __sp_grasp_callback_line_jump_apply --no-scope-shadowing
+	# backwards compatible wrapper 2026-09-23
+	exec __sp_grasp_callback line_jump_apply
 end
 
 function __sp_grasp_one_screen_lead -d \

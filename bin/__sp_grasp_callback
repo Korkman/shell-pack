@@ -31,6 +31,27 @@ case "$CMD" in
 			fi
 		fi
 		;;
+	line_jump_read)
+		rm -f "$GRASP_JUMP_FILE"
+		# switch to the alternate screen (like fzf itself) so the prompt doesn't clutter scrollback
+		# done here rather than in fish's `read`, which leaves the alternate screen on its own
+		printf '\033[?1049h\033[H\033[?25h'
+		printf 'Jump to line: '
+		read -r line
+		printf '\033[?25l\033[?1049l'
+		case "$line" in
+			[1-9]*[0-9]|[1-9])
+				echo "$line" > "$GRASP_JUMP_FILE"
+				;;
+		esac
+		;;
+	line_jump_apply)
+		if [ -f "$GRASP_JUMP_FILE" ]; then
+			line=$(cat "$GRASP_JUMP_FILE")
+			rm -f "$GRASP_JUMP_FILE"
+			echo "pos($line)"
+		fi
+		;;
 	*)
 		# non-accelerated callback loops back to the original function
 		exec fishcall grasp --fzf-callback "$CMD" "$@"
