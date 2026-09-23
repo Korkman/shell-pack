@@ -504,7 +504,7 @@ function onman -d \
 			end
 			echo
 			echo 'Download URL: '(__sp_osc8_url $url)
-		end | __sp_pager
+		end | __sp_pager --prompt "Online-manual for `$page($forced_section)`"
 		rm -f $tmpfile
 		return
 	end

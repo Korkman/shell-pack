@@ -157,6 +157,12 @@ function __spt -d \
 		case prompt_fg
 			$scolor "ff0"
 			return
+		case grasp_header_bg
+			$scolor "5f0087"
+			return
+		case grasp_header_fg
+			$scolor "ff0"
+			return
 		case fish_command_fg linenumber
 			$scolor "888888"
 			return

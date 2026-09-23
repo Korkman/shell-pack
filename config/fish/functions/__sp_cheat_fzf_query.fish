@@ -1,8 +1,6 @@
 function __sp_cheat_fzf_query
-	echo "
-fzf query syntax
-
-Case-insensitive unless uppercase letters are used.
+  echo (set_color brwhite --bold)"FZF QUERY SYNTAX"(set_color normal)
+  echo "Case-insensitive unless uppercase letters are used.
 
 Token    Match type
 ─────    ──────────

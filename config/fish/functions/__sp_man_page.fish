@@ -64,6 +64,7 @@ function __sp_man_page
 		if set -q _flag_line_number
 			set -a pager --line-number
 		end
+		set -a pager --prompt "Manual page `$argv`"
 	end
 	
 	if command -q man

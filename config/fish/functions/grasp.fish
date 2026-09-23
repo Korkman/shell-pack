@@ -28,8 +28,7 @@ function grasp -d \
 		echo "  q, alt-q             Quit"
 		echo
 		echo (set_color brwhite --bold)"  MATCHING"(set_color normal)
-		echo
-		echo "  space, /, :          New search"
+		echo "  space, /, :          New fzf search (see also FZF QUERY SYNTAX below)"
 		echo "                       (also: ctrl-f)"
 		echo "  +                    Edit search input"
 		echo "  alt-up/-down         Recall search history"
@@ -41,7 +40,7 @@ function grasp -d \
 		echo "                       (also: f2, alt-p)"
 		echo "  esc                  Clear query, hide search box"
 		echo "  f, alt-f             Toggle filter showing only matched lines"
-		echo "  o, alt-o             Toggle sort best up (only when filtered)"
+		echo "  o, alt-o             Toggle sort best up (requires filter)"
 		echo "  m, alt-m             Print all matched (filtered) line(s) and exit"
 		echo
 		echo (set_color brwhite --bold)"  SELECTING"(set_color normal)
@@ -55,8 +54,11 @@ function grasp -d \
 		echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
 		echo 
 		echo (set_color brwhite --bold)"  OTHER"(set_color normal)
-		echo "  f1, alt-h            Show keybinds"
-		echo "  b, alt-b             Show condensed keybinds list"
+		echo "  f1, h, alt-h            Show keybinds"
+		echo
+		for line in (PAGER=cat __sp_cheat_fzf_query)
+			echo "  $line"
+		end
 		echo
 	end | read -z -l usage_keybinds
 
@@ -101,6 +103,9 @@ function grasp -d \
 		echo "  --search=QUERY"
 		echo "      Pre-fill the search box with QUERY on startup."
 		echo
+		echo "  --prompt=PROMPT"
+		echo "      Display PROMPT in status line."
+		echo
 		echo "  --cmd"
 		echo "      Passed argument is strictly a command"
 		echo
@@ -116,17 +121,20 @@ function grasp -d \
 	set -lx GRASP_HIST_FILE "$HOME/.local/share/shell-pack/fzf_grasp_history"
 
 	set -l argv_copy $argv
-	argparse --stop-nonopt 'cmd' 'file' 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	argparse --stop-nonopt 'P/prompt=' 'cmd' 'file' 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
 	or begin
 		echo "grasp --help for usage"
 		return 1
 	end >&2
 	
 	# these keys are only bound while the search input is hidden
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o,h'
+	set -x GRASP_PAGER_MODE_KEYS $pager_mode_keys
 	
 	if set -q _flag_fzf_callback
-		eval "$_flag_fzf_callback"
+		# backwards compatible argument converter 2026-09-23
+		set _flag_fzf_callback (string replace -r -- "^__sp_grasp_callback_" "" "$_flag_fzf_callback")
+		eval "__sp_grasp_callback_$_flag_fzf_callback"
 		return
 	end
 	
@@ -146,7 +154,9 @@ function grasp -d \
 	
 	
 	if set -q _flag_pager
-		set GRASP_PAGER yes
+		set -x GRASP_PAGER yes
+	else
+		set -e GRASP_PAGER
 	end
 	
 	if set -q _flag_tail
@@ -202,27 +212,6 @@ function grasp -d \
 		return
 	end
 	
-	begin
-		echo 'slash/spc:show-search esc:cancel'
-		echo 'alt-q:exit f1:help-syntax'
-		echo 'alt-w:word-wrap alt-o:sort-best'
-		echo 'alt-up/dn:jump-selected'
-		echo 'f2/f3/alt-p/-n:jump-match'
-		echo 'alt-l:jump-to-line-in-query'
-		echo 'alt-page-up/dn:begin/end'
-		echo 'alt-f:(un)filter'
-		echo 'alt-s/-S:print-/save-selected'
-		echo 'alt-m/-M:print-/save-matched'
-		echo 'alt-a:select-all alt-x:deselect-all'
-		echo 'alt-up/dn:query-history'
-		echo 'alt-y/dbl-clk:to-clipboard'
-		if test (count $argv) -gt 0
-			echo 'ctrl-r,f5:reload'
-			echo 'alt-e,f4:edit'
-		end
-		echo (set_color bryellow)'*use solo keys when search hidden'(set_color normal)
-	end | __sp_fzf_header
-	
 	# start off with generic defaults
 	__sp_fzf_defaults --exact --compact
 	
@@ -241,12 +230,12 @@ function grasp -d \
 		set write_history_cmd '+execute-silent([ -z {q} ] && exit; [ ! -e "$GRASP_HIST_FILE" ] && last="" || last=$(tail -n1 "$GRASP_HIST_FILE"); [ "$last" = {q} ] && exit; echo {q} >> "$GRASP_HIST_FILE")'
 	end
 
-	# command to loop back to this function for callbacks
-	set -l callback_cmd 'fishcall grasp --fzf-callback'
+	# callback handler, may loop back into this file (see __sp_grasp_callback below)
+	set -l callback_cmd '__sp_grasp_callback'
 	
 	# main fzf keybinds
 	set -l fzf_binds (printf %s \
-		'f1,alt-h:execute('$callback_cmd' __sp_grasp_callback_help),' \
+		'f1,alt-h,h:execute('$callback_cmd' help),' \
 		'alt-w,w:toggle-wrap-word,' \
 		'alt-t,t:toggle-track-current,' \
 		'alt-S,S:execute-silent(cat {+f} > "$GRASP_DUMPFILE")+become(printf %s\\\\n "Saved to $GRASP_DUMPFILE"; exit 50),' \
@@ -255,7 +244,7 @@ function grasp -d \
 		'alt-m,m:disable-raw+select-all+accept,' \
 		'alt-a,a:select-all,' \
 		'alt-x,x:deselect-all,' \
-		'alt-o,o:toggle-sort,' \
+		'alt-o,o:disable-raw+toggle-sort,' \
 		'shift-up:page-up+track-current,shift-down:page-down+track-current,' \
 		'alt-shift-up,shift-page-up,alt-page-up,g,alt-g:first+track-current,' \
 		'alt-shift-down,shift-page-down,alt-page-down,G,alt-G:last+track-current,' \
@@ -265,18 +254,17 @@ function grasp -d \
 		'left-click:track-current,right-click:select+track-current,' \
 		'alt-N,alt-p,f2,p,N:up-match+track-current,' \
 		'alt-n,f3,n,ctrl-g:down-match+track-current,' \
-		'alt-l:transform('$callback_cmd' __sp_grasp_callback_line_jump),' \
+		'alt-l:transform('$callback_cmd' line_jump),' \
 		'tab:toggle+down+track-current,' \
 		'alt-f,f:toggle-raw,' \
 		'alt-q,q,f10:abort,' \
 		'alt-up,alt-.:prev-history,' \
 		'alt-down,alt-,:next-history,' \
-		'esc:transform('$callback_cmd' __sp_grasp_callback_escape),' \
-		'enter:hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
-		':,/,space,ctrl-f,f7:show-input+clear-query+unbind('$pager_mode_keys'),' \
-		'+:show-input+unbind('$pager_mode_keys'),' \
-		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n")),' \
-		'alt-b,b:toggle-header' \
+		'esc:transform('$callback_cmd' escape),' \
+		'enter:show-header+hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
+		':,/,space,ctrl-f,f7:hide-header+show-input+clear-query+unbind('$pager_mode_keys'),' \
+		'+:hide-header+show-input+unbind('$pager_mode_keys'),' \
+		'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))' \
 	)
 	
 	# add keybinds and more to list of args
@@ -293,7 +281,7 @@ function grasp -d \
 	end
 	
 	# start in compact mode with invisible search (q exits), unless a query was pre-filled
-	set -l start_bind 'start:trigger(esc)+hide-header'
+	set -l start_bind 'start:trigger(esc)'
 	if set -q _flag_search
 		set -a fzf_defaults --query "$_flag_search"
 	end
@@ -410,6 +398,7 @@ function grasp -d \
 		
 		set FZF_EDIT_COMMAND fishcall __sp_editor --line=\$FZF_POS $argv[1]
 		__sp_grasp_set_fzf_default_cmd
+		set grasptitle "$argv[1]"
 	case cmd
 		# run passed command
 		set cmd $argv
@@ -459,12 +448,12 @@ function grasp -d \
 		
 		if set -q STDIN_FILENAME
 			set bat_filename $STDIN_FILENAME
-			set grasptitle $STDIN_FILENAME
+			set grasptitle "$STDIN_FILENAME"
 			if test "$STDIN_FILENAME" = man
 				set skip_bat 0
 			end
 		else
-			set grasptitle STDIN
+			set grasptitle "Viewing STDIN"
 		end
 		
 		# setup bat
@@ -481,14 +470,34 @@ function grasp -d \
 		end
 	end
 	
-	# restrict grasptitle to 80% of terminal width
-	fish_prompt_shorten_string grasptitle 80
-	set grasptitle (__sp_quote_args $grasptitle)
+	if set -q _flag_prompt
+		set grasptitle $_flag_prompt
+	end
 	
 	# add nice title, enable reload
-	set -l input_label (__spt fzf_title bold)" grasping "(__spt prompt_fg)"$grasptitle"(set_color normal)" "(set_color normal)
+	set -l self grasp
+	if set -q _flag_pager
+		set self ppage
+	end
+	set grasptitle " $grasptitle (`$self`, press h for help or q to quit) "
+	
+	# restrict grasptitle to 80% of terminal width
+	fish_prompt_shorten_string grasptitle 80
+	# TODO: this causes double-quoting?
+	#set grasptitle (__sp_quote_args $grasptitle)
+	
+	set -l header_bg (__spt grasp_header_bg bg)
+	set -l header_fg (__spt grasp_header_fg)
+	set -x GRASP_HEADER_BG "$header_bg"
+	set -x GRASP_HEADER_FG "$header_fg"
+	set -x GRASP_HEADER_TEXT "$grasptitle"
+	set -l header "$header_bg$header_fg$grasptitle"(set_color normal)
 	set -a fzf_defaults \
-		--input-label "$input_label"
+		--input-label "Search [F1 or alt-h for help]" \
+		--header $header \
+		--header-border=none \
+		--ghost "[fzf query, exact match, F1 or alt-h for help]" \
+		--bind 'focus,result:transform('$callback_cmd' update_header)'
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
@@ -527,29 +536,18 @@ function grasp -d \
 	return 0
 end
 
-function __sp_grasp_callback_escape --no-scope-shadowing
-	if test "$FZF_INPUT_STATE" = "enabled"
-		if test "$FZF_QUERY" = ""
-			echo 'hide-input+rebind('$pager_mode_keys')'
-		else
-			echo 'clear-query'
-		end
-	else
-		if test "$FZF_QUERY" = ""
-			echo 'abort'
-		else
-			echo 'show-input+clear-query'
-		end
-	end
-end
-
 function __sp_grasp_callback_help --no-scope-shadowing
 	if set -q __sp_grasp_callback_help_loop
 		return
 	end
 	set -x __sp_grasp_callback_help_loop 1
-	echo "$usage_keybinds" | __sp_pager
+	echo "$usage_keybinds" | __sp_pager --prompt "Viewing `grasp` usage"
 	set -e __sp_grasp_callback_help_loop
+end
+
+function __sp_grasp_callback_escape --no-scope-shadowing
+	# backwards compatible wrapper 2026-09-23
+	exec __sp_grasp_callback escape
 end
 
 function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
@@ -559,10 +557,10 @@ function __sp_grasp_callback_line_jump --no-scope-shadowing -d \
 	if test "$FZF_INPUT_STATE" = "enabled"
 		set -l digits (string match -r "[0-9]+\$" -- $FZF_QUERY)
 		if test -n "$digits"
-			echo "search()+wait+pos($digits)+hide-input+rebind($pager_mode_keys)"
+			echo "search()+wait+pos($digits)+show-header+hide-input+rebind($pager_mode_keys)"
 		end
 	else
-		echo "show-input+clear-query+unbind($pager_mode_keys)"
+		echo "hide-header+show-input+clear-query+unbind($pager_mode_keys)"
 	end
 end
 
@@ -624,7 +622,7 @@ function __sp_grasp_set_bat_cmd --no-scope-shadowing
 end
 
 function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
-	set grasptitle $cmd
+	set grasptitle "Viewing output of `$cmd`"
 	
 	set -a fzf_defaults \
 		--bind 'r,ctrl-r,f5:become(exec fzf)'

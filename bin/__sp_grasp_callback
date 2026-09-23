@@ -1,0 +1,40 @@
+#!/bin/sh
+{
+	
+set -eu
+# FAST callbacks for grasp / ppage fzf pager
+
+CMD="$1"
+shift
+case "$CMD" in
+	update_header)
+		reset=$(printf '\033[0m')
+		pos="$FZF_POS"
+		if [ -z "${GRASP_PAGER:-}" ]; then
+			# in grasp (non-pager) mode, show remaining lines as a negative count
+			pos="$((FZF_TOTAL_COUNT - FZF_POS + 1))"
+		fi
+		printf 'change-header(%s%s%s[line %s/%s] %s)\n' "$GRASP_HEADER_BG" "$GRASP_HEADER_FG" "$GRASP_HEADER_TEXT" "$pos" "$FZF_TOTAL_COUNT" "$reset"
+		;;
+	escape)
+		if [ "$FZF_INPUT_STATE" = "enabled" ]; then
+			if [ "$FZF_QUERY" = "" ]; then
+				echo 'show-header+hide-input+rebind('"$GRASP_PAGER_MODE_KEYS"')'
+			else
+				echo 'clear-query'
+			fi
+		else
+			if [ "$FZF_QUERY" = "" ]; then
+				echo 'abort'
+			else
+				echo 'hide-header+show-input+clear-query'
+			fi
+		fi
+		;;
+	*)
+		# non-accelerated callback loops back to the original function
+		exec fishcall grasp --fzf-callback "$CMD" "$@"
+		;;
+esac
+exit
+}
