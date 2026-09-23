@@ -178,6 +178,13 @@ function grasp -d \
 	if not set -q GRASP_BAT_MAX_SIZE
 		set GRASP_BAT_MAX_SIZE $default_bat_max_size
 	end
+	
+	if not set -q GRASP_MAX_FZF_RSS_KB
+		set -l mem_available_kb (awk '/^MemAvailable:/ { print $2 }' /proc/meminfo 2>/dev/null)
+		if set -q mem_available_kb[1] && test -n "$mem_available_kb"
+			set -x GRASP_MAX_FZF_RSS_KB (math -s0 "$mem_available_kb * 0.1")
+		end
+	end
 
 	if test (count $argv) -eq 0 && test -t 0
 		echo $usage >&2
@@ -502,7 +509,8 @@ function grasp -d \
 		--header $header \
 		--header-border=none \
 		--ghost "[fzf query, exact match, F1 or alt-h for help]" \
-		--bind 'focus,result:transform('$callback_cmd' update_header)'
+		--bind 'focus:transform('$callback_cmd' update_header)' \
+		--bind 'result:bg-transform('$callback_cmd' memory_guard)+transform('$callback_cmd' update_header)'
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	

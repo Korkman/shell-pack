@@ -1,0 +1,13 @@
+#!/bin/sh
+# Print RSS memory usage in KB for the given PID to stdout, or nothing if it cannot be determined.
+set -eu
+
+pid="$1"
+
+if [ -r "/proc/$pid/status" ]; then
+	# Linux
+	awk '/^VmRSS:/ { print $2; exit }' "/proc/$pid/status" 2>/dev/null
+else
+	# macOS/BSD: ps reports rss in KB
+	ps -o rss= -p "$pid" 2>/dev/null | tr -d ' '
+fi

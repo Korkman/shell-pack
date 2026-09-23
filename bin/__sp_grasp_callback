@@ -7,6 +7,20 @@ set -eu
 CMD="$1"
 shift
 case "$CMD" in
+	memory_guard)
+		# guard against fzf/search exhausting memory
+		max_fzf_rss_kb="${GRASP_MAX_FZF_RSS_KB:-524288}"
+		# fzf runs transform/execute actions via `$SHELL -c`, so $PPID is that
+		# shell, not fzf itself; walk up one more level to find fzf's real pid
+		fzf_pid="$PPID"
+		if [ "$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')" != "fzf" ]; then
+			fzf_pid=$(ps -o ppid= -p "$PPID" 2>/dev/null | tr -d ' ')
+		fi
+		fzf_rss_kb=$(__sp_mem_usage_pid "$fzf_pid" 2>/dev/null)
+		if [ -n "$fzf_rss_kb" ] && [ "$fzf_rss_kb" -gt "$max_fzf_rss_kb" ]; then
+			echo "unbind(result)+reload(echo 'Memory limit reached ($fzf_rss_kb kb > $max_fzf_rss_kb kb). Immediate exit.')+show-input+clear-query+wait+accept"
+		fi
+		;;
 	update_header)
 		reset=$(printf '\033[0m')
 		pos="$FZF_POS"
