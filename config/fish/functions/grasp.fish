@@ -112,7 +112,7 @@ function grasp -d \
 		echo "      Passed argument is strictly a command"
 		echo
 		echo "  --file"
-		echo "      Passed argument is strictly a file"
+		echo "      Passed argument is strictly a file / dir"
 		echo 
 		echo "Keybinds:"
 		echo
@@ -379,8 +379,12 @@ function grasp -d \
 
 		begin
 			for file in $argv
+				set -l type FILE
+				if test -d $file
+					set type DIR
+				end
 				if test -e $file
-					__sp_grasp_inline_header "  BEGIN FILE $file"
+					__sp_grasp_inline_header "  BEGIN $type $file"
 					set -l created (__sp_getbtime $file)
 					if test -n "$created"
 						set created (__sp_grasp_format_epoch $created)
@@ -391,7 +395,7 @@ function grasp -d \
 
 					# NOTE: when calling grasp, the stream stays open (following file), so forcing ppage here
 					ppage $argv_options --file $file 2>&1
-					__sp_grasp_inline_header "  END FILE $file"
+					__sp_grasp_inline_header "  END $type $file"
 				else
 					__sp_grasp_inline_header "  MISS FILE $file "(__spt warnsign)
 				end
@@ -399,8 +403,28 @@ function grasp -d \
 		end | fishcall $self
 		return
 	end
+	
+	if test $processing_mode = "file"
+		if test -d $argv[1]
+			set processing_mode "dir"
+		end
+	end
 
 	switch $processing_mode
+	case dir
+		# directory passed: page fancy "ls"
+		
+		set cmd ls -alh --color=always $argv[1]
+		
+		if test ! -t 1
+			# STDOUT is not a terminal! Someone is using us as a pipe
+			$cmd
+			return
+		end
+		
+		# no FZF_EDIT_COMMAND, would be a weird workflow
+		__sp_grasp_set_fzf_default_cmd
+		set grasptitle "Listing directory $argv[1]"
 	case file
 		# read from file
 		
