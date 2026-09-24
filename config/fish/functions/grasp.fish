@@ -128,12 +128,16 @@ function grasp -d \
 	end
 
 	set -l argv_copy $argv
-	argparse --stop-nonopt 'P/prompt=' 'cmd' 'file' 'F/quit-if-one-screen' p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' 'no-syntax' 'search=' 'fzf-callback=' help -- $argv
+	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'search=' 'fzf-callback=' help -- $argv
 	or begin
 		echo "grasp --help for usage"
 		return 1
 	end >&2
-	
+	set -l self grasp
+	if set -q _flag_pager
+		set self ppage
+	end
+
 	# these keys are only bound while the search input is hidden
 	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o,h'
 	set -x GRASP_PAGER_MODE_KEYS $pager_mode_keys
@@ -336,9 +340,6 @@ function grasp -d \
 		if not set -q argv[1]
 			__sp_error "--file: missing file argument"
 			return 2
-		else if test (count $argv) -gt 1
-			__sp_error "--file: too many arguments"
-			return 2
 		else if not test -e $argv[1]
 			__sp_error "--file: not a file: '"$argv[1]"'"
 			return 2
@@ -353,7 +354,7 @@ function grasp -d \
 			return 2
 		end
 		set processing_mode cmd
-	else if test (count $argv) -eq 1 && test -e $argv[1]
+	else if set -q argv[1] && test -e $argv[1]
 		set processing_mode file
 	else if test (count $argv) -ge 1 && type -q -- $argv[1]
 		set processing_mode cmd
@@ -366,6 +367,38 @@ function grasp -d \
 		echo $usage
 		return 1
 	end >&2
+
+	# when multiple files were passed, recurse into a pipe
+	if test $processing_mode = file && test (count $argv) -gt 1
+		# options precede the file args due to --stop-nonopt, so pass those through to ppage
+		set -l argv_options
+		set -l cnt_flags (math (count $argv_copy) - (count $argv))
+		if test $cnt_flags -gt 0
+			set argv_options $argv_copy[1..$cnt_flags]
+		end
+
+		begin
+			for file in $argv
+				if test -e $file
+					__sp_grasp_inline_header "  BEGIN FILE $file"
+					set -l created (__sp_getbtime $file)
+					if test -n "$created"
+						set created (__sp_grasp_format_epoch $created)
+					else
+						set created "unknown"
+					end
+					__sp_grasp_inline_header "    (birth $created, modified "(__sp_grasp_format_epoch (__sp_getmtime $file))")"
+
+					# NOTE: when calling grasp, the stream stays open (following file), so forcing ppage here
+					ppage $argv_options --file $file 2>&1
+					__sp_grasp_inline_header "  END FILE $file"
+				else
+					__sp_grasp_inline_header "  MISS FILE $file "(__spt warnsign)
+				end
+			end
+		end | fishcall $self
+		return
+	end
 
 	switch $processing_mode
 	case file
@@ -387,11 +420,11 @@ function grasp -d \
 		# setup bat
 		set skip_bat 0
 		set bat_filename $argv[1]
+		# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
 		if set -q cfd_type[1]
-			# strip the detected archive extension, then any rotated-log numeric suffix, for bat's syntax detection
 			set bat_filename (string replace -r -i "\.$cfd_type\$" '' -- $bat_filename)
-			set bat_filename (string replace -r '\.[0-9]+$' '' -- $bat_filename)
 		end
+		set bat_filename (string replace -r '\.[0-9]+$' '' -- $bat_filename)
 		if test (__sp_get_filesize $argv[1]) -gt $GRASP_BAT_MAX_SIZE
 			set skip_bat 1
 		end
@@ -487,10 +520,6 @@ function grasp -d \
 	end
 	
 	# add nice title, enable reload
-	set -l self grasp
-	if set -q _flag_pager
-		set self ppage
-	end
 	set grasptitle " $grasptitle (`$self`, press h for help or q to quit) "
 	
 	# restrict grasptitle to 80% of terminal width
@@ -632,10 +661,13 @@ end
 
 function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 	set grasptitle "Viewing output of `$cmd`"
-	
-	set -a fzf_defaults \
-		--bind 'r,ctrl-r,f5:become(exec fzf)'
-	
+
+	if test -t 0
+		# only bind reload when we have no stdin piped to the command
+		set -a fzf_defaults \
+			--bind 'r,ctrl-r,f5:become(exec fzf)'
+	end
+
 	if set -q FZF_EDIT_COMMAND
 		__sp_quote_args $FZF_EDIT_COMMAND | read -z -x FZF_EDIT_COMMAND
 		set -a fzf_defaults \
@@ -645,4 +677,21 @@ function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 	# leave cmd execution (and killing of it) to fzf
 	__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
 	set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
+end
+
+function __sp_grasp_inline_header
+	echo -n (__spt grasp_header_bg bg)(__spt grasp_header_fg)
+	printf %-"$COLUMNS"s $argv[1]
+	echo (set_color normal)
+end
+
+function __sp_grasp_format_epoch -a epoch -d \
+	'Format an epoch timestamp as a human-readable date, portably across GNU/BSD date'
+	if $__cap_date_is_gnu || $__cap_date_is_busybox
+		date -d "@$epoch" +'%F %T'
+	else if $__cap_date_is_bsd
+		date -r "$epoch" +'%F %T'
+	else
+		echo "$epoch"
+	end
 end
