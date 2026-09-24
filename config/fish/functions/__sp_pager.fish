@@ -1,7 +1,7 @@
 function __sp_pager -d \
 	'Invoke the configured pager, adapt flags if possible'
 
-	argparse 'F/quit-if-one-screen' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
+	argparse --stop-nonopt 'F/quit-if-one-screen' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
 	or return
 
 	set -l filename $argv[1]
@@ -72,7 +72,7 @@ function __sp_pager -d \
 	end
 
 	if set -q filename[1]
-		$pager $opts "$filename"
+		$pager $opts $argv
 	else
 		$pager $opts
 	end
