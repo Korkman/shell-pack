@@ -46,8 +46,8 @@ function rrg -d \
 		'f10:abort,'\
 		'esc:cancel,'\
 		'alt-i:change-preview(printf "Result line #{n}:\nLine %s in file %s\nMatched content:\n%s" {2} {1} {3..})+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
-		'alt-o:change-preview(rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
-		'enter:execute(fishcall __sp_pager --search=$query --line {2} {1}),'\
+		'alt-o:change-preview(fishcall rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
+		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
 		'right-click:toggle-preview,'\
 		'home:pos(0),end:pos(-1)'\
 	)

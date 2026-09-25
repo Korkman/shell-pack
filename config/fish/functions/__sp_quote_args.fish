@@ -3,7 +3,7 @@ function __sp_quote_args -d \
 	set -l sep ''
 	for opt in $argv
 		# quote argument only when necessary
-		if test $opt = '' || string match -q --regex -- '[\n\\"\' \(\)~#]' $opt
+		if test $opt = '' || string match -q --regex -- '[\\[\\]*\n\\"\' \(\)~#]' $opt
 			echo -n $sep'"'
 			echo -n -- $opt | string replace -a -- "\\" "\\\\" | string replace -a -- '"' '\\"'
 			echo -n '"'

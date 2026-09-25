@@ -20,12 +20,12 @@ function grasp -d \
 		echo "  G, alt-G             Jump to last line (and follow new input)"
 		echo "                       (also: alt-shift-down, shift-page-down, alt-page-down)"
 		echo "  l, alt-l, :          Prompt for a line number to jump to"
-		echo "                       (also: esc, f10)"
 		echo "  w, alt-w             Toggle word-wrap"
 		echo "  t, alt-t             Toggle tracking of current line on new input"
 		echo "  ctrl-r, f5           Reload content (when FILE or COMMAND was passed)"
 		echo "  alt-e, f4            Edit file in \$EDITOR (when FILE was passed)"
 		echo "  q, alt-q             Quit"
+		echo "                       (also: esc, f10)"
 		echo
 		echo (set_color brwhite --bold)"  MATCHING"(set_color normal)
 		echo "  space, /             New fzf search (see also FZF QUERY SYNTAX below)"
@@ -128,7 +128,7 @@ function grasp -d \
 	end
 
 	set -l argv_copy $argv
-	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'search=' 'fzf-callback=' help -- $argv
+	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'search=' 'then-search=' 'fzf-callback=' help -- $argv
 	or begin
 		echo "grasp --help for usage"
 		return 1
@@ -137,6 +137,7 @@ function grasp -d \
 	if set -q _flag_pager
 		set self ppage
 	end
+	set -x GRASP_SELF $self
 
 	# these keys are only bound while the search input is hidden
 	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o,h'
@@ -272,7 +273,7 @@ function grasp -d \
 		'alt-n,f3,n,ctrl-g:down-match+track-current,' \
 		':,alt-l,l:execute('$callback_cmd' line_jump_read)+clear-screen+transform('$callback_cmd' line_jump_apply),' \
 		'tab:toggle+down+track-current,' \
-		'alt-f,f:toggle-raw,' \
+		'alt-f,f:transform('$callback_cmd' toggle_raw),' \
 		'alt-q,q,f10:abort,' \
 		'alt-up,alt-.:prev-history,' \
 		'alt-down,alt-,:next-history,' \
@@ -297,9 +298,15 @@ function grasp -d \
 	end
 	
 	# start in compact mode with invisible search (q exits), unless a query was pre-filled
-	set -l start_bind 'start:trigger(esc)'
 	if set -q _flag_search
 		set -a fzf_defaults --query "$_flag_search"
+		if set -q _flag_then_search
+			set start_bind 'start:wait+change-query('"$_flag_then_search"')+trigger(enter)'
+		else
+			set start_bind 'start:trigger(enter)'
+		end
+	else
+		set start_bind 'start:trigger(esc)'
 	end
 	set -a fzf_defaults --bind "$start_bind"
 	
@@ -542,15 +549,6 @@ function grasp -d \
 	if set -q _flag_prompt
 		set grasptitle $_flag_prompt
 	end
-	
-	# add nice title, enable reload
-	set grasptitle " $grasptitle (`$self`, press h for help or q to quit) "
-	
-	# restrict grasptitle to 80% of terminal width
-	fish_prompt_shorten_string grasptitle 80
-	# TODO: this causes double-quoting?
-	#set grasptitle (__sp_quote_args $grasptitle)
-	
 	set -l header_bg (__spt grasp_header_bg bg)
 	set -l header_fg (__spt grasp_header_fg)
 	set -x GRASP_HEADER_BG "$header_bg"

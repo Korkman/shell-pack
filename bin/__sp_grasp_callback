@@ -1,70 +1,105 @@
 #!/bin/sh
+# FAST callbacks for grasp / ppage fzf pager
+# shellcheck disable=2329
 {
 	
 set -eu
-# FAST callbacks for grasp / ppage fzf pager
+
+filter_prompt="(alt-f) filter> "
+search_prompt="> "
+memory_guard() {
+	# guard against fzf/search exhausting memory
+	max_fzf_rss_kb="${GRASP_MAX_FZF_RSS_KB:-524288}"
+	# fzf runs transform/execute actions via `$SHELL -c`, so $PPID is that
+	# shell, not fzf itself; walk up one more level to find fzf's real pid
+	fzf_pid="$PPID"
+	if [ "$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')" != "fzf" ]; then
+		fzf_pid=$(ps -o ppid= -p "$PPID" 2>/dev/null | tr -d ' ')
+	fi
+	fzf_rss_kb=$(__sp_mem_usage_pid "$fzf_pid" 2>/dev/null)
+	if [ -n "$fzf_rss_kb" ] && [ "$fzf_rss_kb" -gt "$max_fzf_rss_kb" ]; then
+		echo "unbind(result)+reload(echo 'Memory limit GRASP_MAX_FZF_RSS_KB reached ($fzf_rss_kb kb > $max_fzf_rss_kb kb). Immediate exit.')+show-input+clear-query+wait+accept"
+	fi
+}
+
+toggle_raw() {
+	if [ -n "${FZF_RAW:-}" ]; then
+		printf %s "disable-raw+change-prompt($filter_prompt)+trigger(focus)"
+	else
+		printf %s "enable-raw+change-prompt($search_prompt)+trigger(focus)"
+	fi
+}
+
+update_header() {
+	reset=$(printf '\033[0m')
+	pos="$FZF_POS"
+	if [ -z "${GRASP_PAGER:-}" ]; then
+		# in grasp (non-pager) mode, show remaining lines as a negative count
+		pos="$((FZF_TOTAL_COUNT - FZF_POS + 1))"
+	fi
+	pre="[line $pos/$FZF_TOTAL_COUNT] "
+	ext=' (`'"${GRASP_SELF:-ppage}"'`, press h for help or q to quit)'
+	if [ -n "${FZF_QUERY:-}" ]; then
+		if [ -n "${FZF_RAW:-}" ]; then
+			pre="[$FZF_MATCH_COUNT matches, line $pos/$FZF_TOTAL_COUNT, alt-f to filter] "
+		else
+			pre="[FILTERING, match $pos/$FZF_MATCH_COUNT, alt-f to unfilter] "
+		fi
+	fi
+	
+	GRASP_HEADER_TEXT="$pre$GRASP_HEADER_TEXT$ext"
+	printf 'change-header(%s %s %s)\n' "$GRASP_HEADER_BG$GRASP_HEADER_FG" "$GRASP_HEADER_TEXT" "$reset"
+}
+
+escape() {
+	if [ "$FZF_INPUT_STATE" = "enabled" ]; then
+		if [ "$FZF_QUERY" = "" ]; then
+			echo 'show-header+hide-input+rebind('"$GRASP_PAGER_MODE_KEYS"')'
+		else
+			echo 'clear-query'
+		fi
+	else
+		if [ "$FZF_QUERY" = "" ]; then
+			echo 'abort'
+		else
+			# unfortunately we have to show the input to clear it :-/
+			echo 'hide-header+show-input+clear-query+unbind('"$GRASP_PAGER_MODE_KEYS"')'
+		fi
+	fi
+}
+
+line_jump_read() {
+	rm -f "$GRASP_JUMP_FILE"
+	# switch to the alternate screen (like fzf itself) so the prompt doesn't clutter scrollback
+	# done here rather than in fish's `read`, which leaves the alternate screen on its own
+	printf '\033[?1049h\033[H\033[?25h'
+	if [ -n "${FZF_RAW:-}" ]; then
+		printf 'Jump to line: '
+	else
+		printf 'Jump to match: '
+	fi
+	read -r line
+	printf '\033[?25l\033[?1049l'
+	case "$line" in
+		[1-9]*[0-9]|[1-9])
+			echo "$line" > "$GRASP_JUMP_FILE"
+			;;
+	esac
+}
+
+line_jump_apply() {
+	if [ -f "$GRASP_JUMP_FILE" ]; then
+		line=$(cat "$GRASP_JUMP_FILE")
+		rm -f "$GRASP_JUMP_FILE"
+		echo "pos($line)"
+	fi
+}
 
 CMD="$1"
 shift
 case "$CMD" in
-	memory_guard)
-		# guard against fzf/search exhausting memory
-		max_fzf_rss_kb="${GRASP_MAX_FZF_RSS_KB:-524288}"
-		# fzf runs transform/execute actions via `$SHELL -c`, so $PPID is that
-		# shell, not fzf itself; walk up one more level to find fzf's real pid
-		fzf_pid="$PPID"
-		if [ "$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')" != "fzf" ]; then
-			fzf_pid=$(ps -o ppid= -p "$PPID" 2>/dev/null | tr -d ' ')
-		fi
-		fzf_rss_kb=$(__sp_mem_usage_pid "$fzf_pid" 2>/dev/null)
-		if [ -n "$fzf_rss_kb" ] && [ "$fzf_rss_kb" -gt "$max_fzf_rss_kb" ]; then
-			echo "unbind(result)+reload(echo 'Memory limit reached ($fzf_rss_kb kb > $max_fzf_rss_kb kb). Immediate exit.')+show-input+clear-query+wait+accept"
-		fi
-		;;
-	update_header)
-		reset=$(printf '\033[0m')
-		pos="$FZF_POS"
-		if [ -z "${GRASP_PAGER:-}" ]; then
-			# in grasp (non-pager) mode, show remaining lines as a negative count
-			pos="$((FZF_TOTAL_COUNT - FZF_POS + 1))"
-		fi
-		printf 'change-header(%s%s%s[line %s/%s] %s)\n' "$GRASP_HEADER_BG" "$GRASP_HEADER_FG" "$GRASP_HEADER_TEXT" "$pos" "$FZF_TOTAL_COUNT" "$reset"
-		;;
-	escape)
-		if [ "$FZF_INPUT_STATE" = "enabled" ]; then
-			if [ "$FZF_QUERY" = "" ]; then
-				echo 'show-header+hide-input+rebind('"$GRASP_PAGER_MODE_KEYS"')'
-			else
-				echo 'clear-query'
-			fi
-		else
-			if [ "$FZF_QUERY" = "" ]; then
-				echo 'abort'
-			else
-				echo 'hide-header+show-input+clear-query'
-			fi
-		fi
-		;;
-	line_jump_read)
-		rm -f "$GRASP_JUMP_FILE"
-		# switch to the alternate screen (like fzf itself) so the prompt doesn't clutter scrollback
-		# done here rather than in fish's `read`, which leaves the alternate screen on its own
-		printf '\033[?1049h\033[H\033[?25h'
-		printf 'Jump to line: '
-		read -r line
-		printf '\033[?25l\033[?1049l'
-		case "$line" in
-			[1-9]*[0-9]|[1-9])
-				echo "$line" > "$GRASP_JUMP_FILE"
-				;;
-		esac
-		;;
-	line_jump_apply)
-		if [ -f "$GRASP_JUMP_FILE" ]; then
-			line=$(cat "$GRASP_JUMP_FILE")
-			rm -f "$GRASP_JUMP_FILE"
-			echo "pos($line)"
-		fi
+	memory_guard|toggle_raw|update_header|escape|line_jump_read|line_jump_apply)
+		"$CMD" "$@"
 		;;
 	*)
 		# non-accelerated callback loops back to the original function

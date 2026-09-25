@@ -38,9 +38,9 @@ lines with context.
 	set starting "start-with-cat"
 	set ending "end-with-less-multi"
 	set file_basename (basename "$_flag_file")
-	if set -q _flag_line
-		set ending "end-with-less-single"
-	end
+	#if set -q _flag_line
+	#	set ending "end-with-less-single"
+	#end
 
 	if set -q _flag_truncate
 		if ! set -q _flag_line
@@ -81,33 +81,35 @@ lines with context.
 		| head -n 20
 	end
 
-	function end-with-less-single --no-scope-shadowing -d \
-		'Present with less, highlighting a specific line'
-		
-		set -lx LESSHISTFILE '-'
-		less \
-		# ordering of commands passed to less seems flakey, sending the generic line search twice
-		"+/^[0-9]+:" \
-		# this search jumps to the focused line
-		'+/^'"$_flag_line"':' \
-		"+/^[0-9]+:" \
-		# move viewport a few lines down
-		-j 3 \
-		# allow ansi colors in source
-		-R \
-		# nice prompt
-		'-Ps '(rrg-in-file-desc)' | less - q to quit, h for help $'
-	end
-
 	function end-with-less-multi --no-scope-shadowing -d \
-		'Present with less, highlighting all line numbers followed by ":"'
+		'Present with ppage, highlighting matching line numbers, jumping to passed line number'
+
+		if set -q _flag_line
+			set search --search "^!\\ $_flag_line\\ "
+			set then_search --then-search "^!"
+		else
+			set search --search "^!"
+			set then_search
+		end
 		
-		set -lx LESSHISTFILE '-'
-		less \
-		"+/^[0-9]+:" \
-		-j 3 \
-		-R \
-		'-Ps '(rrg-in-file-desc)' | less - q to quit, h for help $'
+		awk \
+		# context linenumbers ("-" suffix)
+		-v cn=(__spt linenumber) \
+		# color reset
+		-v cr=(set_color normal) \
+		# match line numbers enclosed by rg in color reset codes,
+		# reformat matching lines to have ! at start
+		'match($0, /^(\033\[[0-9;]*m)*[0-9]+(\033\[[0-9;]*m)*[:-]/) {
+			seg = substr($0, RSTART, RLENGTH)
+			rest = substr($0, RSTART + RLENGTH)
+			gsub(/\033\[[0-9;]*m/, "", seg)
+			sep = substr(seg, length(seg), 1)
+			n = substr(seg, 1, length(seg) - 1)
+			print (sep == ":" ? "! ": "  ") cn n " " cr rest
+			next
+		}
+		{ print }' \
+		| ppage $search $then_search --prompt "Viewing rrg results"
 	end
 
 	function end-with-tail --no-scope-shadowing
@@ -118,10 +120,10 @@ lines with context.
 		# linenumber highlighted
 		-v lh=(set_color -b ffff00; set_color black) \
 		# linenumber normal
-		-v ln=(set_color green) \
+		-v ln=(__spt linenumber) \
 		# color reset
 		-v cr=(set_color normal) \
-		'BEGIN { OFS="" } { print (i == l ? lh : ln), i, (i == l ? ":" : "-"), cr, "", $0; i++ }'
+		'BEGIN { OFS="" } { print (i == l ? lh "!" : ln " ") cr " " ln i cr " " $0; i++ }'
 		if set -q _flag_rrg_preview
 			echo (set_color -b ff00ff; set_color black)' End of match preview with context | alt-p to hide pane '(set_color normal)
 		end
@@ -170,6 +172,8 @@ lines with context.
 	$opt_linenumber \
 	--context-separator "\n(…)\n" \
 	--color always \
+	# leave linenumbers uncolored so the end functions can match/highlight them themselves
+	--colors "line:none" \
 	$extra_opts \
 	-e "$query" \
 	# pipe to end function:
