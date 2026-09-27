@@ -21,13 +21,16 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	set -l to_stdout no
 	set -l resume_dl ask
 	set -l retry_count 3
+	set -l ip_version_opt
 	
 	set -l cache_pass_args
 	set -l cache_key_args
 	set -l cache_allow_stale no
 	
 	if test (count $argv) = 0 || test "$argv[1]" = '--help'
-		echo "Usage: dl [--cache=EXPIRY] [--curl|--wget] [-v|--verbose] [-s|--silent] [--resume|--overwrite] [--retry=N] <url> [output_file]"
+		echo "Usage: dl [--cache=EXPIRY] [--curl|--wget] [-v|--verbose] [-s|--silent]"
+		echo "          [--resume|--overwrite] [--retry=N] [-4|-6]"
+		echo "          <url> [output_file|-]"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
@@ -72,6 +75,10 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 			case '--retry=*' '--tries=*'
 				set retry_count (string replace -r '^--[^=]+=?' '' -- "$arg")
 				set -a cache_pass_args "$arg"
+			case '-4' '-6'
+				set ip_version_opt "$arg"
+				set -a cache_pass_args "$arg"
+				set -a cache_key_args "$arg"
 			case '*'
 				set -a args "$arg"
 				set -a cache_pass_args "$arg"
@@ -195,6 +202,9 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	if test "$use_tool" = "curl"
 		test "$silent" = "yes" || echo "Download with curl ..." >&2
 		set -l base_opt -L --max-redirs 10 --retry $retry_count --globoff -f
+		if test -n "$ip_version_opt"
+			set -a base_opt $ip_version_opt
+		end
 		set -l silent_opt
 		set -l writeout_opt --write-out '%{url_effective}\n-> HTTP %{http_code} %{content_type}\n'
 		set -l resume_opt -C -
@@ -231,6 +241,9 @@ Will ask to resume or overwrite if already present. Pipe friendly."
 	else if test "$use_tool" = "wget"
 		test "$silent" = "yes" || echo "Download with wget ..." >&2
 		set -l base_opt --tries $retry_count
+		if test -n "$ip_version_opt"
+			set -a base_opt $ip_version_opt
+		end
 		if $__cap_wget_has_no_use_server_timestamps
 			set -a base_opt --no-use-server-timestamps
 		end
