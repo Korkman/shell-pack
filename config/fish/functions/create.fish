@@ -63,6 +63,9 @@ function create -d "Creates a new text file with a basic template and opens it i
 			case "timer"
 				set argv[2] $argv[1]
 				set argv[1] "systemd-timer"
+			case '*'
+				set argv[2] $argv[1]
+				set argv[1] "$extension"
 		end
 		set file_type $argv[1]
 	end
@@ -144,9 +147,19 @@ function create -d "Creates a new text file with a basic template and opens it i
 			set template "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Title</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>"
 			set line 6
 			set suggested_ext ".htm"
+		case "json"
+			set template "{\n  \"key\": \"value\"\n}"
+			set suggested_ext ".json"
+		case "jsonc"
+			set template "// comments, multi-line with /* */\n{\n  \"key\": \"value\"\n}"
+			set suggested_ext ".jsonc"
+		case "ndjson"
+			set template "{ \"row\": 1 }\n{ \"row\": 2 }"
+			set suggested_ext ".ndjson"
 		case '*'
-			echo "Error: Unsupported type '$file_type'. Supported types are: bash, sh, fish, python, docker-compose, dockerfile, systemd-service, systemd-mount, systemd-automount, systemd-timer, cron, desktop, html, md, txt, ini, .env, yaml."
-			return 1
+			set template "Unknown file type, go ahead."
+			set line 1
+			set suggested_ext ""
 	end
 
 	if test (count $argv) -lt 2
@@ -174,7 +187,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 		end
 	end
 	
-	if test -n "$suggested_ext" && ! string match -q "*$suggested_ext" -- "$filename"
+	if test -n "$suggested_ext" && ! string match -q "*.*" -- "$filename"
 		set filename "$filename$suggested_ext"
 	end
 	
