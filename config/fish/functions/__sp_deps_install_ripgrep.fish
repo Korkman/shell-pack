@@ -2,7 +2,7 @@ function __sp_deps_install_ripgrep
 	echo "Project website: https://github.com/BurntSushi/ripgrep"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "15.1.0"
+		set pversion "15.2.0"
 	end
 	set tpl_arm_other "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-armv7-unknown-linux-gnueabihf.tar.gz"
 	set tpl_arm_aarch64 "https://github.com/BurntSushi/ripgrep/releases/download/VERSION/ripgrep-VERSION-aarch64-unknown-linux-gnu.tar.gz"

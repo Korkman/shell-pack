@@ -211,7 +211,6 @@ function td-version -d \
 	/repo/get.sh $argv
 	echo "maybe run:"
 	echo shell-pack-check-deps
-	echo reinstall-shell-pack-prefs
 end
 
 function td-override -d \
@@ -274,5 +273,4 @@ function td-edit-live -d \
 	echo "Linked $srcdir -> /repo"
 	echo "maybe run:"
 	echo shell-pack-check-deps
-	echo reinstall-shell-pack-prefs
 end
