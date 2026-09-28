@@ -7,7 +7,7 @@ function shell-pack-check-deps -d \
 	
 	if ! set -q __sp_first_startup_done
 		echo "This seems to be your first time using shell-pack. Welcome!"
-		echo "You can repeat this setup at any time by invoking 'shell-pack-check-deps.fish'."
+		echo "You can repeat this setup at any time by invoking 'shell-pack-check-deps'."
 		echo "Please take a minute to confirm or reject the following steps."
 		echo
 		set --universal __sp_first_startup_done 1
