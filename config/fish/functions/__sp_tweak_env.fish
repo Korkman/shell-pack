@@ -207,12 +207,19 @@ end
 
 function __sp_tweak_systemd_pagersecure -v SYSTEMD_PAGER -v PAGER -d \
 	"Keep SYSTEMD_PAGERSECURE in sync with internal whitelist of secure pagers"
-	
 	# "secure" in the sense that the pager won't allow the user to spawn arbitrary processes (grasp / ppage are not designed to do so)
 	# see https://www.freedesktop.org/software/systemd/man/latest/systemd-inhibit.html#%24SYSTEMD_PAGERSECURE
 	
+	if set -q __sp_mute_event_var_systemd_pager
+		return
+	end
+	
 	if test -z "$SYSTEMD_PAGER"
-		set --no-event -f SYSTEMD_PAGER "$PAGER"
+		# copy over PAGER to SYSTEMD_PAGER, whatever it is
+		# --no-event is a recent addition to fish, so we use a "mute" variable
+		set -g __sp_mute_event_var_systemd_pager 1
+		set -f SYSTEMD_PAGER "$PAGER"
+		set -ge __sp_mute_event_var_systemd_pager
 	end
 	
 	# blacklist:
