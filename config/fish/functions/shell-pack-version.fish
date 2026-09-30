@@ -5,5 +5,5 @@ function shell-pack-version \
 	# won't cause reloads anymore!
 	
 	# NOTE: the following line is parsed by legacy versions (<= 3.31) of __sp_upgrade_check!
-	echo '3.97'
+	echo '3.98'
 end
