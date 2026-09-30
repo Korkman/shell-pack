@@ -1,11 +1,9 @@
-function upgrade-fish
-	argparse s/subtle -- $argv
-	or return
+function __sp_upgrade_fish
 	set -l repo_version (__sp_get_newer_fish_version)
 	switch $status
 		case 0
-			if set -q _flag_subtle
-				echo "Update: run 'upgrade-fish' to upgrade from "$FISH_VERSION" to "$repo_version"!"
+			if test "$argv[1]" = "check"
+				echo "Update: run 'shell-pack-upgrade fish' to upgrade from "$FISH_VERSION" to "$repo_version"!"
 				return
 			end
 			echo "A new version of FISH is available: $repo_version"
@@ -82,10 +80,10 @@ function upgrade-fish
 			reload
 			or begin echo "Error: reload failed"; return 7; end
 		case 1
-			set -q _flag_subtle || echo "You are already using the latest fish version: $repo_version"
+			test "$argv[1]" = "check" || echo "You are already using the latest fish version: $repo_version"
 			return 0
 		case 2
-			set -q _flag_subtle || echo "Error"
+			test "$argv[1]" = "check" || echo "Error"
 			return 1
 	end
 end
@@ -100,5 +98,5 @@ function __sp_get_newer_fish_version
 	end
 
 	echo "$repo_version"
-	return 0
 end
+

@@ -29,4 +29,4 @@ mv "$HOME/.local/share/shell-pack/config" "$HOME/.local/share/shell-pack/config.
 ln -s "$DEVEL_DIR/bin" "$HOME/.local/share/shell-pack/bin"
 ln -s "$DEVEL_DIR/config" "$HOME/.local/share/shell-pack/config"
 
-echo "Now run shell-pack-check-deps"
+echo "Now run shell-pack-deps check"

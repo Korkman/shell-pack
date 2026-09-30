@@ -117,7 +117,7 @@ Follow the setup guide for your terminal to install a Nerd Font (properly!):
 Congratulations! Your prompt should look gorgeus now.
 
 ## Updates
-Retrieving the latest version is as simple as running ```upgrade-shell-pack```. If any dependencies need to be upgraded as well, shell-pack will say so.
+Retrieving the latest version is as simple as running ```shell-pack-upgrade```. If any dependencies need to be upgraded as well, shell-pack will say so.
 
 Shell-pack will check for a new version once a day on login and suggest an upgrade. This can be disabled by setting the variable $UPGRADE_SHELLPACK to "no" (`set -U UPGRADE_SHELLPACK no`) and enabled again through erasing the variable (`set -eU UPGRADE_SHELLPACK`). This also controls `fresh` editor updates.
 
@@ -140,4 +140,4 @@ Install as usual. Clone git repo into a dedicated directory. Symlink the followi
  * `~/.local/share/shell-pack/bin`
  * `~/.local/share/shell-pack/config`
 
-This will have your changes take immediate effect on the local installation and you will be able to create commits. Be aware that upgrade-shell-pack will overwrite your git directory - it should not be run on developer installations. Also, do not accidentially add the binaries rg, fzf or sk to the repo.
+This will have your changes take immediate effect on the local installation and you will be able to create commits. Be aware that shell-pack-upgrade will overwrite your git directory - it should not be run on developer installations. Also, do not accidentially add the binaries rg, fzf or sk to the repo.

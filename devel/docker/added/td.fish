@@ -210,7 +210,7 @@ function td-version -d \
 	rm -rf $HOME/.local/share/shell-pack/src
 	/repo/get.sh $argv
 	echo "maybe run:"
-	echo shell-pack-check-deps
+	echo "shell-pack-deps check"
 end
 
 function td-override -d \
@@ -272,5 +272,5 @@ function td-edit-live -d \
 	ln -s /repo "$srcdir"
 	echo "Linked $srcdir -> /repo"
 	echo "maybe run:"
-	echo shell-pack-check-deps
+	echo "shell-pack-deps check"
 end

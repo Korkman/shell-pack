@@ -1,7 +1,7 @@
 function shell-pack-deps -d \
 	"Perform various actions to manage dependencies"
-	if test "$argv[1]" = "check"
-		shell-pack-check-deps
+	if test "$argv[1]" = "check" || test "$argv[1]" = ""
+		__sp_deps_check
 	else if test "$argv[1]" = "install"
 		if test "$argv[2]" = "fzf"
 			__sp_deps_install_fzf $argv[3] || echo "Failed with status $status"

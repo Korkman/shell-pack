@@ -1,5 +1,5 @@
 ## Preferences
-A set of biased config files for midnight commander, htop, tmux, screen and fresh is included and offered to install on first startup (```reinstall-shell-pack-prefs```). Here are some examples:
+A set of biased config files for midnight commander, htop, tmux, screen and fresh is included and offered to install on first startup (```shell-pack-prefs install```). Here are some examples:
 
 ### mc
 * is dark themed for better readability
