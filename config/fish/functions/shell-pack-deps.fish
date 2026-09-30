@@ -19,8 +19,40 @@ function shell-pack-deps -d \
 			echo "Invalid argument"
 			return 2
 		end
+	else if test "$argv[1]" = "minimum"
+		switch "$argv[2]"
+			case ripgrep
+				echo "15.2.0"
+			case fzf
+				# the development version of fzf compiles to "0.xx (devel)", relevant on termux
+				echo "0.74"
+			case dool
+				echo "1.3.8"
+			case fresh
+				echo "0.5.1"
+			case bat
+				echo "0.26.1"
+			case localsend-cli
+				echo "1.18.2"
+			case '*'
+				echo "unknown"
+				return 1
+		end
+	else if test "$argv[1]" = "recommended"
+		switch "$argv[2]"
+			case fzf
+				echo "0.74.4"
+			case localsend-cli
+				echo "latest"
+			case '*'
+				echo (shell-pack-deps minimum "$argv[2]")
+		end
 	else
-		echo "Invalid argument"
+		echo "Usage: shell-pack-deps [check|install|minimum|recommended]"
+		echo "  check              - check if dependencies are up-to-date"
+		echo "  install <pkg> [v]  - install <pkg> at version [v] (or recommended)"
+		echo "  minimum <pkg>      - show minimum required version"
+		echo "  recommended <pkg>  - show recommended version"
 		return 1
 	end
 end

@@ -5,7 +5,7 @@ function localsend-cli -d "LocalSend CLI wrapper with on-demand installation"
 	set argv $argv_copy
 	
 	if not command -q localsend-cli
-		__sp_test_product_version "localsend-cli" "1.18.2" "localsend-cli --version" "Run: shell-pack-deps install localsend-cli v\$minver"
+		__sp_test_product_version "localsend-cli" (shell-pack-deps minimum localsend-cli) "localsend-cli --version" "Run: shell-pack-deps install localsend-cli "(shell-pack-deps recommended localsend-cli)
 		or return $status
 	end
 

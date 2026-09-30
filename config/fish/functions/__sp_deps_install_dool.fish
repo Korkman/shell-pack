@@ -7,7 +7,7 @@ function __sp_deps_install_dool
 	echo "Project website: https://github.com/scottchiefbaker/dool"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "1.3.8"
+		set pversion (shell-pack-deps recommended dool)
 	end
 	set url "https://github.com/scottchiefbaker/dool/archive/refs/tags/vVERSION.tar.gz"
 	

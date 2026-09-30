@@ -32,10 +32,7 @@ function shell-pack-prefs \
 	and cmp -s -- "$__sp_config_dir/fresh/init.ts" ~/.config/fresh/init.ts
 	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack.json" ~/.config/fresh/themes/shell-pack.json
 	and cmp -s -- "$__sp_config_dir/fresh/themes/shell-pack-16-colors.json" ~/.config/fresh/themes/shell-pack-16-colors.json
-		if test "$verb" = "check"
-			return 0
-		end
-		return
+		return 0
 	end
 	
 	# Prefs don't match

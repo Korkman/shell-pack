@@ -46,6 +46,8 @@ function __sp_deps_install_fresh
 			echo "Could not determine latest release tag"
 			return 1
 		end
+	else if test "$argv[1]" = ""
+		set tag "v"(shell-pack-deps recommended fresh)
 	else
 		set tag $argv[1]
 	end

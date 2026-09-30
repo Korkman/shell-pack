@@ -2,7 +2,7 @@ function __sp_deps_install_bat
 	echo "Project website: https://github.com/sharkdp/bat"
 	set pversion "$argv[1]"
 	if test "$pversion" = ""
-		set pversion "0.26.1"
+		set pversion (shell-pack-deps recommended bat)
 	end
 	set tpl_arm_other "https://github.com/sharkdp/bat/releases/download/vVERSION/bat-vVERSION-arm-unknown-linux-gnueabihf.tar.gz"
 	set tpl_arm_aarch64 "https://github.com/sharkdp/bat/releases/download/vVERSION/bat-vVERSION-aarch64-unknown-linux-gnu.tar.gz"

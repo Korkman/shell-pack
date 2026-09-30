@@ -37,7 +37,10 @@ function __sp_deps_install_localsend_cli -d "Install localsend-cli"
 	
 	set -l pversion "$argv[1]"
 	set -l tag
-	if test -z "$pversion"; or test "$pversion" = "latest"
+	if test -z "$pversion"
+		set "$pversion" (shell-pack-deps recommended localsend-cli)
+	end
+	if test "$pversion" = "latest"
 		echo "Looking up latest release tag ..."
 		set tag (dl -q "https://api.github.com/repos/localsend/localsend/releases/latest" | string match --regex '"tag_name":\s*"[^"]+"' | string match --regex 'v[0-9][^"]*')
 		if test -z "$tag"
