@@ -279,15 +279,16 @@ echo "Run $docker"
 CACHED_FILES="rg fzf fresh bat localsend-cli dool.d"
 if [ "$USE_CACHED_DOWNLOADS" = "yes" ]
 then
-	echo "Copy over available cached files …"
+	printf %s "Copy over available cached files "
 	for cached_file in $CACHED_FILES
 	do
 		if [ -e "$cachedir/$cached_file" ]
 		then
-			echo "$cached_file …"
+			printf %s "$cached_file "
 			cp -a "$cachedir/$cached_file" "$tmpdir/"
 		fi
 	done
+	echo "… done"
 fi
 
 extra_mounts_args=""
