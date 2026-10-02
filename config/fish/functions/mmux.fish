@@ -36,96 +36,93 @@ using socket SOCKET_NAME.
 			set -g __term_muxer "none"
 		end
 		
-		if ! set -q MC_SID
-			# do not update environment inside mc
-			function __mmux_tmux_update_shell_env --on-event fish_prompt --on-event fish_focus_in
-				if set -q TMUX
-					# inside TMUX, grab environment update with extra variables not imported
-					set -l accept_env $__mmux_imported_environment __sp_tmux_ver 
-					
-					# skip variables that were locally modified outside of this routine,
-					# so a manual local change is not silently overwritten again
-					for masked in $__mmux_masked_environment
-						set -l idx (contains -i -- $masked $accept_env)
-						if set -q idx[1]
-							set -e accept_env[$idx]
-						end
+		function __mmux_tmux_update_shell_env --on-event fish_prompt --on-event fish_focus_in
+			if set -q TMUX
+				# inside TMUX, grab environment update with extra variables not imported
+				set -l accept_env $__mmux_imported_environment __sp_tmux_ver 
+				
+				# skip variables that were locally modified outside of this routine,
+				# so a manual local change is not silently overwritten again
+				for masked in $__mmux_masked_environment
+					set -l idx (contains -i -- $masked $accept_env)
+					if set -q idx[1]
+						set -e accept_env[$idx]
 					end
-					
-					set -l tmux_env (tmux show-environment 2> /dev/null)
-					or return # tmux commands fail when env variable is set but not writable (su)
-					
-					# guard so __mmux_watch_* handlers can tell this update apart
-					# from a local modification made by the user
-					set -g __mmux_env_updating 1
-					
-					# update environment
-					for v in $tmux_env
-						if [ (string sub --start 1 --length 1 -- $v) = "-" ]
-							# erase variables prefixed with minus which are currently set
-							set -l vminus (string sub --start 2 -- $v)
-							if contains -- $vminus $accept_env && set -q $vminus
-								#echo "tmux: unset $vminus"
-								set -ge $vminus
-							end
-						else
-							# update changed variables
-							set -l vsplit (string split --max 1 "=" -- $v)
-							set -l vname "$vsplit[1]"
-							set -l vval "$vsplit[2]"
-							if contains -- $vname $accept_env
-								# variable is on whitelist
-								if ! set -q $vname
-									# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
-									set -gx $vname $vval
-								else if [ "$$vname" != "$vval" ]
-									# value does not match, overwrite the global variable with the export flag kept as-is
-									#echo "tmux: set $vname=$vval"
-									if set --show "$vname" | string match --quiet --regex '.*: set in global scope, unexported.*'
-										set -g $vname $vval
-									else
-										set -gx $vname $vval
-									end
-								end # if
-							end # if
-							
-						end # if
-					end # for
-					
-					# special case for TERM: set it to tmux show-option -v default-terminal
-					set -l NEWTERM (tmux show-options -gv @copy-default-terminal 2>/dev/null)
-					if test "$NEWTERM" != "" && test "$NEWTERM" != "$TERM"
-						set -gx TERM "$NEWTERM"
-					end
-					
-					set -e __mmux_env_updating
-					
-				end # if
-			end # function
-			
-			# execute once right after execution so variable __sp_tmux_ver is immediately available
-			__mmux_tmux_update_shell_env
-			
-			# watch imported environment variables for local modifications: if a
-			# variable changes outside of __mmux_tmux_update_shell_env, assume the
-			# user (or some other code) deliberately changed it locally and mask
-			# it from future tmux-driven updates
-			for v in $__mmux_imported_environment
-				# except LC_NERDLEVEL, which synchronizes across all tmux windows on purpose
-				if test "$v" = "LC_NERDLEVEL"
-					continue
 				end
-				if not functions -q __mmux_watch_$v
-					function __mmux_watch_$v --on-variable $v -V v
-						if not set -q __mmux_env_updating
-							if not contains -- $v $__mmux_masked_environment
-								set -ga __mmux_masked_environment $v
-							end
+				
+				set -l tmux_env (tmux show-environment 2> /dev/null)
+				or return # tmux commands fail when env variable is set but not writable (su)
+				
+				# guard so __mmux_watch_* handlers can tell this update apart
+				# from a local modification made by the user
+				set -g __mmux_env_updating 1
+				
+				# update environment
+				for v in $tmux_env
+					if [ (string sub --start 1 --length 1 -- $v) = "-" ]
+						# erase variables prefixed with minus which are currently set
+						set -l vminus (string sub --start 2 -- $v)
+						if contains -- $vminus $accept_env && set -q $vminus
+							#echo "tmux: unset $vminus"
+							set -ge $vminus
+						end
+					else
+						# update changed variables
+						set -l vsplit (string split --max 1 "=" -- $v)
+						set -l vname "$vsplit[1]"
+						set -l vval "$vsplit[2]"
+						if contains -- $vname $accept_env
+							# variable is on whitelist
+							if ! set -q $vname
+								# not currently set -> assume it is meant to be exported (SSH_AUTH_SOCK is)
+								set -gx $vname $vval
+							else if [ "$$vname" != "$vval" ]
+								# value does not match, overwrite the global variable with the export flag kept as-is
+								#echo "tmux: set $vname=$vval"
+								if set --show "$vname" | string match --quiet --regex '.*: set in global scope, unexported.*'
+									set -g $vname $vval
+								else
+									set -gx $vname $vval
+								end
+							end # if
+						end # if
+						
+					end # if
+				end # for
+				
+				# special case for TERM: set it to tmux show-option -v default-terminal
+				set -l NEWTERM (tmux show-options -gv @copy-default-terminal 2>/dev/null)
+				if test "$NEWTERM" != "" && test "$NEWTERM" != "$TERM"
+					set -gx TERM "$NEWTERM"
+				end
+				
+				set -e __mmux_env_updating
+				
+			end # if
+		end # function
+		
+		# execute once right after execution so variable __sp_tmux_ver is immediately available
+		__mmux_tmux_update_shell_env
+		
+		# watch imported environment variables for local modifications: if a
+		# variable changes outside of __mmux_tmux_update_shell_env, assume the
+		# user (or some other code) deliberately changed it locally and mask
+		# it from future tmux-driven updates
+		for v in $__mmux_imported_environment
+			# except LC_NERDLEVEL, which synchronizes across all tmux windows on purpose
+			if test "$v" = "LC_NERDLEVEL"
+				continue
+			end
+			if not functions -q __mmux_watch_$v
+				function __mmux_watch_$v --on-variable $v -V v
+					if not set -q __mmux_env_updating
+						if not contains -- $v $__mmux_masked_environment
+							set -ga __mmux_masked_environment $v
 						end
 					end
 				end
 			end
-		end # if
+		end
 		
 		return 0
 	end
