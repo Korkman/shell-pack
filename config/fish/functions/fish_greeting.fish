@@ -17,16 +17,15 @@ function fish_greeting -d "shell-pack says hello"
 	echo -n "Welcome to FISH $FISH_VERSION"
 	echo -ne " + shell-pack "(shell-pack-version) $theme_greeting_add "\n"
 	
-	if ! set -q __sp_first_startup_done
-		echo "This seems to be your first time using shell-pack. Welcome!"
-		echo "Please take a minute to confirm or reject the following steps."
-		echo "You can repeat this setup at any time by invoking 'shell-pack-deps check'."
-		echo
-		shell-pack-deps check
-		set --universal __sp_first_startup_done 1
-	end
-	
 	if [ "$UPGRADE_SHELLPACK" != "no" ]
+		if ! set -q __sp_first_startup_done
+			echo "This seems to be your first time using shell-pack. Welcome!"
+			echo "Please take a minute to confirm or reject the following steps."
+			echo "You can repeat this setup at any time by invoking 'shell-pack-deps check'."
+			echo
+			shell-pack-deps check
+			set --universal __sp_first_startup_done 1
+		end
 		# check once a day for new version and dependendies
 		set -l thisdate (date +%Y%m%d)
 		if test "$__sp_last_date_check_deps" != "$thisdate""."(shell-pack-version)
