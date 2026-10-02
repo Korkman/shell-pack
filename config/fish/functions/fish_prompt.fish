@@ -107,6 +107,13 @@ function fish_prompt -d \
 		__fish_prompt_reduce_pwd_budget chroot_tag
 		fish_prompt_segment "chroot_bg" "chroot_fg" "$chroot_tag"
 	end
+	
+	if set -q MC_SID
+		# mark prompt inside mc
+		set -l mc_tag "\$mc"
+		__fish_prompt_reduce_pwd_budget mc_tag
+		fish_prompt_segment "venv_bg" "venv_fg" "$mc_tag"
+	end
 
 	# python virtual_env support
 	if set -q VIRTUAL_ENV
@@ -423,6 +430,15 @@ function __sp_reformat_cmdline -d \
 		end
 	end
 end
+
+#function __sp_autoclean_terminal -e fish_prompt -d \
+#	"Automatic clean-up after (crashed) processes: disable mouse, focus tracking and graphics modes"
+#	#printf '\e[?1000l\e[?1002l\e[?1003l\e[?1004l\e[?1006l\e[0m\e[?25h'
+#end
+
+#function __debug_focus -e fish_focus_in
+#	echo "focus in"
+#end
 
 function enhanced_prompt -e fish_postexec -d "Foreground and background job execution tracking and status code clearance"
 	set -g __saved_pipestatus (string split ' ' -- "$pipestatus")
