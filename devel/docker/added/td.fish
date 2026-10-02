@@ -207,10 +207,10 @@ function td-version -d \
 		return 1
 	end
 
+	set -e __sp_last_date_check_deps
 	rm -rf $HOME/.local/share/shell-pack/src
 	/repo/get.sh $argv
-	echo "maybe run:"
-	echo "shell-pack-deps check"
+	exec fish
 end
 
 function td-override -d \
@@ -271,6 +271,6 @@ function td-edit-live -d \
 	rm -rf "$srcdir"
 	ln -s /repo "$srcdir"
 	echo "Linked $srcdir -> /repo"
-	echo "maybe run:"
-	echo "shell-pack-deps check"
+	set -e __sp_last_date_check_deps
+	exec fish
 end

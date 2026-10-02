@@ -64,15 +64,6 @@ function __sp_deps_check -d \
 		return 1
 	end
 	
-	if ! set -q __sp_first_startup_done
-		echo "This seems to be your first time using shell-pack. Welcome!"
-		echo "You can repeat this setup at any time by invoking 'shell-pack-deps check'."
-		echo "Please take a minute to confirm or reject the following steps."
-		echo
-		shell-pack-prefs install
-		set --universal __sp_first_startup_done 1
-	end
-	
 	set __shp_outdated_deps ""
 	
 	__sp_test_product_version "ripgrep" (shell-pack-deps minimum ripgrep) "rg --version"       "Run: shell-pack-deps install ripgrep "(shell-pack-deps recommended ripgrep)
@@ -89,4 +80,5 @@ function __sp_deps_check -d \
 		echo "outdated: $__shp_outdated_deps"
 	end
 	
+	shell-pack-prefs install
 end
