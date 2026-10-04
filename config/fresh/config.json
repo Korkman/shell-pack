@@ -179,7 +179,8 @@
     },
     {
       "modifiers": ["alt"], "key": "o",
-      "action": "orchestrator_dock_toggle",
+      //"action": "orchestrator_dock_toggle",
+      "action": "none",
       "when": "global"
     },
     // several alternatives to switch buffers in case ctrl-pgup/-pgdn don't pass
@@ -263,11 +264,15 @@
     }
   },
   "theme": "shell-pack",
+  "orchestrator_mode": false,
   "plugins": {
     "welcome": {
       "enabled": false
     },
     "welcome_screen": {
+      "enabled": false
+    },
+    "orchestrator": {
       "enabled": false
     }
   }
