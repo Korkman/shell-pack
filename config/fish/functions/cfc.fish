@@ -45,6 +45,7 @@ function cfc -d \
 	# more directory compressors
 	set comprext $comprext'|7z'
 	set comprext $comprext'|zip'
+	set comprext $comprext'|squashfs|sqfs'
 	set comprext $comprext'|cpio'
 	set comprext $comprext'|cpio\.gz'
 	set comprext $comprext'|cpio\.zst'
@@ -248,6 +249,19 @@ function cfc -d \
 			case '7z'
 				__sp_require_cmd $bin_7z || return 1
 				$bin_7z a $passed_args "$filename" "$src"
+			case 'squashfs' 'sqfs'
+				__sp_require_cmd mksquashfs || return 1
+				# mksquashfs refuses to overwrite, so remove any existing destination first
+				rm -f -- "$filename"
+				set -l squashfs_args $passed_args
+				if ! contains -- '-comp' $squashfs_args
+					if $__cap_mksquashfs_has_zstd
+						set -a squashfs_args -comp zstd
+					else if $__cap_mksquashfs_has_xz
+						set -a squashfs_args -comp xz
+					end
+				end
+				mksquashfs "$src" "$filename" $squashfs_args
 			case 'cpio'
 				__sp_require_cmd cpio || return 1
 				set filename (builtin path resolve "$filename")
@@ -412,6 +426,9 @@ function cfc -d \
 				echo "The 7z compressor cannot stream to stdout, it needs seek operations" >&2
 				return 1
 				$bin_7z a $passed_args -so "$src"
+			case 'squashfs' 'sqfs'
+				echo "The squashfs compressor cannot stream to stdout, it needs seek operations" >&2
+				return 1
 			case 'cpio'
 				__sp_require_cmd cpio || return 1
 				pushd (dirname "$src") || return 1

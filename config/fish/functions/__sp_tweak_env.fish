@@ -319,6 +319,8 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_tail_has_r "__sp_cap_tail_has_r"
 	set -g __cap_hexdump_has_color "__sp_cap_hexdump_has_color"
 	set -g __cap_timeout_has_t "__sp_cap_timeout_has_t"
+	set -g __cap_mksquashfs_has_zstd "__sp_cap_mksquashfs_has_zstd"
+	set -g __cap_mksquashfs_has_xz "__sp_cap_mksquashfs_has_xz"
 end
 
 function __sp_tweak_keybinds \

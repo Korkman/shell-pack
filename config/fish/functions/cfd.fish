@@ -57,6 +57,8 @@ function cfd -d \
 		set format cpio
 	else if string match -qir '\.7z$' -- "$filename"
 		set format 7z
+	else if string match -qir '\.(squashfs|sqfs)$' -- "$filename"
+		set format squashfs
 	else if string match -qir '\.gz$' -- "$filename"
 		set format gz
 	else if string match -qir '\.zst$' -- "$filename"
@@ -122,6 +124,8 @@ function cfd -d \
 			set format lzo
 		else if string match -q 'application/x-cpio' -- "$mime"
 			set format cpio
+		else if string match -q '*squashfs*' -- "$mime"
+			set format squashfs
 		else
 			if set -q _flag_get_type
 				return 1
@@ -159,6 +163,11 @@ function cfd -d \
 		__sp_require_cmd $bin_7z || return 1
 		__sp_cfd_make_dst_dir || return 2
 		$bin_7z x "$filename" -o"$dst"
+	case squashfs
+		__sp_require_cmd unsquashfs || return 1
+		__sp_cfd_make_dst_dir || return 2
+		# -f lets unsquashfs write into the already-created destination directory
+		unsquashfs -f -d "$dst" "$filename"
 	case gz
 		__sp_require_cmd gunzip || return 1
 		__sp_cfd_make_dst_file || return 2
