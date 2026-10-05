@@ -145,3 +145,17 @@ function shellpack_keybind_esc(): void {
 registerHandler("shellpack_keybind_esc", shellpack_keybind_esc);
 editor.registerCommand("Remove secondary cursors or quit", "Removes secondary cursors if there are any or quit", "shellpack_keybind_esc");
 // END: shellpack_keybind_esc
+
+// START: shellpack_keybind_hot_exit
+// active keybind version of hot exit
+// by default, hot_exit is disabled (NOTE: it must be enabled in config.json to work)
+// only a specific keybind enables it and allows to leave unsaved work open
+editor.setSetting("editor.hot_exit", false);
+function shellpack_keybind_hot_exit(): void {
+  editor.setSetting("editor.hot_exit", true);
+  editor.executeAction("quit");
+}
+registerHandler("shellpack_keybind_hot_exit", shellpack_keybind_hot_exit);
+editor.registerCommand("Hot exit", "Enables hot exit and quits", "shellpack_keybind_hot_exit");
+// END: shellpack_keybind_hot_exit
+

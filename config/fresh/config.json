@@ -129,10 +129,10 @@
       "action": "quit",
       "when": "normal"
     },
-    // even force_quit gets a key
+    // active hot exit gets a key
     {
       "modifiers": ["alt", "shift"], "key": "q",
-      "action": "force_quit",
+      "action": "shellpack_keybind_hot_exit",
       "when": "global"
     },
     // default from vscode: ctrl-, to open settings
