@@ -187,6 +187,7 @@ function grasp -d \
 	end
 	
 	if not set -q GRASP_MAX_FZF_RSS_KB
+		set -x GRASP_MAX_FZF_RSS_KB 100000
 		set -l mem_available_kb (__sp_mem_available)
 		and set -x GRASP_MAX_FZF_RSS_KB (math -s0 "$mem_available_kb * 0.1")
 	end
