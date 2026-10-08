@@ -9,6 +9,7 @@ HotList = alt-d; ctrl-\\
 ScreenList = alt-shift-w; alt-prime
 ScreenPrev = alt-shift-q; alt-lbrace
 ScreenNext = alt-q; alt-rbrace
+Quit = f10; alt-q; ctrl-q; ctrl-d
 
 
 # NOTE: main:xmap is renamed to filemanager:xmap in later mc versions (4.8.26 and up)
@@ -75,6 +76,7 @@ BlockShiftRight = tab
 #BookmarkFlush = alt-o
 #BookmarkNext = alt-j
 #BookmarkPrev = alt-i
+Quit = esc; f10; alt-q; ctrl-q
 
 [viewer]
 Goto = ctrl-l; alt-l; f5
@@ -82,6 +84,7 @@ Search = ctrl-f; f7
 SearchContinue = f17; ctrl-g; n
 SearchForwardContinue = n; alt-n
 SearchBackwardContinue = N; alt-shift-n
+Quit = esc; f10; q; alt-q; ctrl-q
 
 [viewer:hex]
 Goto = ctrl-l; alt-l; f5
@@ -110,4 +113,4 @@ Left = shift-left
 Right = shift-right
 # so undo doesn't exist, but you probably don't want to suspend the program
 # (assigned ctrl-z to the closest "undo" we have)
-Quit = f10; q; shift-q; esc; ctrl-z
+Quit = esc; f10; q; alt-q; ctrl-q; ctrl-z
