@@ -416,6 +416,9 @@ function __sp_tweak_keybinds \
 	bind \e\e\[B "__sp_cd_dive"
 	# alt-up in linux console
 	bind \e\e\[A "quick_dir_up"
+	# alt-q and ctrl-q as more consistent ways to exit
+	bind \eq "__sp_exit"
+	bind \cq "__sp_exit"
 	
 	# if fish version is 4 (or higher)
 	# yeah, we all hate version checks, but the keybinds have to be adjusted for 4.0
