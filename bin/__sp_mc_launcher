@@ -68,11 +68,12 @@ while :; do
 		if command -v sudo >/dev/null 2>&1; then
 			sudo sh -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
 		else
-			su -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
+			su root -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
 		fi
 	else
 		mc "$@" <&3 3<&- &
 	fi
+	# save invoked child PID and wait for exit (trapped SIGUSR1 may interrupt)
 	child=$!
 	wait "$child"
 	status=$?
