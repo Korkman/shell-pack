@@ -1,6 +1,11 @@
 function tac -d \
 	"tac polyfill when native binary is absent."
-	argparse -- $argv
+	argparse 'h/help' -- $argv
+	
+	if set -q _flag_help
+		echo "cat in reverse (shell-pack polyfill)" >&2
+		return
+	end
 	
 	if command -q tac
 		#echo "native" >&2
