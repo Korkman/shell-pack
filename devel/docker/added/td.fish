@@ -117,10 +117,16 @@ function td-user -d \
 		set -l shpuser_home '/problematic home/shpuser'
 
 		mkdir -p "$shpuser_home"
-		# useradd will take $SHELL as a default, so make it a POSIX one
 		set -lx SHELL (command -v bash || command -v zsh || command -v ksh || command -v sh)
-		useradd shpuser --home-dir "$shpuser_home"
-		cp -aT /etc/skel "$shpuser_home"
+		if type -q useradd
+			useradd shpuser --home-dir "$shpuser_home"
+		else
+			# direct passwd manipulation because adduser is not standardized
+			# shpuser:x:1000:1000::/problematic home/shpuser:/bin/sh
+			echo "shpuser:x:1000:1000::$shpuser_home:$SHELL" >> /etc/passwd
+			echo "shpuser:x:1000:" >> /etc/group
+		end
+		cp -a /etc/skel/. "$shpuser_home"
 		if set -q _flag_pw
 			echo "setting pw"
 			printf 'shpuser:%s\n' "$_flag_pw" | chpasswd
