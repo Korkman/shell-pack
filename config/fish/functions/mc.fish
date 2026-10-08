@@ -9,6 +9,11 @@ function mc -d \
 		set __sp_mc_bin "mc"
 	end
 	
+	if ! command -q $__sp_mc_bin
+		__sp_error "Not installed: $__sp_mc_bin" >&2
+		return 1
+	end
+	
 	set --local MC_TERM "$TERM"
 	if test "$MC_TERM" = "tmux-256color"
 		# workaround for older mc versions

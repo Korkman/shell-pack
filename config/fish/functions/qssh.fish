@@ -29,7 +29,10 @@ function qssh -d \
 	# TODO: jumphost support: default user does not apply to jumphost
 	# TODO: jumphost support: ssh URI scheme
 	
-	# NOTE: background job spamming own pid - seems fixed in fish 3.1.2
+	if ! type -q ssh
+		__sp_error "Not installed: ssh" >&2
+		return 1
+	end
 	
 	# create .ssh if missing
 	if ! [ -d ~/.ssh ]

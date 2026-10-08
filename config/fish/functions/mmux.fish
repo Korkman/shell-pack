@@ -167,15 +167,20 @@ using socket SOCKET_NAME.
 		set shortuser $socket_name
 	end
 	
-	# backwards-compatibility: search for present sessions with the default socket name
-	if test $socket_name != "default" && tmux -L default has-session -t $shortuser &> /dev/null
-		set socket_name default
-	end
-	
 	set have_screen (command -sq screen && echo true || echo false)
 	set have_tmux (command -sq tmux && echo true || echo false)
 	if set -q _flag_screen
 		set have_tmux false
+	end
+	
+	if ! $have_screen && ! $have_tmux
+		__sp_error "Not installed: tmux or screen" >&2
+		return 1
+	end
+	
+	# backwards-compatibility: search for present sessions with the default socket name
+	if test $socket_name != "default" && tmux -L default has-session -t $shortuser &> /dev/null
+		set socket_name default
 	end
 	
 	if set -q _flag_exclusive
