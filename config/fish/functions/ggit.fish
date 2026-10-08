@@ -1,5 +1,10 @@
 function ggit -d \
-"Interactive git commit"
+	"Interactive git commit"
+	
+	if ! type -q git
+		__sp_error "Not installed: git" >&2
+		return 1
+	end
 	
 	if set -q argv[1]
 		
@@ -50,11 +55,16 @@ function ggit -d \
 	"esc:cancel,"\
 	'home:pos(-1),end:pos(0)'
 	)
-	set -l fzf_help "ggit | alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-m:message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	set -l results
 	set -l filename
 	set -l msg_hold
 
+	begin
+		echo 'enter:append-message'
+		echo 'alt-a:add alt-x:reset alt-c:commit alt-p:commit+push'
+		echo "alt-m:edit-message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
+	end | __sp_fzf_header
+	__sp_fzf_defaults "ggit"
 	while true
 		set -l git_status (git status --porcelain)
 		if test $status -ne 0
@@ -64,12 +74,13 @@ function ggit -d \
 		set -e results
 		for line in $git_status; echo "$line"; end \
 		| fzf \
+			$fzf_defaults \
 			--bind "$fzf_binds" \
-			--header "$fzf_help" \
+			--ghost "(will be appended on ENTER)" \
 			--multi \
 			--height 90% \
 			--disabled \
-			--prompt "Commit message (enter appends): " \
+			--prompt "Commit message: " \
 			--preview "fishcall ggit diff_preview {} '$msg_filename'" \
 			--query "$msg_hold" \
 			--preview-window down \
