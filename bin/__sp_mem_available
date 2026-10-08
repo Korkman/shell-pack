@@ -15,11 +15,11 @@ if [ -r /proc/meminfo ]; then
 		' /proc/meminfo /proc/spl/kstat/zfs/arcstats
 	else
 		awk '
-			/^MemAvailable:/ { print $2; exit }
+			/^MemAvailable:/ { ma=$2 }
 			/^MemFree:/ { free=$2 }
 			/^Buffers:/ { buffers=$2 }
 			/^Cached:/ { cached=$2 }
-			END { if (free != "") printf "%d\n", free + buffers + cached }
+			END { printf "%d\n", (ma ? ma : free + buffers + cached) }
 		' /proc/meminfo
 	fi
 elif command -v vm_stat >/dev/null 2>&1 && command -v sysctl >/dev/null 2>&1; then
