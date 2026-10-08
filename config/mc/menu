@@ -27,6 +27,17 @@ shell_patterns=0
         set -- %s
         echo $CMD "$@" | fish -i
 
+!       Toggle sudo elevation
+        # __SP_MC_LAUNCHER_PID is exported by __sp_mc_launcher; it swaps our
+        # parent mc process between 'sudo mc' and 'mc'
+        if [ -n "${__SP_MC_LAUNCHER_PID:-}" ]; then
+            printf '%%s\n' %d %D > "$__SP_MC_LAUNCHER_TMP"
+            kill -USR1 "$__SP_MC_LAUNCHER_PID"
+        else
+            echo "Not launched through __sp_mc_launcher: elevator unavailable." >&2
+            exit 1
+        fi
+
 n       New file with template (create)
         FNAME=%{New file name, or space for README.md}
         [ "$FNAME" = " " ] && FNAME=README.md

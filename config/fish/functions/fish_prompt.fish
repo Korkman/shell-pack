@@ -110,7 +110,11 @@ function fish_prompt -d \
 	
 	if set -q MC_SID
 		# mark prompt inside mc
-		set -l mc_tag "\$mc"
+		if fish_is_root_user
+			set -f mc_tag "mc#"
+		else
+			set -f mc_tag "mc\$"
+		end
 		__fish_prompt_reduce_pwd_budget mc_tag
 		fish_prompt_segment "venv_bg" "venv_fg" "$mc_tag"
 	end

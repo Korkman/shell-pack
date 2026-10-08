@@ -1,0 +1,85 @@
+#!/bin/sh
+# Runs mc and keeps this PID alive as the thing the parent shell actually
+# tracks as "the mc job". SIGUSR1 toggles between a plain mc and an
+# elevated `sudo fish -i -c 'exec mc'` session. Arguments are not handled:
+# mc is started bare, except after a toggle, where the panel directories
+# written by the mc menu to $__SP_MC_LAUNCHER_TMP are passed on.
+set -u
+
+toggle() {
+	if [ "${__SP_MC_ELEVATED:-0}" = "1" ]; then
+		export __SP_MC_ELEVATED=0
+	else
+		export __SP_MC_ELEVATED=1
+	fi
+	toggled=1
+	kill "$child" 2>/dev/null
+	wait "$child" 2>/dev/null
+}
+trap toggle USR1
+
+export __SP_MC_LAUNCHER_PID=$$
+export __SP_MC_LAUNCHER_TMP="$(fishcall __sp_path --xdg-runtime)/shell-pack-mc-launcher-$__SP_MC_LAUNCHER_PID"
+
+# async lists get stdin from /dev/null in non-interactive sh; pass the real one via fd 3
+exec 3<&0
+
+export __SP_MC_ELEVATED=0
+while :; do
+	toggled=0
+	# read back panes from temporary file (they might swap places as we can't know which was left or right)
+	set --
+	if [ -f "$__SP_MC_LAUNCHER_TMP" ]; then
+		dir1= dir2=
+		{ IFS= read -r dir1; IFS= read -r dir2; } < "$__SP_MC_LAUNCHER_TMP"
+		rm -f "$__SP_MC_LAUNCHER_TMP"
+		if [ -n "$dir1" ]; then
+			set -- "$dir1"
+			[ -z "$dir2" ] || set -- "$@" "$dir2"
+		fi
+	fi
+	if [ "${__SP_MC_ELEVATED:-0}" = "1" ]; then
+		# gain control over environment. whatever sudo edition, or blank su, we want some env passed.
+		su_unset=
+		su_env=
+		seen=
+		for var in __SP_MC_LAUNCHER_PID __SP_MC_LAUNCHER_TMP LANG LANGUAGE LC_ALL LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE \
+			LC_MONETARY LC_MESSAGES LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE \
+			LC_MEASUREMENT LC_IDENTIFICATION \
+			$(env | sed -n 's/^\(LC_[A-Za-z0-9_]*\)=.*/\1/p'); do
+			case " $seen " in *" $var "*) continue ;; esac
+			seen="$seen $var"
+			eval "isset=\${$var+1} val=\${$var-}"
+			if [ -n "$isset" ]; then
+				su_env="$su_env $var='$(printf '%s' "$val" | sed "s/'/'\\\\''/g")'"
+			else
+				su_unset="$su_unset -u $var"
+			fi
+		done
+		
+		# now escape the args properly
+		mc_args=
+		for arg in "$@"; do
+			mc_args="$mc_args '$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")'"
+		done
+		
+		# absolute fish path, since su may reset PATH; fish -c hands extra args over as $argv
+		# no eval: $! must be mc/sudo itself, not an intermediate subshell
+		if command -v sudo >/dev/null 2>&1; then
+			sudo sh -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
+		else
+			su -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
+		fi
+	else
+		mc "$@" <&3 3<&- &
+	fi
+	child=$!
+	wait "$child"
+	status=$?
+	[ "$toggled" = "1" ] || break
+	wait "$child" 2>/dev/null
+	# the killed mc leaves the tty raw, which breaks password prompts (su, sudo)
+	stty sane 2>/dev/null
+done
+exit "$status"
+

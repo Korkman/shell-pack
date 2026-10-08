@@ -49,5 +49,12 @@ function mc -d \
 	end
 	
 	# NOTE: this is fixed in mc for Debian Bookworm, but we're supporting Stretch here
-	env DISPLAY=$MC_DISPLAY TERM=$MC_TERM LC_NERDLEVEL=$MC_NERDLEVEL $__sp_mc_bin $argv
+	# __sp_mc_launcher only handles plain, argument-less "mc" (it enables the
+	# sudo-elevation toggle menu entry); mcview/mcedit/mcdiff and any mc
+	# invocation with arguments bypass it and run the binary directly
+	if ! fish_is_root_user; and [ "$__sp_mc_bin" = "mc" ]; and [ (count $argv) -eq 0 ]
+		env DISPLAY=$MC_DISPLAY TERM=$MC_TERM LC_NERDLEVEL=$MC_NERDLEVEL __sp_mc_launcher
+	else
+		env DISPLAY=$MC_DISPLAY TERM=$MC_TERM LC_NERDLEVEL=$MC_NERDLEVEL $__sp_mc_bin $argv
+	end
 end
