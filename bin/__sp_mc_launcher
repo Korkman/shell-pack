@@ -13,8 +13,6 @@ toggle() {
 		export __SP_MC_ELEVATED=1
 	fi
 	toggled=1
-	kill "$child" 2>/dev/null
-	wait "$child" 2>/dev/null
 }
 trap toggle USR1
 
@@ -27,7 +25,10 @@ exec 3<&0
 export __SP_MC_ELEVATED=0
 while :; do
 	toggled=0
-	# read back panes from temporary file (they might swap places as we can't know which was left or right)
+	
+	# read back panes from temporary file
+	# they might swap places as we can't know which was left or right
+	mc_args=
 	set --
 	if [ -f "$__SP_MC_LAUNCHER_TMP" ]; then
 		dir1= dir2=
@@ -37,8 +38,17 @@ while :; do
 			set -- "$dir1"
 			[ -z "$dir2" ] || set -- "$@" "$dir2"
 		fi
+		
+		# now escape the args properly
+		for arg in "$@"; do
+			mc_args="$mc_args '$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")'"
+		done
 	fi
+	
+	# invoke mc
 	if [ "${__SP_MC_ELEVATED:-0}" = "1" ]; then
+		# elevation ON
+		
 		# gain control over environment. whatever sudo edition, or blank su, we want some env passed.
 		su_unset=
 		su_env=
@@ -57,30 +67,30 @@ while :; do
 			fi
 		done
 		
-		# now escape the args properly
-		mc_args=
-		for arg in "$@"; do
-			mc_args="$mc_args '$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")'"
-		done
-		
 		# absolute fish path, since su may reset PATH; fish -c hands extra args over as $argv
 		# no eval: $! must be mc/sudo itself, not an intermediate subshell
 		if command -v sudo >/dev/null 2>&1; then
+			echo "elevating with 'sudo mc'"
 			sudo sh -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
 		else
+			echo "elevating with 'su mc'"
 			su root -c "set --$mc_args; exec env$su_unset$su_env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
 		fi
 	else
-		mc "$@" <&3 3<&- &
+		# elevation OFF
+		# run non-elevated mc in similar manner so we can share the escaped args
+		sh -c "set --$mc_args; exec env '$(command -v fish)' -i -c 'exec mc \$argv' \"\$@\"" <&3 3<&- &
 	fi
+	
 	# save invoked child PID and wait for exit (trapped SIGUSR1 may interrupt)
 	child=$!
 	wait "$child"
 	status=$?
+	# the trap interrupts wait; the menu kills mc (it may be root), so wait for it
+	[ "$toggled" != "1" ] || wait "$child" 2>/dev/null
+	# if not toggled, mc was simply exit, so we do the same
 	[ "$toggled" = "1" ] || break
-	wait "$child" 2>/dev/null
 	# the killed mc leaves the tty raw, which breaks password prompts (su, sudo)
 	stty sane 2>/dev/null
 done
 exit "$status"
-

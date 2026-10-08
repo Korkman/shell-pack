@@ -31,8 +31,18 @@ shell_patterns=0
         # __SP_MC_LAUNCHER_PID is exported by __sp_mc_launcher; it swaps our
         # parent mc process between 'sudo mc' and 'mc'
         if [ -n "${__SP_MC_LAUNCHER_PID:-}" ]; then
+            # store pane directories for next mc launch
             printf '%%s\n' %d %D > "$__SP_MC_LAUNCHER_TMP"
+            # signal the launcher to toggle elevation
             kill -USR1 "$__SP_MC_LAUNCHER_PID"
+            # mc may run as root, so it must be killed from here, not the launcher
+            # $PPID is mc's subshell; mc is its parent, so we search
+            if [ -r /proc/$PPID/status ]; then
+                MC_PID=$(sed -n 's/^PPid:[[:space:]]*//p' /proc/$PPID/status)
+            else
+                MC_PID=$(ps -o ppid= -p $PPID | tr -d ' ')
+            fi
+            kill "$MC_PID"
         else
             echo "Not launched through __sp_mc_launcher: elevator unavailable." >&2
             exit 1
