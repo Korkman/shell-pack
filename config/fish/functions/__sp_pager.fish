@@ -34,13 +34,10 @@ function __sp_pager -d \
 				set -a opts --clear-screen
 			end
 			if set -q _flag_quit_if_one_screen
-				set -a opts --quit-if-one-screen
+				set -a opts -F
 			end
-			if set -q _flag_prompt
+			if set -q _flag_prompt && $__cap_less_has_prompt
 				set -a opts -P "$_flag_prompt"
-				# force less to read the whole (piped) input upfront, so paging/searching
-				# behaves consistently right away instead of lazily as more input arrives
-				set -a opts +G +g
 			end
 			if set -q _flag_line
 				set -a opts "+$_flag_line"g
