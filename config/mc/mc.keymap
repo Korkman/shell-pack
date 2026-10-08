@@ -4,12 +4,15 @@ HotList = alt-d; ctrl-\\
 ScreenList = alt-shift-w; alt-prime
 ScreenPrev = alt-shift-q; alt-lbrace
 ScreenNext = alt-q; alt-rbrace
+UserMenu = f2; alt-x
+Quit = f10; alt-q; ctrl-q; ctrl-d
 [filemanager]
 HotList = alt-d; ctrl-\\
 ScreenList = alt-shift-w; alt-prime
 ScreenPrev = alt-shift-q; alt-lbrace
 ScreenNext = alt-q; alt-rbrace
 Quit = f10; alt-q; ctrl-q; ctrl-d
+UserMenu = f2; alt-x
 
 
 # NOTE: main:xmap is renamed to filemanager:xmap in later mc versions (4.8.26 and up)
