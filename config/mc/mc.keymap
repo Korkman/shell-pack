@@ -4,8 +4,8 @@ HotList = alt-d; ctrl-\\
 ScreenList = alt-shift-w; alt-prime
 ScreenPrev = alt-shift-q; alt-lbrace
 ScreenNext = alt-q; alt-rbrace
-UserMenu = f2; alt-x
 Quit = f10; alt-q; ctrl-q; ctrl-d
+UserMenu = f2; alt-x
 [filemanager]
 HotList = alt-d; ctrl-\\
 ScreenList = alt-shift-w; alt-prime
@@ -87,7 +87,7 @@ Search = ctrl-f; f7
 SearchContinue = f17; ctrl-g; n
 SearchForwardContinue = n; alt-n
 SearchBackwardContinue = N; alt-shift-n
-Quit = esc; f10; q; alt-q; ctrl-q
+Quit = esc; f3; f10; q; alt-q; ctrl-q
 
 [viewer:hex]
 Goto = ctrl-l; alt-l; f5
@@ -96,6 +96,7 @@ Search = ctrl-f; f7
 SearchContinue = f17; ctrl-g; n
 SearchForwardContinue = n
 SearchBackwardContinue = N
+Quit = esc; f3; f10; q; alt-q; ctrl-q
 
 [diffviewer]
 # added alt-* keys for more intuitive merging, -l and -r for terminal compatibility
