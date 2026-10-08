@@ -44,7 +44,11 @@ shell_patterns=0
             fi
             kill "$MC_PID"
         else
-            echo "Not launched through __sp_mc_launcher: elevator unavailable." >&2
+            if [ "$(id -u)" = 0 ]; then
+                echo "Already root." >&2
+            else
+                echo "Not launched through __sp_mc_launcher: elevator unavailable." >&2
+            fi
             exit 1
         fi
 
