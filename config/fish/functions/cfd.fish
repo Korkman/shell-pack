@@ -164,6 +164,11 @@ function cfd -d \
 		__sp_cfd_make_dst_dir || return 2
 		$bin_7z x "$filename" -o"$dst"
 	case squashfs
+		if ! command -vq unsquashfs || set -q CFC_FORCE_RDSQUASHFS; and command -vq rdsquashfs
+			__sp_cfd_make_dst_dir || return 2
+			rdsquashfs -u / -p "$dst" "$filename"
+			return
+		end
 		__sp_require_cmd unsquashfs || return 1
 		__sp_cfd_make_dst_dir || return 2
 		# -f lets unsquashfs write into the already-created destination directory

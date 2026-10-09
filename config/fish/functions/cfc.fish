@@ -250,10 +250,32 @@ function cfc -d \
 				__sp_require_cmd $bin_7z || return 1
 				$bin_7z a $passed_args "$filename" "$src"
 			case 'squashfs' 'sqfs'
+				if ! command -vq mksquashfs || set -q CFC_FORCE_GENSQUASHFS; and command -vq gensquashfs
+					# squashfs-tools-ng fallback; -f overwrites, -D packs a directory
+					set -l ng_args $passed_args
+					if ! contains -- '-c' $ng_args
+						set -l comps (command gensquashfs --help 2>&1 | string match -r -a -- '\b(zstd|xz)\b')
+						if contains -- zstd $comps
+							set -a ng_args -c zstd
+						else if contains -- xz $comps
+							set -a ng_args -c xz
+						end
+					end
+					# pack file places the directory itself (not just its contents) in the image
+					set -l abs_src (builtin path resolve "$src")
+					set -l base (builtin path basename "$abs_src")
+					set -l packfile (__sp_mkuniq --xdg-runtime cfc-sqfs.XXXXXX)
+					printf '%s\n' "dir \"/$base\" 0755 0 0" "glob \"/$base\" * * * -mount -keeptime $base" > "$packfile"
+					gensquashfs -f -D (builtin path dirname "$abs_src") -F "$packfile" $ng_args "$filename"
+					set -l rc $status
+					rm -f -- "$packfile"
+					return $rc
+				end
 				__sp_require_cmd mksquashfs || return 1
 				# mksquashfs refuses to overwrite, so remove any existing destination first
 				rm -f -- "$filename"
-				set -l squashfs_args $passed_args
+				set -l squashfs_args -one-file-system -keep-as-directory
+				set -a squashfs_args $passed_args
 				if ! contains -- '-comp' $squashfs_args
 					if $__cap_mksquashfs_has_zstd
 						set -a squashfs_args -comp zstd
