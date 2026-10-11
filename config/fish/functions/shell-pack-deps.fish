@@ -41,7 +41,7 @@ function shell-pack-deps -d \
 	else if test "$argv[1]" = "recommended"
 		switch "$argv[2]"
 			case fzf
-				echo "0.74.4"
+				echo "0.74.5"
 			case localsend-cli
 				echo "latest"
 			case '*'
