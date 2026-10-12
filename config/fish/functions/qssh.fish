@@ -583,14 +583,13 @@ function __qssh_master_connect
 					for line in $sshErrors
 						#echo "!! $line"
 						if string match --quiet --regex 'Offending.*key in ((?<offending_file>.*)):((?<offending_line>[0-9]+))' -- "$line"
-							set sshKeyGenCmd "-R" "$hostdef_hostname" "-f" "$offending_file"
 							break
 						end
 					end
 
-					if [ "$sshKeyGenCmd" != "" ]
-						# ssh-keygen -R doesn't remove related IP keys, so we improve ssh-keygen -R
-						__qssh_remove_keys $sshKeyGenCmd
+					if [ "$offending_file" != "" ]
+						# the offending entry may belong to the target or to a jump host
+						__qssh_remove_target_keys -f "$offending_file" -l $offending_line (__qssh_key_targets)
 						__qssh_master_connect $hostdef
 						return $status
 					else
@@ -737,6 +736,7 @@ function __qssh_parse_hostdef --no-scope-shadowing
 	set -l hostdef_cfg_proxycommand
 	# config values that decide target and identity, so masters are not shared across them
 	set hostdef_cfg_id
+	set hostdef_hostkeyalias
 	if $__cap_ssh_has_g
 		for line in (command ssh -G $hostdef_ssh_argv 2>/dev/null)
 			if string match -qr -- '^(hostname|port|user|proxyjump|proxycommand|identityfile|certificatefile|identitiesonly|hostkeyalias) ' $line
@@ -754,6 +754,8 @@ function __qssh_parse_hostdef --no-scope-shadowing
 					set hostdef_cfg_proxyjump $kv[2]
 				case proxycommand
 					set hostdef_cfg_proxycommand $kv[2]
+				case hostkeyalias
+					test "$kv[2]" != none; and set hostdef_hostkeyalias $kv[2]
 			end
 		end
 		if test "$hostdef_cfg_proxyjump" = none
@@ -1317,9 +1319,9 @@ function __qssh_exec --no-scope-shadowing
 			__qssh_db_mru_read mru $hostdef
 			__qssh_echo_interactive "Clearing known host keys for $hostdef_hostname $hostdef ..."
 			if [ "$mru_tmp_host_key" != "" ]
-				__qssh_remove_keys -R "$hostdef_hostname" -f "$__qssh_tmp_host_file"
+				__qssh_remove_target_keys -f "$__qssh_tmp_host_file" (__qssh_key_targets)
 			else
-				__qssh_remove_keys -R "$hostdef_hostname"
+				__qssh_remove_target_keys (__qssh_key_targets)
 			end
 		else
 			__qssh_echo_interactive "Unable to parse hostdef $hostdef" 1>&2
@@ -1742,25 +1744,119 @@ function __qssh_fingerprint --no-scope-shadowing
 	rm -f ~/.ssh/qssh-keyscan.tmp
 end
 
-function __qssh_remove_keys
-	argparse 'R=' 'f=' -- $argv
+function __qssh_key_targets --no-scope-shadowing -d \
+	'lists "hostname, port, known_hosts name, no-ip" (tab separated) for the target, then its jump hosts'
+	set -l noip no
+	if test -n "$hostdef_proxyjump" -o -n "$hostdef_proxycommand"
+		# the target IP is not checked when connecting through a proxy
+		set noip yes
+	end
+	set -l keyname $hostdef_connect_hostname
+	if test -n "$hostdef_hostkeyalias"
+		set keyname $hostdef_hostkeyalias
+	end
+	printf '%s\t%s\t%s\t%s\n' $hostdef_connect_hostname $hostdef_port $keyname $noip
+
+	if test -z "$hostdef_proxyjump"
+		return 0
+	end
+	for jump in (string split -- ',' $hostdef_proxyjump)
+		set jump (string replace -r -- '^ssh://' '' $jump)
+		set jump (string replace -r -- '^.*@' '' $jump)
+		set -l jhost $jump
+		set -l jport 22
+		set -l g_argv
+		if string match -qr -- '^(?<h>[^:]+):(?<p>[0-9]+)$' $jump
+			set jhost $h
+			set jport $p
+			set g_argv -p $p
+		end
+		set -l jkey $jhost
+		if $__cap_ssh_has_g
+			for line in (command ssh -G $g_argv $jhost 2>/dev/null)
+				set -l kv (string split -m1 -- ' ' $line)
+				switch $kv[1]
+					case hostname
+						set jhost $kv[2]
+						set jkey $kv[2]
+					case port
+						set jport $kv[2]
+					case hostkeyalias
+						test "$kv[2]" != none; and set jkey $kv[2]
+				end
+			end
+		end
+		printf '%s\t%s\t%s\t%s\n' $jhost $jport $jkey no
+	end
+end
+
+function __qssh_known_hosts_line_matches --argument-names name port file line -d \
+	'true if known_hosts $file has an entry for $name:$port at $line'
+	set -l key $name
+	if test "$port" != 22
+		set key "[$name]:$port"
+	end
+	ssh-keygen -F "$key" -f "$file" 2>/dev/null | string match -qr -- "found: line $line\$"
+end
+
+function __qssh_remove_target_keys -d \
+	'remove known_hosts entries for __qssh_key_targets lines; with -l only those at that line of -f (default: the target)'
+	argparse 'f=' 'l=' -- $argv
+	set -l targets $argv
+	set -l selected
+	if set -q _flag_l
+		for i in (seq (count $targets))
+			set -l tf (string split -- \t $targets[$i])
+			if __qssh_known_hosts_line_matches $tf[3] $tf[2] "$_flag_f" $_flag_l
+				set -a selected $i
+			end
+		end
+		if test -z "$selected"
+			set selected 1
+		end
+	else
+		set selected (seq (count $targets))
+	end
+	set -l opt_f
+	if set -q _flag_f
+		set opt_f -f $_flag_f
+	end
+	for i in $selected
+		set -l tf (string split -- \t $targets[$i])
+		set -l opt_n
+		if test "$tf[4]" = yes
+			set opt_n --no-ip
+		end
+		__qssh_remove_keys -R $tf[3] -H $tf[1] -p $tf[2] $opt_f $opt_n
+	end
+end
+
+function __qssh_remove_keys -d \
+	'remove host keys of -R name (and its IPs, resolved from -H host), for port -p, optionally from file -f'
+	argparse 'R=' 'H=' 'p=' 'f=' 'n/no-ip' -- $argv
+	set -l opt_f
 	__qssh_echo_interactive -n "Removing host keys "
 	if set -q _flag_f
 		set opt_f -f $_flag_f
 		__qssh_echo_interactive "from $_flag_f ..."
 	else
-		set -e opt_f
 		__qssh_echo_interactive "..."
 	end
-	__qssh_echo_interactive -n  "$_flag_R"
-	ssh-keygen -R "$_flag_R" $opt_f &> /dev/null
-	set ipv4 (__qssh_resolve_ipv4 "$_flag_R")
-	set ipv6 (__qssh_resolve_ipv6 "$_flag_R")
-	if [ "$ipv4" != "" ]
-		for i in $ipv4; __qssh_echo_interactive -n " $i"; ssh-keygen -R $i $opt_f &> /dev/null; end
+	set -l ip_host $_flag_R
+	if set -q _flag_H
+		set ip_host $_flag_H
 	end
-	if [ "$ipv6" != "" ]
-		for i in $ipv6; __qssh_echo_interactive -n " $i"; ssh-keygen -R $i $opt_f &> /dev/null; end
+	set -l names $_flag_R
+	if not set -q _flag_n
+		set -a names (__qssh_resolve_ipv4 "$ip_host") (__qssh_resolve_ipv6 "$ip_host")
+	end
+	for name in $names
+		__qssh_echo_interactive -n " $name"
+		ssh-keygen -R "$name" $opt_f &> /dev/null
+		# non-default ports are stored as [name]:port
+		if set -q _flag_p; and test "$_flag_p" != 22
+			ssh-keygen -R "[$name]:$_flag_p" $opt_f &> /dev/null
+		end
 	end
 	__qssh_echo_interactive " ... done"
 end
