@@ -25,8 +25,6 @@ function qssh -d \
 	# TODO: watch fish issue #6649 (open as of 3.1.2), capture SIGINT instead of subprocessing
 	# TODO: watch fish issue #6987 (open as of 3.1.2), simplify completions when fixed
 	# TODO: add support for *:qssh strings to cli multipick? and / or make multipick items work with args
-	# TODO: jumphost support: control connections? unsupported in ssh?
-	# TODO: jumphost support: default user does not apply to jumphost
 	# TODO: jumphost support: ssh URI scheme
 	
 	if ! type -q ssh
@@ -48,7 +46,6 @@ function qssh -d \
 	set -x __qssh_db_fzf_cache_file ~/.ssh/qssh_skim.list
 	set -x __qssh_interval_compact_db 200
 	set -x __qssh_controlpath_prefix "~/.ssh/qssh-cp-"
-	set -x __qssh_default_user "root" # instead of $USER
 	set -x __qssh_prompt_answer_tmp ~/.ssh/qssh-answer.tmp
 	set -x __qssh_mru_pick_control_persist_checks 0
 	
@@ -443,55 +440,58 @@ function __qssh_master_connect
 
 	#echo "Master connection"
 	
-	# connectivity pre-flight: defaults for non-jumphost hostdef
-	set -l connect_hostname $hostdef_hostname
-	set -l connect_user $hostdef_user
-	set -l connect_port $hostdef_port
-	# parse jumphost list if present
-	if set -q hostdef_jumphost
-		# split list on comma
-		set -l list_jumphosts (string split -- ',' $hostdef_jumphost)
-		set -l first_jumphost $list_jumphosts[1]
-		# reset connect_* to defaults
-		set connect_user $__qssh_default_user
-		set connect_port 22
-		# parse user
-		if string match -q -- '*@*' $first_jumphost
-			set first_jumphost (string split -- '@' $first_jumphost)
-			set connect_user $first_jumphost[1]
-			set first_jumphost $first_jumphost[2]
-		end
-		# parse port
+	# connectivity pre-flight: target the first jumphost, if any
+	set -l preflight_hostname $hostdef_connect_hostname
+	set -l preflight_port $hostdef_port
+	if test -n "$hostdef_proxyjump"
+		set -l first_jumphost (string split -- ',' $hostdef_proxyjump)[1]
+		set -l jump_port
+		set first_jumphost (string replace -r -- '^.*@' '' $first_jumphost)
 		if string match -q -- '*:*' $first_jumphost
 			set first_jumphost (string split -- ':' $first_jumphost)
-			set connect_port $first_jumphost[2]
+			set jump_port $first_jumphost[2]
 			set first_jumphost $first_jumphost[1]
 		end
-		set connect_hostname $first_jumphost
-	end
-	
-	if set -q hostdef_jumphost
-		__qssh_echo_interactive "Proxy connection to $hostdef_user@$hostdef_hostname:$hostdef_port via $hostdef_jumphost ..."
-	else
-		# test if master connection already exists and is alive
-		if __qssh_check $hostdef
-			# present master connection 
-			__qssh_echo_interactive "Sharing connection $controlPath ..."
-			return 0
+		set preflight_hostname $first_jumphost
+		set preflight_port 22
+		if test -n "$jump_port"
+			set preflight_port $jump_port
 		end
-		
-		__qssh_echo_interactive "New connection $controlPath ..."
+		# the jumphost may be an alias in ~/.ssh/config as well
+		if $__cap_ssh_has_g
+			set -l jump_g_argv $first_jumphost
+			if test -n "$jump_port"
+				set -p jump_g_argv -p $jump_port
+			end
+			for line in (command ssh -G $jump_g_argv 2>/dev/null)
+				set -l kv (string split -m1 -- ' ' $line)
+				switch $kv[1]
+					case hostname
+						set preflight_hostname $kv[2]
+					case port
+						set preflight_port $kv[2]
+				end
+			end
+		end
 	end
-	#echo connect_hostname $connect_hostname
-	#echo connect_user $connect_user
-	#echo connect_port $connect_port
 	
-	begin
+	# test if master connection already exists and is alive
+	if __qssh_check $hostdef
+		# present master connection 
+		__qssh_echo_interactive "Sharing connection $controlPath ..."
+		return 0
+	end
+	
+	__qssh_echo_interactive "New connection $controlPath ..."
+	
+	if test -n "$hostdef_proxycommand" -a -z "$hostdef_proxyjump"
+		__qssh_echo_interactive "ProxyCommand configured, skipping connectivity check"
+	else
 		# Handle resolver errors, guess connected IP ...
 		__qssh_db_mru_read mru $hostdef
-		set -l resolved_host (__qssh_resolve "$connect_hostname" $opt_ip46)
+		set -l resolved_host (__qssh_resolve "$preflight_hostname" $opt_ip46)
 		if [ (count $resolved_host) -lt 1 ]
-			__qssh_echo_interactive "Host does not resolve: $connect_hostname"
+			__qssh_echo_interactive "Host does not resolve: $preflight_hostname"
 			__qssh_echo_interactive "Last known IPs:"
 			set -l last_known (begin
 				__qssh_echo_interactive $mru_last_ip
@@ -514,9 +514,9 @@ function __qssh_master_connect
 		if [ "$mru_last_ip" != "" -a "$resolved_host" != "$mru_last_ip" ]
 			__qssh_echo_interactive "Notice: Resolved IP changed from $mru_last_ip to $resolved_host"
 		end
-		if ! nc -w 1 -z $resolved_host $connect_port &> /dev/null
+		if ! nc -w 1 -z $resolved_host $preflight_port &> /dev/null
 			# the host is down, wait for it to come up
-			__qssh_echo_interactive "Host is down: $resolved_host port $connect_port"
+			__qssh_echo_interactive "Host is down: $resolved_host port $preflight_port"
 			set -l wait_start (__sp_getnanoseconds)
 			set -l spinner ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
 			set -l i 1
@@ -528,7 +528,7 @@ function __qssh_master_connect
 				if test $i -gt (count $spinner)
 					set i 1
 				end
-				if nc -w 1 -z $resolved_host $connect_port &> /dev/null
+				if nc -w 1 -z $resolved_host $preflight_port &> /dev/null
 					break
 				end
 				# sleep the remaining time of 1s minus the time spent in this loop
@@ -547,22 +547,18 @@ function __qssh_master_connect
 		if [ "$__qssh_disable_history" != "yes" ]
 			set -l mru_hostdef $hostdef
 			set -l mru_last_ip $resolved_host
-			set -l mru_last_ipv4 (__qssh_resolve_ipv4 "$connect_hostname" | head -n1)
-			set -l mru_last_ipv6 (__qssh_resolve_ipv6 "$connect_hostname" | head -n1)
+			set -l mru_last_ipv4 (__qssh_resolve_ipv4 "$preflight_hostname" | head -n1)
+			set -l mru_last_ipv6 (__qssh_resolve_ipv6 "$preflight_hostname" | head -n1)
 			
 			__qssh_db_mru_write mru
 		end
-	end
-	
-	if set -q hostdef_jumphost
-		return 0
 	end
 	
 	#echo "$ssh_ccheck_errors"
 	#echo "exit $ssh_ccheck_exit"
 	# opening the peristent control connection
 	#set sshErrors (ssh $opt_A $opt_ip46 $opt_batchmode $addOpt -o ControlMaster=auto -o ControlPath=$controlPath -o ExitOnForwardFailure=yes -N -f -p $hostdef_port -l $hostdef_user $hostdef_hostname 2>&1)
-	set sshErrors (ssh $opt_A $opt_ip46 $opt_batchmode $addOpt -o ControlMaster=$controlMasterAuto -o ControlPath=$controlPath -o ExitOnForwardFailure=yes -N -f -p $connect_port -l $connect_user $connect_hostname 2>&1)
+	set sshErrors (ssh $opt_A $opt_J $opt_ip46 $opt_batchmode $addOpt -o ControlMaster=auto -o ControlPath=$controlPath -o ExitOnForwardFailure=yes -N -f -p $hostdef_port -l $hostdef_user $hostdef_hostname 2>&1)
 	set sshExit $status
 	if [ $sshExit -ne 0 ]
 		#for line in $sshErrors; echo "! $line"; end
@@ -619,7 +615,7 @@ function __qssh_master_connect
 			__qssh_fingerprint
 			# using ssh for host key confirmation, as we don't know how to edit known_hosts safely yet
 			# keeping true stdin with echo ""
-			echo "" | ssh $addOpt $opt_ip46 -o BatchMode=no -o ControlPath=none -l $hostdef_user -p $hostdef_port $hostdef_hostname /bin/cat
+			echo "" | ssh $addOpt $opt_J $opt_ip46 -o BatchMode=no -o ControlPath=none -l $hostdef_user -p $hostdef_port $hostdef_hostname /bin/cat
 			set confirm_status $status
 			if [ $confirm_status -eq 0 ]
 				__qssh_master_connect $hostdef
@@ -686,6 +682,11 @@ function __qssh_parse_connect_args --no-scope-shadowing
 	else
 		set -e opt_ip46
 	end
+	if set -q hostdef_jumphost
+		set opt_J -J $hostdef_jumphost
+	else
+		set -e opt_J
+	end
 	
 	set -l cp_hostdef $hostdef
 	if [ "$hostdef_cmd" != "" ]
@@ -694,16 +695,10 @@ function __qssh_parse_connect_args --no-scope-shadowing
 	end
 	set -a cp_hostdef $hostdef_user
 	set -a cp_hostdef $hostdef_port
+	set -a cp_hostdef $hostdef_cfg_id
 	# NOTE: length of unix domain socket limited! | string sub -l 8
 	set controlPathSuffix (echo $cp_hostdef | __sp_getmd5 | string replace --regex -- ' .*' '')
-	if set -q hostdef_jumphost
-		# Jumphost does not support controlPath, as it seems
-		set controlPath none
-		set controlMasterAuto no
-	else
-		set controlPath "$__qssh_controlpath_prefix""$controlPathSuffix"
-		set controlMasterAuto auto
-	end
+	set controlPath "$__qssh_controlpath_prefix""$controlPathSuffix"
 	return 0
 end
 
@@ -721,7 +716,10 @@ function __qssh_check
 end
 
 function __qssh_parse_hostdef --no-scope-shadowing
-	# set hostdef_hostname, hostdef_user, hostdef_port
+	# set hostdef_hostname, hostdef_user, hostdef_port,
+	# hostdef_connect_hostname, hostdef_proxyjump, hostdef_proxycommand, hostdef_cfg_id
+
+	set -l hostdef_ssh_argv $argv
 
 	# using argparse to strip all known ssh arguments (with values) from $argv
 	argparse --ignore-unknown \
@@ -731,9 +729,46 @@ function __qssh_parse_hostdef --no-scope-shadowing
 		'B=' 'b=' 'c=' 'D=' 'E=' 'e=' 'F=' 'I=' 'i=' 'J=' 'L=' 'm=' 'O=' 'o=' 'Q=' 'R=' 'S=' 'W=' 'w=' \
 		-- $argv
 
+	# effective client config, honoring ~/.ssh/config
+	set -l hostdef_cfg_hostname
+	set -l hostdef_cfg_port
+	set -l hostdef_cfg_user
+	set -l hostdef_cfg_proxyjump
+	set -l hostdef_cfg_proxycommand
+	# config values that decide target and identity, so masters are not shared across them
+	set hostdef_cfg_id
+	if $__cap_ssh_has_g
+		for line in (command ssh -G $hostdef_ssh_argv 2>/dev/null)
+			if string match -qr -- '^(hostname|port|user|proxyjump|proxycommand|identityfile|certificatefile|identitiesonly|hostkeyalias) ' $line
+				set -a hostdef_cfg_id $line
+			end
+			set -l kv (string split -m1 -- ' ' $line)
+			switch $kv[1]
+				case hostname
+					set hostdef_cfg_hostname $kv[2]
+				case port
+					set hostdef_cfg_port $kv[2]
+				case user
+					set hostdef_cfg_user $kv[2]
+				case proxyjump
+					set hostdef_cfg_proxyjump $kv[2]
+				case proxycommand
+					set hostdef_cfg_proxycommand $kv[2]
+			end
+		end
+		if test "$hostdef_cfg_proxyjump" = none
+			set hostdef_cfg_proxyjump
+		end
+		if test "$hostdef_cfg_proxycommand" = none
+			set hostdef_cfg_proxycommand
+		end
+	end
+
 	#echo "Remaining argv: $argv"
 	if set -q _flag_p
 		set hostdef_port $_flag_p
+	else if test -n "$hostdef_cfg_port"
+		set hostdef_port $hostdef_cfg_port
 	else
 		set hostdef_port 22
 	end
@@ -743,6 +778,12 @@ function __qssh_parse_hostdef --no-scope-shadowing
 	else
 		set -e hostdef_jumphost
 	end
+	if set -q _flag_J
+		set hostdef_proxyjump $_flag_J
+	else
+		set hostdef_proxyjump $hostdef_cfg_proxyjump
+	end
+	set hostdef_proxycommand $hostdef_cfg_proxycommand
 	
 	# walk remains as positional arguments
 	set -l posarg 0
@@ -772,11 +813,18 @@ function __qssh_parse_hostdef --no-scope-shadowing
 		set hostdef_hostname $hostdef_userhost
 	end
 
+	set hostdef_connect_hostname $hostdef_hostname
+	if test -n "$hostdef_cfg_hostname"
+		set hostdef_connect_hostname $hostdef_cfg_hostname
+	end
+
 	if ! set -q hostdef_user
 		if set -q _flag_l
 			set hostdef_user $_flag_l
+		else if test -n "$hostdef_cfg_user"
+			set hostdef_user $hostdef_cfg_user
 		else
-			set hostdef_user $__qssh_default_user
+			set hostdef_user $USER
 		end
 	end
 	
@@ -1689,7 +1737,7 @@ function __qssh_multipick -d \
 end
 
 function __qssh_fingerprint --no-scope-shadowing
-	ssh-keyscan -p $hostdef_port $hostdef_hostname > ~/.ssh/qssh-keyscan.tmp 2> /dev/null
+	ssh-keyscan -p $hostdef_port $hostdef_connect_hostname > ~/.ssh/qssh-keyscan.tmp 2> /dev/null
 	ssh-keygen -l -f ~/.ssh/qssh-keyscan.tmp | sort
 	rm -f ~/.ssh/qssh-keyscan.tmp
 end
@@ -1781,7 +1829,6 @@ function __qssh_clean_env -d \
 	set -e __qssh_interval_compact_db
 	set -e __qssh_countdown_compact_db
 	set -e __qssh_controlpath_prefix
-	set -e __qssh_default_user
 	set -e __qssh_prompt_answer_tmp
 	set -e __qssh_mru_pick_control_persist_checks
 	set -e cnt_control_persist_checks
