@@ -1,3 +1,5 @@
+# When adding new formats here, do not forget to update completions and mc menu.
+
 function cfc -d \
 	'Compressed file creation'
 	
@@ -40,6 +42,7 @@ function cfc -d \
 	set comprext $comprext'|tar\.lzma|tlz'
 	set comprext $comprext'|tar\.lzo'
 	set comprext $comprext'|tar\.lz4'
+	set comprext $comprext'|tar\.br'
 	set comprext $comprext'|tar\.xz|txz'
 	set comprext $comprext'|tar\.Z|tZ|taZ'
 	# more directory compressors
@@ -55,6 +58,7 @@ function cfc -d \
 	set comprext $comprext'|cpio\.lzma'
 	set comprext $comprext'|cpio\.lzo'
 	set comprext $comprext'|cpio\.lz4'
+	set comprext $comprext'|cpio\.br'
 	set comprext $comprext'|cpio\.Z'
 	# single file compressors
 	set comprext $comprext'|gz'
@@ -66,6 +70,7 @@ function cfc -d \
 	set comprext $comprext'|Z'
 	set comprext $comprext'|lz4'
 	set comprext $comprext'|zst'
+	set comprext $comprext'|br'
 	set comprext $comprext')$'
 	
 	# choose a default compression method if none is given
@@ -240,6 +245,10 @@ function cfc -d \
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args > "$filename"
+			case 'tar.br'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd brotli || return 1
+				tar $tar_base_opts | brotli $passed_args > "$filename"
 			case 'zip'
 				__sp_require_cmd zip || return 1
 				set filename (builtin path resolve "$filename")
@@ -346,6 +355,13 @@ function cfc -d \
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args > "$filename"
 				popd
+			case 'cpio.br'
+				__sp_require_cmd cpio || return 1
+				__sp_require_cmd brotli || return 1
+				set filename (builtin path resolve "$filename")
+				pushd (dirname "$src") || return 1
+				find (basename "$src") | cpio -o -H newc | brotli $passed_args > "$filename"
+				popd
 			case 'cpio.Z'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
@@ -380,6 +396,9 @@ function cfc -d \
 			case 'zst'
 				__sp_require_cmd zstd || return 1
 				zstd $passed_args -c "$src" > "$filename"
+			case 'br'
+				__sp_require_cmd brotli || return 1
+				brotli $passed_args -c "$src" > "$filename"
 			case '*'
 				echo "Unsupported file extension" >&2
 				return 1
@@ -438,6 +457,10 @@ function cfc -d \
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args
+			case 'tar.br'
+				__sp_require_cmd tar || return 1
+				__sp_require_cmd brotli || return 1
+				tar $tar_base_opts | brotli $passed_args
 			case 'zip'
 				__sp_require_cmd zip || return 1
 				pushd (dirname "$src") || return 1
@@ -504,6 +527,12 @@ function cfc -d \
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args
 				popd
+			case 'cpio.br'
+				__sp_require_cmd cpio || return 1
+				__sp_require_cmd brotli || return 1
+				pushd (dirname "$src") || return 1
+				find (basename "$src") | cpio -o -H newc | brotli $passed_args
+				popd
 			case 'cpio.Z'
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
@@ -537,6 +566,9 @@ function cfc -d \
 			case 'zst'
 				__sp_require_cmd zstd || return 1
 				zstd $passed_args -c "$src"
+			case 'br'
+				__sp_require_cmd brotli || return 1
+				brotli $passed_args -c "$src"
 			case '*'
 				echo "Unsupported file extension" >&2
 				return 1

@@ -1,3 +1,5 @@
+# When adding new formats here, do not forget to update completions and mc menu.
+
 function cfd -d \
 'Compressed file decompression'
 	
@@ -65,6 +67,8 @@ function cfd -d \
 		set format zst
 	else if string match -qir '\.bz2$' -- "$filename"
 		set format bz2
+	else if string match -qir '\.br$' -- "$filename"
+		set format br
 	else if string match -qir '\.lz4$' -- "$filename"
 		set format lz4
 	else if string match -qir '\.lz$' -- "$filename"
@@ -152,7 +156,13 @@ function cfd -d \
 	case tar
 		__sp_require_cmd tar || return 1
 		__sp_cfd_make_dst_dir || return 2
-		tar -xf "$filename" -C "$dst"
+		if string match -qir '\.tar\.br$' -- "$filename"
+			# tar has no builtin brotli support
+			__sp_require_cmd brotli || return 1
+			brotli --stdout -d "$filename" | tar -xf - -C "$dst"
+		else
+			tar -xf "$filename" -C "$dst"
+		end
 	case cpio
 		__sp_require_cmd cpio || return 1
 		__sp_cfd_make_dst_dir || return 2
@@ -181,6 +191,10 @@ function cfd -d \
 		__sp_require_cmd zstd || return 1
 		__sp_cfd_make_dst_file || return 2
 		zstd --stdout -d "$filename" | __sp_redirect_out "$dst"
+	case br
+		__sp_require_cmd brotli || return 1
+		__sp_cfd_make_dst_file || return 2
+		brotli --stdout -d "$filename" | __sp_redirect_out "$dst"
 	case bz2
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
