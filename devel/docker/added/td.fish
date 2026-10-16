@@ -381,3 +381,86 @@ function td-test-cfc -d \
 	test $failed -gt 125; and set failed 125
 	return $failed
 end
+
+function td-test-comma -d \
+	"Run a short automated test suite for the , (comma) function"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td test-comma"
+		echo
+		echo "  Checks binary integrity, lazy spawning, streaming, empty input"
+		echo "  and exit status of ','. Returns the number of failed checks (max 125)."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+
+	set -l tmp (__sp_mkuniq --dir --xdg-runtime td-test-comma)
+	or return 1
+	pushd "$tmp"; or return 1
+	set -g __td_test_failed 0
+	set -g __td_test_total 0
+
+	# usage: __td_check DESCRIPTION EXPECTED ACTUAL
+	function __td_check
+		set -g __td_test_total (math $__td_test_total + 1)
+		if test "$argv[2]" = "$argv[3]"
+			echo "ok     $argv[1]"
+		else
+			set -g __td_test_failed (math $__td_test_failed + 1)
+			echo "FAILED $argv[1]: expected '$argv[2]', got '$argv[3]'"
+		end
+	end
+
+	# binary integrity, including a leading NUL and a leading newline
+	head -c 1000000 /dev/urandom > rnd.bin
+	cmp -s rnd.bin ( , cat < rnd.bin | psub ) 2>/dev/null
+	__td_check "1 MB random data intact" 0 $status
+	begin; printf '\0'; head -c 100000 /dev/urandom; end > nul.bin
+	cmp -s nul.bin ( , cat < nul.bin | psub ) 2>/dev/null
+	__td_check "leading NUL byte intact" 0 $status
+	begin; printf '\n'; head -c 100000 /dev/urandom; end > nl.bin
+	cmp -s nl.bin ( , cat < nl.bin | psub ) 2>/dev/null
+	__td_check "leading newline intact" 0 $status
+	printf '\377rest' | , cat > hi.bin
+	__td_check "leading high byte intact" "ff 72 65 73 74" (od -An -v -tx1 < hi.bin | string trim | string replace -ra ' +' ' ')
+
+	# arguments
+	__td_check "command with arguments" ABC (echo abc | , string upper)
+	__td_check "no command falls back to cat" noarg (echo noarg | ,)
+
+	# empty input: no spawn, success
+	printf '' | , touch spawned.marker
+	__td_check "empty input returns 0" 0 $status
+	__td_check "empty input does not spawn" no (test -e spawned.marker; and echo yes; or echo no)
+
+	# exit status of the downstream command
+	echo x | , sh -c 'cat >/dev/null; exit 7'
+	__td_check "downstream exit status" 7 $status
+
+	# spawn is delayed until the first byte arrives
+	set -l start (date +%s)
+	sh -c 'sleep 2; echo x' | , sh -c 'date +%s' | read -l spawn_at
+	test (math $spawn_at - $start) -ge 2
+	__td_check "spawn waits for data" 0 $status
+
+	# output streams through while the producer is still running
+	sh -c 'echo first; sleep 2; echo last' | , sh -c 'while read l; do echo "$l $(date +%s)"; done' | read -l first_line
+	set -l first_at (string split ' ' -- $first_line)[2]
+	set -l end_at (date +%s)
+	test (math $end_at - $first_at) -ge 1
+	__td_check "streams without buffering the input" 0 $status
+
+	popd
+	rm -rf "$tmp"
+	echo
+	echo "$__td_test_total checks, $__td_test_failed failed"
+	set -l failed $__td_test_failed
+	set -e __td_test_failed __td_test_total
+	functions -e __td_check
+	test $failed -gt 125; and set failed 125
+	return $failed
+end
