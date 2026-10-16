@@ -126,8 +126,11 @@
 	fi
 	
 	_headfile=""
+	_tty_dirty=""
 	_cleanup() {
-		{ stty echo < /dev/tty; } 2>/dev/null || true
+		if [ -n "$_tty_dirty" ]; then
+			{ stty echo < /dev/tty; } 2>/dev/null || true
+		fi
 		if [ -n "$_headfile" ]; then rm -f "$_headfile"; fi
 	}
 	trap _cleanup EXIT
@@ -170,16 +173,20 @@
 	# read password from terminal into ENCPASS
 	if [ -z "${ENCPASS:-}" ]; then
 		printf "%s" "Password: " >&2
+		_tty_dirty=1
 		stty -echo < /dev/tty
 		read -r ENCPASS < /dev/tty
 		stty echo < /dev/tty
+		_tty_dirty=""
 		echo >&2
 		if [ "${_flag_decrypt:-}" = "no" ]; then
 			# confirm to catch typos, e.g. keystrokes stolen by another process reading the tty
 			printf "%s" "Repeat password: " >&2
+			_tty_dirty=1
 			stty -echo < /dev/tty
 			read -r _encpass2 < /dev/tty
 			stty echo < /dev/tty
+			_tty_dirty=""
 			echo >&2
 			if [ "$ENCPASS" != "$_encpass2" ]; then
 				echo "Error: Passwords do not match." >&2
