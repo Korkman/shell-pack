@@ -680,8 +680,8 @@ function cfc -d \
 				__sp_require_cmd xz || return 1
 				xz $passed_args -c $src_args
 			case 'Z'
-				__sp_require_cmd gzip || return 1
-				gzip -d $passed_args -c $src_args
+				__sp_require_cmd compress || return 1
+				compress $passed_args -c $src_args
 			case 'lz4'
 				__sp_require_cmd lz4 || return 1
 				lz4 $passed_args -c $src_args

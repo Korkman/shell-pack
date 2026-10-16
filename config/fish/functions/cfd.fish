@@ -127,7 +127,7 @@ function __sp_cfd_main
 	else if string match -qir '\.xz$' -- "$filename"
 		set format xz
 	else if string match -qir '\.Z$' -- "$filename"
-		set format gz
+		set format Z
 	end
 
 	# Fall back to file(1) magic detection when extension gives no match.
@@ -173,6 +173,8 @@ function __sp_cfd_main
 			set format zst
 		else if string match -q 'application/x-lz4' -- "$mime"
 			set format lz4
+		else if string match -q 'application/x-compress' -- "$mime"
+			set format Z
 		else if string match -q 'application/x-lzma' -- "$mime"
 			set format lzma
 		else if string match -q 'application/x-lzip' -- "$mime"
@@ -226,7 +228,11 @@ function __sp_cfd_main
 		else if string match -qir '\.tar\.br$' -- "$filename"
 			# tar has no builtin brotli support
 			__sp_require_cmd brotli || return 1
-			brotli --stdout -d "$filename" | tar -xf - -C "$dst"
+			brotli -dc "$filename" | tar -xf - -C "$dst"
+		else if string match -qir '\.tar\.lz4$' -- "$filename"
+			# GNU tar cannot auto-detect lz4
+			__sp_require_cmd lz4 || return 1
+			lz4 -dc "$filename" | tar -xf - -C "$dst"
 		else
 			tar -xf "$filename" -C "$dst"
 		end
@@ -261,15 +267,19 @@ function __sp_cfd_main
 	case zst
 		__sp_require_cmd zstd || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | zstd --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | zstd -dc | __sp_redirect_out "$dst"
 	case br
 		__sp_require_cmd brotli || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | brotli --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | brotli -dc | __sp_redirect_out "$dst"
 	case bz2
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | bzip2 --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | bzip2 -dc | __sp_redirect_out "$dst"
+	case Z
+		__sp_require_cmd compress || return 1
+		__sp_cfd_make_dst_file || return 2
+		__sp_cfd_src | compress -dc | __sp_redirect_out "$dst"
 	case lz4
 		__sp_require_cmd lz4 || return 1
 		__sp_cfd_make_dst_file || return 2
@@ -277,19 +287,19 @@ function __sp_cfd_main
 	case lz
 		__sp_require_cmd lzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | lzip --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzip -dc | __sp_redirect_out "$dst"
 	case lzma
 		__sp_require_cmd lzma || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | lzma --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzma -dc | __sp_redirect_out "$dst"
 	case lzo
 		__sp_require_cmd lzop || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | lzop --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzop -dc | __sp_redirect_out "$dst"
 	case xz
 		__sp_require_cmd xz || return 1
 		__sp_cfd_make_dst_file || return 2
-		__sp_cfd_src | xz --stdout -d | __sp_redirect_out "$dst"
+		__sp_cfd_src | xz -dc | __sp_redirect_out "$dst"
 	end
 end
 
