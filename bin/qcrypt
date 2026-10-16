@@ -97,6 +97,7 @@
 			echo "Unless --terminal is specified, the program will abort if stdin or stdout are terminals."
 			echo
 			echo "If neither --gpg nor --openssl is specified, OpenSSL is used by default."
+			echo "When decrypting a file or stdin, the format is detected with \"file\" if available (also for stdin)."
 			echo
 			echo "Examples:"
 			echo "  qcrypt for a file:"
@@ -124,15 +125,50 @@
 		outfile="/dev/stdout"
 	fi
 	
+	_headfile=""
+	_cleanup() {
+		{ stty echo < /dev/tty; } 2>/dev/null || true
+		if [ -n "$_headfile" ]; then rm -f "$_headfile"; fi
+	}
+	trap _cleanup EXIT
+	
+	# emits the input, replaying the bytes consumed for format detection first
+	_src() {
+		if [ -n "$_headfile" ]; then
+			cat "$_headfile"
+			cat
+		else
+			cat "$infile"
+		fi
+	}
+	
 	if [ "${_flag_gpg:-}" = "yes" ]; then
 		mode="gpg"
 	else
 		mode="openssl"
+		# detect format when decrypting and no format was passed
+		if [ "$_flag_decrypt" = "yes" ] && [ "$_flag_openssl" != "yes" ] && command -v file >/dev/null 2>&1; then
+			_probe=""
+			if [ "$infile" = "/dev/stdin" ]; then
+				# read exactly 1024 bytes (dd bs=1 never over-reads a pipe) and replay them later
+				_headfile="$(fishcall __sp_mkuniq --xdg-runtime qcrypt-head)"
+				dd bs=1 count=1024 of="$_headfile" 2>/dev/null
+				_probe="$_headfile"
+			elif [ -f "$infile" ]; then
+				_probe="$infile"
+			fi
+			if [ -n "$_probe" ]; then
+				case "$(file -b -- "$_probe" 2>/dev/null || true)" in
+					*"PGP symmetric key encrypted"*|*"GPG symmetric key encrypted"*|*"PGP/GPG"*|*"OpenPGP"*)
+						mode="gpg"
+						;;
+				esac
+			fi
+		fi
 	fi
 	
 	# read password from terminal into ENCPASS
 	if [ -z "${ENCPASS:-}" ]; then
-		trap 'stty echo < /dev/tty 2>/dev/null || true' EXIT
 		printf "%s" "Password: " >&2
 		stty -echo < /dev/tty
 		read -r ENCPASS < /dev/tty
@@ -175,7 +211,7 @@
 		
 		set +e
 		# juggle with file descriptors so gpg receives fd 0 (stdin) and fd 3 (passphrase) correctly
-		cat "$infile" | {
+		_src | {
 			printf "%s" "$ENCPASS" | {
 				gpg $arg_decrypt --cipher-algo AES256 --no-options --quiet --batch --no-symkey-cache --pinentry-mode loopback --passphrase-fd 3
 			} 3<&0 0<&4
@@ -204,7 +240,7 @@
 		iteration_count=800000
 		
 		# juggle with file descriptors so openssl receives fd 0 (stdin) and fd 3 (passphrase) correctly
-		cat "$infile" | {
+		_src | {
 			printf "%s" "$ENCPASS" | {
 				openssl enc $arg_decrypt -pbkdf2 -iter $iteration_count -aes-256-cbc -pass "fd:3"
 			} 3<&0 0<&4
