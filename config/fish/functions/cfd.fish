@@ -353,8 +353,7 @@ end
 # emit the input: stdin (after the detection head) or the file
 function __sp_cfd_src --no-scope-shadowing
 	if test $stdin_mode -eq 1
-		cat "$head"
-		cat
+		cat "$head" -
 	else
 		cat -- "$filename"
 	end
