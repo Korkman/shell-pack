@@ -29,7 +29,7 @@ function shell-pack-deps -d \
 			case dool
 				echo "1.3.8"
 			case fresh
-				echo "0.5.2"
+				echo "0.5.3"
 			case bat
 				echo "0.26.1"
 			case localsend-cli

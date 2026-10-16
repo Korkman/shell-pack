@@ -27,6 +27,9 @@
     "keyword": [191, 140, 242],
     "punctuation_bracket": [ 204, 93, 232 ]
   },
+  "search": {
+    "current_match_bg": [ 235, 71, 235 ]
+  },
   "ui": {
     "tab_active_bg": [100, 100, 100],
     "tab_active_fg": [255, 255, 255],
