@@ -262,16 +262,20 @@ function cfc -d \
 	end
 	
 	# special treatment for src being rootfs, a directory or a file
+	set -l tar_fs_opts
+	if $__cap_tar_has_one_fs
+		set tar_fs_opts --one-file-system
+	end
 	if test "$from_stdin" = "yes"
 		set tar_base_opts
 	else if test "$src" = "/"
-		set tar_base_opts --one-file-system -c /
+		set tar_base_opts $tar_fs_opts -c /
 	else if test -d "$src"
 		# src is a directory, compress with parent dir as base
-		set tar_base_opts --one-file-system -C "$src/.." -c (basename "$src")
+		set tar_base_opts $tar_fs_opts -C "$src/.." -c (basename "$src")
 	else
 		# src is a file, compress with parent dir as base
-		set tar_base_opts --one-file-system -C (dirname $src) -c (basename "$src")
+		set tar_base_opts $tar_fs_opts -C (dirname $src) -c (basename "$src")
 	end
 	
 	if [ "$to_stdout" != "yes" ]

@@ -295,20 +295,26 @@ function td-test-cfc -d \
 		echo "  Returns the number of failed checks (max 125)."
 		echo
 		echo "  By default all compression tools must be installed. With -p / --partial,"
-		echo "  formats whose tools are missing are skipped instead (gzip and tar are"
-		echo "  still required)."
+		echo "  formats whose tools are missing are skipped instead (gzip is still"
+		echo "  required)."
 		set -q _flag_help
 		and return 0
 		or return 1
 	end >&2
 
-	# prints the tools among the arguments which are not installed
+	# prints the tools among the arguments which are not installed or lack the needed features
+	# (busybox lzma only decompresses)
 	function __td_missing_tools
 		for tool in $argv
-			if test $tool = 7z
-				not command -q 7z; and not command -q 7zz; and not command -q 7za; and not command -q 7zr; and echo 7z
-			else
-				command -q $tool; or echo $tool
+			switch $tool
+				case 7z
+					not command -q 7z; and not command -q 7zz; and not command -q 7za; and not command -q 7zr; and echo 7z
+				case lzma
+					if not command -q lzma; or not printf x | lzma -c >/dev/null 2>&1
+						echo "lzma (compressing)"
+					end
+				case '*'
+					command -q $tool; or echo $tool
 			end
 		end
 	end
@@ -361,7 +367,7 @@ function td-test-cfc -d \
 	set -l all_tools tar gzip gunzip bzip2 xz lzma zstd lzip lzop lz4 brotli compress cpio zip unzip mksquashfs unsquashfs 7z file script
 	set -l missing (__td_missing_tools $all_tools)
 	if set -q _flag_partial
-		set -l hard (__td_missing_tools gzip tar)
+		set -l hard (__td_missing_tools gzip)
 		if test (count $hard) -gt 0
 			echo "td test-cfc: missing binaries needed even with --partial: $hard" >&2
 			functions -e __td_missing_tools __td_fmt_tools
@@ -485,11 +491,17 @@ function td-test-cfc -d \
 	__td_check "invalid compressor args fail" 1 $status
 
 	# directories
-	__td_check "directory to stdout as tar.gz" sub/i.txt (cfc dir tar.gz 2>/dev/null | tar tz | string match 'dir/sub/i.txt' | string replace 'dir/' '')
-	mkdir out-dir
-	cfc dir tar.gz > dir.tar.gz 2>/dev/null
-	cfd dir.tar.gz out-dir >/dev/null 2>&1
-	__td_check "cfd extracts directory archive" inner (cat out-dir/dir/sub/i.txt 2>/dev/null)
+	set -l miss (__td_missing_tools tar)
+	if test (count $miss) -gt 0
+		__td_skip "directory to stdout as tar.gz" $miss
+		__td_skip "cfd extracts directory archive" $miss
+	else
+		__td_check "directory to stdout as tar.gz" sub/i.txt (cfc dir tar.gz 2>/dev/null | tar tz | string match 'dir/sub/i.txt' | string replace 'dir/' '')
+		mkdir out-dir
+		cfc dir tar.gz > dir.tar.gz 2>/dev/null
+		cfd dir.tar.gz out-dir >/dev/null 2>&1
+		__td_check "cfd extracts directory archive" inner (cat out-dir/dir/sub/i.txt 2>/dev/null)
+	end
 
 	# files named like options
 	__td_check "file starting with a dash" dashed (cfc ./-d.txt gz 2>/dev/null | gzip -dc)

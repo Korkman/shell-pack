@@ -322,6 +322,7 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_timeout_has_t "__sp_cap_timeout_has_t"
 	set -g __cap_mksquashfs_has_zstd "__sp_cap_mksquashfs_has_zstd"
 	set -g __cap_mksquashfs_has_xz "__sp_cap_mksquashfs_has_xz"
+	set -g __cap_tar_has_one_fs "__sp_cap_tar_has_one_fs"
 	set -g __cap_ssh_has_g "__sp_cap_ssh_has_g"
 end
 
