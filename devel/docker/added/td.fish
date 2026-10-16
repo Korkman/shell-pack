@@ -280,3 +280,104 @@ function td-edit-live -d \
 	set -e __sp_last_date_check_deps
 	exec fish
 end
+
+function td-test-cfc -d \
+	"Run a short automated test suite for cfc and cfd"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td test-cfc"
+		echo
+		echo "  Round-trips data through cfc and cfd in a temporary directory,"
+		echo "  covering files, directories, stdin / stdout and '-' arguments."
+		echo "  Returns the number of failed checks (max 125)."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+
+	set -l tmp (__sp_mkuniq --dir --xdg-runtime td-test-cfc)
+	or return 1
+	pushd "$tmp"; or return 1
+	set -g __td_test_failed 0
+	set -g __td_test_total 0
+
+	printf 'hello\n' > a.txt
+	printf 'dashed\n' > ./-d.txt
+	mkdir -p dir/sub
+	printf 'inner\n' > dir/sub/i.txt
+
+	# usage: __td_check DESCRIPTION EXPECTED ACTUAL
+	function __td_check
+		set -g __td_test_total (math $__td_test_total + 1)
+		if test "$argv[2]" = "$argv[3]"
+			echo "ok     $argv[1]"
+		else
+			set -g __td_test_failed (math $__td_test_failed + 1)
+			echo "FAILED $argv[1]: expected '$argv[2]', got '$argv[3]'"
+		end
+	end
+
+	set -l formats gz
+	for fmt in zst xz bz2
+		set -l bin $fmt
+		test $fmt = bz2; and set bin bzip2
+		command -q $bin; and set -a formats $fmt
+	end
+
+	# stdin to stdout, explicit and default format
+	for fmt in $formats
+		__td_check "stdin | cfc - $fmt - | cfd -" hello (printf 'hello\n' | cfc - $fmt - 2>/dev/null | cfd - 2>/dev/null)
+		__td_check "file to stdout ($fmt)" hello (cfc a.txt $fmt 2>/dev/null | cfd - 2>/dev/null)
+	end
+	__td_check "stdin | cfc | cfd - (default format)" hello (printf 'hello\n' | cfc 2>/dev/null | cfd - 2>/dev/null)
+	__td_check "stdin | cfc - - (explicit dashes)" hello (printf 'hello\n' | cfc - - 2>/dev/null | cfd - 2>/dev/null)
+
+	# compressor args after --
+	__td_check "compressor args pass through" hello (cfc a.txt gz -- -1 2>/dev/null | gzip -dc)
+	cfc a.txt gz -- --bogus-option >/dev/null 2>&1
+	__td_check "invalid compressor args fail" 1 $status
+
+	# directories
+	__td_check "directory to stdout as tar.gz" sub/i.txt (cfc dir tar.gz 2>/dev/null | tar tz | string match 'dir/sub/i.txt' | string replace 'dir/' '')
+	mkdir out-dir
+	cfc dir tar.gz > dir.tar.gz 2>/dev/null
+	cfd dir.tar.gz out-dir >/dev/null 2>&1
+	__td_check "cfd extracts directory archive" inner (cat out-dir/dir/sub/i.txt 2>/dev/null)
+
+	# files named like options
+	__td_check "file starting with a dash" dashed (cfc ./-d.txt gz 2>/dev/null | gzip -dc)
+	__td_check "file starting with a dash, no ./" dashed (cfc -d.txt gz 2>/dev/null | gzip -dc)
+
+	# cfd on files
+	cfc a.txt gz > a.txt.gz 2>/dev/null
+	__td_check "cfd FILE - (stdout)" hello (cfd a.txt.gz - 2>/dev/null)
+	cfd a.txt.gz copy.txt >/dev/null 2>&1
+	__td_check "cfd FILE DEST" hello (cat copy.txt 2>/dev/null)
+	__td_check "cfd - FILE (stdin)" hello (cfd - < a.txt.gz 2>/dev/null)
+	__td_check "cfd --get-type" gz (cfd --get-type a.txt.gz 2>/dev/null)
+
+	# refusals
+	printf 'x\n' | cfc - tar.gz - >/dev/null 2>&1
+	__td_check "archive format from stdin is refused" 1 $status
+	printf 'x\n' | cfc - gz extra - >/dev/null 2>&1
+	__td_check "too many arguments with -" 1 $status
+
+	# file destination with stdin (needs a terminal on stdout, emulated with script)
+	if command -q script
+		printf 'piped\n' | script -qec "fish -c 'cfc - from-stdin.gz'" /dev/null >/dev/null 2>&1
+		__td_check "stdin to file destination" piped (gzip -dc from-stdin.gz 2>/dev/null)
+	end
+
+	popd
+	rm -rf "$tmp"
+	echo
+	echo "$__td_test_total checks, $__td_test_failed failed"
+	set -l failed $__td_test_failed
+	set -e __td_test_failed __td_test_total
+	functions -e __td_check
+	test $failed -gt 125; and set failed 125
+	return $failed
+end

@@ -3,13 +3,22 @@
 function cfc -d \
 	'Compressed file creation'
 	
-	if ! set -q argv[1] || test "$argv[1]" = "--help"
-		echo "Usage: cfc FILE|DIR [ DEST ] [-- COMPRESSOR_ARGS ]"
+	# without arguments, compressing from a piped stdin to a piped stdout is possible
+	set -l no_args_usage no
+	if ! set -q argv[1] && begin; isatty 0; or isatty 1; end
+		set no_args_usage yes
+	end
+	if test "$no_args_usage" = "yes" || test "$argv[1]" = "--help"
+		echo "Usage: cfc [ -f | --force ] FILE|DIR [ DEST ] [-- COMPRESSOR_ARGS ]"
+		echo "       ... | cfc [ - ] [ FORMAT | FILE ] [ - ] [-- COMPRESSOR_ARGS ]"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
 		echo "DEST can be a format like tar.gz or a complete filename including extension."
 		echo "Output redirection is detected and supported."
+		echo "--force overwrites an existing DEST without asking."
+		echo "Piped stdin is compressed with a single file compressor (default: zst, gz)."
+		echo "A dash as first argument forces stdin as source, as last argument forces stdout as destination."
 		echo "Pass compressor specific arguments COMPRESSOR_ARGS like -9."
 		return 1
 	end >&2
@@ -30,6 +39,28 @@ function cfc -d \
 		end
 	end
 	set argv $args
+	argparse -n cfc -i f/force -- $argv
+	or return 1
+	
+	# a dash means stdin as the first and stdout as the last argument, regardless of terminal detection
+	set -l use_stdin no
+	set -l use_stdout no
+	if test "$argv[1]" = "-"
+		set use_stdin yes
+		set -e argv[1]
+	end
+	if test "$argv[-1]" = "-"
+		set use_stdout yes
+		set -e argv[-1]
+	end
+	set -l stdin_piped no
+	if test "$use_stdin" = "yes" || ! isatty 0
+		set stdin_piped yes
+	end
+	if test "$use_stdin" = "yes" && test (count $argv) -gt 1
+		echo "Too many arguments" >&2
+		return 1
+	end
 	
 	# construct a regex to match all supported compressor extensions
 	set -l comprext '('
@@ -97,8 +128,13 @@ function cfc -d \
 		end
 	end
 	
-	if isatty 1
+	if test "$use_stdout" != "yes" && isatty 1
 		# a terminal is attached to stdout
+		
+		if test "$use_stdin" = "yes" && ! set -q argv[1]
+			echo "A destination file is required to compress from stdin to a terminal" >&2
+			return 1
+		end
 		
 		# if not arg given, prompt for a filename to compress to
 		if test (count $argv) -eq 0
@@ -109,7 +145,15 @@ function cfc -d \
 		if test (count $argv) -eq 1
 			# only one arg given - determine what it is
 			
-			if string match -q -r "^$comprext" "$argv[1]"
+			if test "$use_stdin" = "yes"
+				# stdin was requested with "-", the only arg must be a destination file
+				if ! string match -q -r "\.$comprext" "$argv[1]"
+					echo "Destination '$argv[1]' needs a compressor extension to compress from stdin" >&2
+					return 1
+				end
+				set from_stdin yes
+				set filename "$argv[1]"
+			else if string match -q -r "^$comprext" "$argv[1]"
 				# only arg is a compressor spec - compressing pwd to a file in the parent dir
 				set src (path resolve -- .)
 				set filename ../(basename (path resolve -- .))".$argv[1]"
@@ -123,6 +167,10 @@ function cfc -d \
 				else
 					set filename "$src.$defext"
 				end
+			else if test "$stdin_piped" = "yes"
+				# only arg is a destination file (name does end with a compressor ext) and stdin is piped - compressing stdin to the file
+				set from_stdin yes
+				set filename "$argv[1]"
 			else
 				# only arg is a destination file (name does end with a compressor ext) - compressing pwd to a file
 				if not string match -q -r '/' "$argv[1]"
@@ -150,8 +198,13 @@ function cfc -d \
 		end
 		
 		# prompt for overwrite if the file exists
-		if test -e "$filename"
-			read -P "File '$filename' exists. Overwrite? (Y/n): " -l answer || set -l answer n
+		if test -e "$filename" && ! set -q _flag_force
+			if test "$from_stdin" = "yes"
+				# stdin carries the data to compress, ask on the terminal instead
+				read -P "File '$filename' exists. Overwrite? (Y/n): " -l answer </dev/tty || set -l answer n
+			else
+				read -P "File '$filename' exists. Overwrite? (Y/n): " -l answer || set -l answer n
+			end
 			if not string match -q -i 'y' "$answer" && ! test -z "$answer"
 				echo "Aborted." >&2
 				return 1
@@ -165,13 +218,19 @@ function cfc -d \
 		# no terminal attached to stdout - sending compressed data to stdout
 		set to_stdout yes
 		if test (count $argv) -eq 0
-			# no args given and sending to stdout, currently unsupported (would require stdin as src)
+			# no args given and sending to stdout: compress stdin
 			set ext "$defext"
+			set from_stdin yes
 		else if test (count $argv) -eq 1
 			if string match -q -r "^$comprext" "$argv[1]"
 				# only arg is a compressor spec - compressing pwd to stdout with specified compressor
 				set ext "$argv[1]"
-				set src (path resolve -- .)
+				if test "$stdin_piped" = "yes"
+					# piped stdin - compressing stdin (compressors unable to do so bail out below)
+					set from_stdin yes
+				else
+					set src (path resolve -- .)
+				end
 			else
 				# only arg is a dir or file - compressing to stdout with matching default compressor
 				set src (path resolve -- "$argv[1]")
@@ -191,8 +250,21 @@ function cfc -d \
 		end
 	end
 	
+	set -l src_args "$src"
+	set -l src_label "$src"
+	if test "$from_stdin" = "yes"
+		set src_args
+		set src_label stdin
+	end
+	set -l dst_label "$filename"
+	if test "$to_stdout" = "yes"
+		set dst_label stdout
+	end
+	
 	# special treatment for src being rootfs, a directory or a file
-	if test "$src" = "/"
+	if test "$from_stdin" = "yes"
+		set tar_base_opts
+	else if test "$src" = "/"
 		set tar_base_opts --one-file-system -c /
 	else if test -d "$src"
 		# src is a directory, compress with parent dir as base
@@ -204,61 +276,75 @@ function cfc -d \
 	
 	if [ "$to_stdout" != "yes" ]
 		# compose compression commandline with a file destination
-		echo "Compressing $src to $filename ..." >&2
+		echo "Compressing $src_label to $dst_label ..." >&2
 		switch "$ext"
 			case 'tar'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				tar $tar_base_opts > "$filename"
 			case 'tar.gz' 'taz' 'tgz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd gzip || return 1
 				tar $tar_base_opts | gzip $passed_args > "$filename"
 			case 'tar.bz2' 'tb2' 'tbz' 'tbz2' 'tz2'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd bzip2 || return 1
 				tar $tar_base_opts | bzip2 $passed_args > "$filename"
 			case 'tar.lz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzip || return 1
 				tar $tar_base_opts | lzip $passed_args > "$filename"
 			case 'tar.lzma' 'tlz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzma || return 1
 				tar $tar_base_opts | lzma $passed_args > "$filename"
 			case 'tar.lzo'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzop || return 1
 				tar $tar_base_opts | lzop $passed_args > "$filename"
 			case 'tar.xz' 'txz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd xz || return 1
 				tar $tar_base_opts | xz $passed_args > "$filename"
 			case 'tar.Z' 'tZ' 'taZ'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd compress || return 1
 				tar $tar_base_opts | compress $passed_args > "$filename"
 			case 'tar.lz4'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lz4 || return 1
 				tar $tar_base_opts | lz4 $passed_args > "$filename"
 			case 'tar.zst' 'tzst'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args > "$filename"
 			case 'tar.br'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd brotli || return 1
 				tar $tar_base_opts | brotli $passed_args > "$filename"
 			case 'zip'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd zip || return 1
 				set filename (builtin path resolve "$filename")
 				pushd (dirname "$src") || return 1
 				zip $passed_args -r "$filename" (basename "$src")
 				popd
 			case '7z'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd $bin_7z || return 1
 				$bin_7z a $passed_args "$filename" "$src"
 			case 'squashfs' 'sqfs'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				if ! command -vq mksquashfs || set -q CFC_FORCE_GENSQUASHFS; and command -vq gensquashfs
 					# squashfs-tools-ng fallback; -f overwrites, -D packs a directory
 					set -l ng_args $passed_args
@@ -294,12 +380,14 @@ function cfc -d \
 				end
 				mksquashfs "$src" "$filename" $squashfs_args
 			case 'cpio'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				set filename (builtin path resolve "$filename")
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc $passed_args > "$filename"
 				popd
 			case 'cpio.gz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd gzip || return 1
 				set filename (builtin path resolve "$filename")
@@ -307,6 +395,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | gzip $passed_args > "$filename"
 				popd
 			case 'cpio.zst'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd zstd || return 1
 				set filename (builtin path resolve "$filename")
@@ -314,6 +403,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | zstd $passed_args > "$filename"
 				popd
 			case 'cpio.bz2'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd bzip2 || return 1
 				set filename (builtin path resolve "$filename")
@@ -321,6 +411,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | bzip2 $passed_args > "$filename"
 				popd
 			case 'cpio.xz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd xz || return 1
 				set filename (builtin path resolve "$filename")
@@ -328,6 +419,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | xz $passed_args > "$filename"
 				popd
 			case 'cpio.lz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzip || return 1
 				set filename (builtin path resolve "$filename")
@@ -335,6 +427,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | lzip $passed_args > "$filename"
 				popd
 			case 'cpio.lzma'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzma || return 1
 				set filename (builtin path resolve "$filename")
@@ -342,6 +435,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | lzma $passed_args > "$filename"
 				popd
 			case 'cpio.lzo'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzop || return 1
 				set filename (builtin path resolve "$filename")
@@ -349,6 +443,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | lzop $passed_args > "$filename"
 				popd
 			case 'cpio.lz4'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lz4 || return 1
 				set filename (builtin path resolve "$filename")
@@ -356,6 +451,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args > "$filename"
 				popd
 			case 'cpio.br'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd brotli || return 1
 				set filename (builtin path resolve "$filename")
@@ -363,6 +459,7 @@ function cfc -d \
 				find (basename "$src") | cpio -o -H newc | brotli $passed_args > "$filename"
 				popd
 			case 'cpio.Z'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
 				set filename (builtin path resolve "$filename")
@@ -371,34 +468,34 @@ function cfc -d \
 				popd
 			case 'gz'
 				__sp_require_cmd gzip || return 1
-				gzip $passed_args -c "$src" > "$filename"
+				gzip $passed_args -c $src_args > "$filename"
 			case 'bz2'
 				__sp_require_cmd bzip2 || return 1
-				bzip2 $passed_args -c "$src" > "$filename"
+				bzip2 $passed_args -c $src_args > "$filename"
 			case 'lz'
 				__sp_require_cmd lzip || return 1
-				lzip $passed_args -c "$src" > "$filename"
+				lzip $passed_args -c $src_args > "$filename"
 			case 'lzma'
 				__sp_require_cmd lzma || return 1
-				lzma $passed_args -c "$src" > "$filename"
+				lzma $passed_args -c $src_args > "$filename"
 			case 'lzo'
 				__sp_require_cmd lzop || return 1
-				lzop $passed_args -c "$src" > "$filename"
+				lzop $passed_args -c $src_args > "$filename"
 			case 'xz'
 				__sp_require_cmd xz || return 1
-				xz $passed_args -c "$src" > "$filename"
+				xz $passed_args -c $src_args > "$filename"
 			case 'Z'
 				__sp_require_cmd compress || return 1
-				compress $passed_args -c "$src" > "$filename"
+				compress $passed_args -c $src_args > "$filename"
 			case 'lz4'
 				__sp_require_cmd lz4 || return 1
-				lz4 $passed_args -c "$src" > "$filename"
+				lz4 $passed_args -c $src_args > "$filename"
 			case 'zst'
 				__sp_require_cmd zstd || return 1
-				zstd $passed_args -c "$src" > "$filename"
+				zstd $passed_args -c $src_args > "$filename"
 			case 'br'
 				__sp_require_cmd brotli || return 1
-				brotli $passed_args -c "$src" > "$filename"
+				brotli $passed_args -c $src_args > "$filename"
 			case '*'
 				echo "Unsupported file extension" >&2
 				return 1
@@ -406,7 +503,7 @@ function cfc -d \
 		# both tar and compressor must return 0 for success (if zip or 7z were used, the pipestatus is only one exit code)
 		set -l comp_pipestatus $pipestatus
 		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
-			echo "Error compressing $src to $filename" >&2
+			echo "Error compressing $src_label to $dst_label" >&2
 			echo "Pipestatus: $comp_pipestatus" >&2
 			return 1
 		end
@@ -416,124 +513,149 @@ function cfc -d \
 		echo "Created $filename, $filesize bytes ($filesize_mb MiB)" >&2
 	else
 		# compose compression commandline with stdout destination
-		echo "Compressing $src to stdout ..." >&2
+		echo "Compressing $src_label to $dst_label ..." >&2
 		switch "$ext"
 			case 'tar'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				tar $tar_base_opts
 			case 'tar.gz' 'taz' 'tgz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd gzip || return 1
 				tar $tar_base_opts | gzip $passed_args
 			case 'tar.bz2' 'tb2' 'tbz' 'tbz2' 'tz2'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd bzip2 || return 1
 				tar $tar_base_opts | bzip2 $passed_args
 			case 'tar.lz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzip || return 1
 				tar $tar_base_opts | lzip $passed_args
 			case 'tar.lzma' 'tlz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzma || return 1
 				tar $tar_base_opts | lzma $passed_args
 			case 'tar.lzo'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lzop || return 1
 				tar $tar_base_opts | lzop $passed_args
 			case 'tar.xz' 'txz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd xz || return 1
 				tar $tar_base_opts | xz $passed_args
 			case 'tar.Z' 'tZ' 'taZ'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd compress || return 1
 				tar $tar_base_opts | compress $passed_args
 			case 'tar.lz4'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd lz4 || return 1
 				tar $tar_base_opts | lz4 $passed_args
 			case 'tar.zst' 'tzst'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd zstd || return 1
 				tar $tar_base_opts | zstd $passed_args
 			case 'tar.br'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd tar || return 1
 				__sp_require_cmd brotli || return 1
 				tar $tar_base_opts | brotli $passed_args
 			case 'zip'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd zip || return 1
 				pushd (dirname "$src") || return 1
 				zip $passed_args -r - (basename "$src")
 				popd
 			case '7z'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd $bin_7z || return 1
 				echo "The 7z compressor cannot stream to stdout, it needs seek operations" >&2
 				return 1
 				$bin_7z a $passed_args -so "$src"
 			case 'squashfs' 'sqfs'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				echo "The squashfs compressor cannot stream to stdout, it needs seek operations" >&2
 				return 1
 			case 'cpio'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc $passed_args
 				popd
 			case 'cpio.gz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd gzip || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | gzip $passed_args
 				popd
 			case 'cpio.zst'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd zstd || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | zstd $passed_args
 				popd
 			case 'cpio.bz2'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd bzip2 || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | bzip2 $passed_args
 				popd
 			case 'cpio.xz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd xz || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | xz $passed_args
 				popd
 			case 'cpio.lz'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzip || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzip $passed_args
 				popd
 			case 'cpio.lzma'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzma || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzma $passed_args
 				popd
 			case 'cpio.lzo'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lzop || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lzop $passed_args
 				popd
 			case 'cpio.lz4'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd lz4 || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | lz4 $passed_args
 				popd
 			case 'cpio.br'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd brotli || return 1
 				pushd (dirname "$src") || return 1
 				find (basename "$src") | cpio -o -H newc | brotli $passed_args
 				popd
 			case 'cpio.Z'
+				__sp_cfc_reject_stdin "$from_stdin" "$ext" || return 1
 				__sp_require_cmd cpio || return 1
 				__sp_require_cmd compress || return 1
 				pushd (dirname "$src") || return 1
@@ -541,34 +663,34 @@ function cfc -d \
 				popd
 			case 'gz'
 				__sp_require_cmd gzip || return 1
-				gzip $passed_args -c "$src"
+				gzip $passed_args -c $src_args
 			case 'bz2'
 				__sp_require_cmd bzip2 || return 1
-				bzip2 $passed_args -c "$src"
+				bzip2 $passed_args -c $src_args
 			case 'lz'
 				__sp_require_cmd lzip || return 1
-				lzip $passed_args -c "$src"
+				lzip $passed_args -c $src_args
 			case 'lzma'
 				__sp_require_cmd lzma || return 1
-				lzma $passed_args -c "$src"
+				lzma $passed_args -c $src_args
 			case 'lzo'
 				__sp_require_cmd lzop || return 1
-				lzop $passed_args -c "$src"
+				lzop $passed_args -c $src_args
 			case 'xz'
 				__sp_require_cmd xz || return 1
-				xz $passed_args -c "$src"
+				xz $passed_args -c $src_args
 			case 'Z'
 				__sp_require_cmd gzip || return 1
-				gzip -d $passed_args -c "$src"
+				gzip -d $passed_args -c $src_args
 			case 'lz4'
 				__sp_require_cmd lz4 || return 1
-				lz4 $passed_args -c "$src"
+				lz4 $passed_args -c $src_args
 			case 'zst'
 				__sp_require_cmd zstd || return 1
-				zstd $passed_args -c "$src"
+				zstd $passed_args -c $src_args
 			case 'br'
 				__sp_require_cmd brotli || return 1
-				brotli $passed_args -c "$src"
+				brotli $passed_args -c $src_args
 			case '*'
 				echo "Unsupported file extension" >&2
 				return 1
@@ -576,10 +698,18 @@ function cfc -d \
 		# both tar and compressor must return 0 for success (if zip or 7z were used, the pipestatus is only one exit code)
 		set -l comp_pipestatus $pipestatus
 		if test "$comp_pipestatus" != "0 0" && test "$comp_pipestatus" != "0"
-			echo "Error compressing $src to $filename" >&2
+			echo "Error compressing $src_label to $dst_label" >&2
 			echo "Pipestatus: $comp_pipestatus" >&2
 			return 1
 		end
 	end
 	
+end
+
+function __sp_cfc_reject_stdin -d \
+	'Fail if compressing from stdin is requested for a compressor unable to do so'
+	if test "$argv[1]" = "yes"
+		echo "The $argv[2] compressor cannot compress from stdin" >&2
+		return 1
+	end
 end

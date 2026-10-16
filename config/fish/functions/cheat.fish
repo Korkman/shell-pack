@@ -200,7 +200,7 @@ mount --rbind /dev, /proc, /sys    qchroot [ OPTS.. ] [ DIR [ CMD [ ARGS ] ] ]
 Fetch man page from internet       onman [ --os DISTRO:VER ] [ SECTION ] PAGE
 Download with curl or wget         dl URL [ FILENAME ]
 Compressed file creation           cfc FILE|DIR [ FILE|ALGO ]
-Compressed file decompression      cfd FILE [ DESTINATION ]
+Compressed file decompression      cfd [ FILE|- ] [ DESTINATION ]
 Copy to client clipboard           cclip FILE
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit

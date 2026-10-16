@@ -2,19 +2,39 @@
 
 function cfd -d \
 'Compressed file decompression'
-	
+	set -g __sp_cfd_tmp
+	__sp_cfd_main $argv
+	set -l ret $status
+	if test (count $__sp_cfd_tmp) -gt 0
+		command rm -f -- $__sp_cfd_tmp
+	end
+	set -e __sp_cfd_tmp
+	return $ret
+end
+
+function __sp_cfd_main
 	argparse 'h/help' 'get-type' 'deep' -- $argv
 	or return 1
 	
 	if set -q _flag_help
-		echo "Usage: cfd FILE [ DESTINATION ]"
+		echo "Usage: cfd [ FILE|- [ DESTINATION ] ]"
+		echo "       cfd DESTINATION < FILE"
 		echo "       cfd --get-type [--deep] FILE"
 		echo
-		echo -e (functions -vD (status current-function))[5]
+		echo -e (functions -vD cfd)[5]
 		echo
 		echo "Decompress FILE in the current directory or at DESTINATION."
 		echo "If the archive supports directories, DESTINATION is a directory."
 		echo "If not, DESTINATION is the uncompressed filename."
+		echo "DESTINATION '-' writes to stdout, which is also the default when stdout"
+		echo "is not a terminal. Directory formats cannot be written to stdout."
+		echo
+		echo "When stdin is not a terminal, it is read as FILE: with no argument, or with"
+		echo "a single argument which is then taken as DESTINATION."
+		echo "FILE '-' reads from stdin. The format is detected by magic (needs 'file')."
+		echo "Compressed tarballs on stdin are not detected as such; pipe through the"
+		echo "decompressor and into 'cfd -' again. zip, 7z and squashfs need a seekable"
+		echo "file and are refused on stdin."
 		echo
 		echo "--get-type  Print FILE's detected archive/compression format and exit."
 		echo "--deep      With --get-type, also use 'file' magic detection when the"
@@ -22,12 +42,37 @@ function cfd -d \
 		return 1
 	end >&2
 	
-	set filename (path resolve -- "$argv[1]")
+	# no FILE given and stdin is not a terminal: same as FILE "-"
+	if test (count $argv) -eq 0
+		if isatty 0
+			echo "Missing FILE argument, see --help" >&2
+			return 1
+		end
+		set argv -
+	else if test (count $argv) -eq 1; and not set -q _flag_get_type; and not isatty 0
+		# single argument and stdin is not a terminal: it is the destination
+		set argv - $argv[1]
+	end
 	set dst "$argv[2]"
-	
-	if ! test -e "$filename"
-		echo "File does not exist: $filename" >&2
-		return 1
+	set -l stdin_mode 0
+	set -l head
+	if test "$argv[1]" = "-"
+		set stdin_mode 1
+		set filename "-"
+		# read exactly 1024 bytes (dd bs=1 never over-reads a pipe) for detection
+		set head (__sp_mkuniq --xdg-runtime cfd-head)
+		set -a __sp_cfd_tmp $head
+		dd bs=1 count=1024 of="$head" 2>/dev/null
+		if test (__sp_get_filesize "$head") -eq 0
+			echo "No data on stdin" >&2
+			return 1
+		end
+	else
+		set filename (path resolve -- "$argv[1]")
+		if ! test -e "$filename"
+			echo "File does not exist: $filename" >&2
+			return 1
+		end
 	end
 	
 	# when no dst given and stdout is not a terminal, decompress to stdout
@@ -49,7 +94,9 @@ function cfd -d \
 	
 	# Detect format from file extension
 	set -l format ""
-	if string match -qir '\.zip$' -- "$filename"
+	if test $stdin_mode -eq 1
+		# no extension to go by
+	else if string match -qir '\.zip$' -- "$filename"
 		set format zip
 	else if string match -qir '\.(tar\.[^\.]+|tb2|tbz|tbz2|tz2|taz|tgz|tlz|txz|tZ|taZ|tzst)$' -- "$filename"
 		set format tar
@@ -87,7 +134,9 @@ function cfd -d \
 	# For --get-type, this is only attempted with --deep.
 	set -l try_magic 0
 	if test -z "$format"
-		if set -q _flag_get_type
+		if test $stdin_mode -eq 1
+			set try_magic 1
+		else if set -q _flag_get_type
 			if set -q _flag_deep
 				set try_magic 1
 			end
@@ -103,7 +152,11 @@ function cfd -d \
 			echo "Unsupported file type (install 'file' for magic-based detection)" >&2
 			return 1
 		end
-		set -l mime (file --mime-type -b -- "$filename")
+		set -l probe "$filename"
+		if test $stdin_mode -eq 1
+			set probe "$head"
+		end
+		set -l mime (file --mime-type -b -- "$probe")
 		if string match -q 'application/zip' -- "$mime"
 			set format zip
 		else if string match -q 'application/x-tar' -- "$mime"
@@ -147,6 +200,18 @@ function cfd -d \
 		return 0
 	end
 
+	# formats which need seeking cannot be read from a stream
+	if test $stdin_mode -eq 1
+		switch $format
+		case zip 7z squashfs
+			echo "Format '$format' cannot be read from stdin, save it to a file first." >&2
+			return 1
+		end
+		if test -z "$dst"; and contains -- $format tar cpio
+			set dst "."
+		end
+	end
+
 	# Dispatch to the appropriate decompressor
 	switch $format
 	case zip
@@ -156,7 +221,9 @@ function cfd -d \
 	case tar
 		__sp_require_cmd tar || return 1
 		__sp_cfd_make_dst_dir || return 2
-		if string match -qir '\.tar\.br$' -- "$filename"
+		if test $stdin_mode -eq 1
+			__sp_cfd_src | tar -xf - -C "$dst"
+		else if string match -qir '\.tar\.br$' -- "$filename"
 			# tar has no builtin brotli support
 			__sp_require_cmd brotli || return 1
 			brotli --stdout -d "$filename" | tar -xf - -C "$dst"
@@ -167,7 +234,11 @@ function cfd -d \
 		__sp_require_cmd cpio || return 1
 		__sp_cfd_make_dst_dir || return 2
 		pushd "$dst"
-		cpio -id < "$filename"
+		if test $stdin_mode -eq 1
+			__sp_cfd_src | cpio -id
+		else
+			cpio -id < "$filename"
+		end
 		popd
 	case 7z
 		__sp_require_cmd $bin_7z || return 1
@@ -186,39 +257,39 @@ function cfd -d \
 	case gz
 		__sp_require_cmd gunzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		gunzip -c "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | gunzip -c | __sp_redirect_out "$dst"
 	case zst
 		__sp_require_cmd zstd || return 1
 		__sp_cfd_make_dst_file || return 2
-		zstd --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | zstd --stdout -d | __sp_redirect_out "$dst"
 	case br
 		__sp_require_cmd brotli || return 1
 		__sp_cfd_make_dst_file || return 2
-		brotli --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | brotli --stdout -d | __sp_redirect_out "$dst"
 	case bz2
 		__sp_require_cmd bzip2 || return 1
 		__sp_cfd_make_dst_file || return 2
-		bzip2 --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | bzip2 --stdout -d | __sp_redirect_out "$dst"
 	case lz4
 		__sp_require_cmd lz4 || return 1
 		__sp_cfd_make_dst_file || return 2
-		lz4 --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | lz4 -d -c | __sp_redirect_out "$dst"
 	case lz
 		__sp_require_cmd lzip || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzip --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzip --stdout -d | __sp_redirect_out "$dst"
 	case lzma
 		__sp_require_cmd lzma || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzma --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzma --stdout -d | __sp_redirect_out "$dst"
 	case lzo
 		__sp_require_cmd lzop || return 1
 		__sp_cfd_make_dst_file || return 2
-		lzop --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | lzop --stdout -d | __sp_redirect_out "$dst"
 	case xz
 		__sp_require_cmd xz || return 1
 		__sp_cfd_make_dst_file || return 2
-		xz --stdout -d "$filename" | __sp_redirect_out "$dst"
+		__sp_cfd_src | xz --stdout -d | __sp_redirect_out "$dst"
 	end
 end
 
@@ -237,7 +308,8 @@ function __sp_cfd_make_dst_dir --no-scope-shadowing
 	if ! test -d "$dst"
 		echo "Destination directory does not exist: $dst"
 		echo -n "Create (Y/n)?"
-		read -P "" -l answer || set -l answer n
+		set -l answer
+		__sp_cfd_read ""
 		if ! test "$answer" = "y" && ! test "$answer" = "Y" && ! test "$answer" = ""
 			return 1
 		end
@@ -254,17 +326,49 @@ function __sp_cfd_make_dst_file --no-scope-shadowing
 		return
 	end
 	set -l filename_minus_ext (string replace -r '\.[^\.]+$' '' -- "$filename")
+	if test $stdin_mode -eq 1
+		if test -z "$dst"
+			echo "Destination required when reading stdin" >&2
+			return 1
+		end
+		set filename_minus_ext stdin
+	end
 	if test -z "$dst"
 		set dst "$filename_minus_ext"
 	end
 	if test -d "$dst"
-		set dst (builtin path resolve "$dst")"/$filename_minus_ext"
+		set dst (builtin path resolve "$dst")"/"(path basename -- "$filename_minus_ext")
 	end
-	if test -e "$dst"
-		read -P "File '$dst' exists. Overwrite? (Y/n): " -l answer || set -l answer n
+	# only regular files need confirmation; devices and fifos (e.g. /dev/null) do not
+	if test -f "$dst"
+		set -l answer
+		__sp_cfd_read "File '$dst' exists. Overwrite? (Y/n): "
 		if not string match -q -i 'y' "$answer" && ! test -z "$answer"
 			echo "Aborted." >&2
 			return 1
 		end
 	end
+end
+
+# emit the input: stdin (after the detection head) or the file
+function __sp_cfd_src --no-scope-shadowing
+	if test $stdin_mode -eq 1
+		cat "$head"
+		cat
+	else
+		cat -- "$filename"
+	end
+end
+
+# prompt without consuming the data stream on stdin; sets $answer in the caller
+# (command substitution would lose stdin, so a global is used)
+function __sp_cfd_read --no-scope-shadowing -a prompt
+	set -g __sp_cfd_answer n
+	if test $stdin_mode -eq 1
+		read -P "$prompt" -g __sp_cfd_answer < /dev/tty; or set __sp_cfd_answer n
+	else
+		read -P "$prompt" -g __sp_cfd_answer; or set __sp_cfd_answer n
+	end
+	set answer $__sp_cfd_answer
+	set -e __sp_cfd_answer
 end
