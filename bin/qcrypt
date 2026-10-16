@@ -170,7 +170,7 @@
 		fi
 		
 		
-		GNUPGHOME=$(fishcall __sp_mkuniq --xdg-runtime .qcrypt-gnupghome)
+		GNUPGHOME=$(fishcall __sp_mkuniq --dir --xdg-runtime .qcrypt-gnupghome)
 		export GNUPGHOME
 		
 		set +e
