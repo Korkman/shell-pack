@@ -1,4 +1,9 @@
-function , --description "Comma: spawn command once pipe has data"
+function plus -d \
+	"Plus: spawn command once pipe has data"
+	if isatty stdin
+		echo "plus: reads from a pipe, e.g.: cmd |+ ppage" >&2
+		return 1
+	end
 	test (count $argv) -gt 0; or set argv cat
 
 	# Read exactly 1 byte, held as octal (binary-safe, incl. NUL)

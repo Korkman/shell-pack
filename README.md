@@ -38,6 +38,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `qcrypt`, encrypt file or stream with password utilizing `openssl` or `gpg`
  * `grasp`, pipe a stream through fzf for real-time filtering
  * `ppage`, page a file into `grasp` (configured as $PAGER if unset)
+ * `plus` (alias `+`), start a command only once data arrives on the pipe, e.g. `qcrypt -d file |+ ppage`
  * `fishcall`, to call any fish alias from non-fish shells
  * Linux only
    * `lsports`: list open ports in compact manner or perform nmap scan (see --help)
