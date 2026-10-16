@@ -298,6 +298,13 @@ function td-test-cfc -d \
 		or return 1
 	end >&2
 
+	for required in gzip tar
+		if not command -q $required
+			echo "td test-cfc: required binary '$required' not found, aborting" >&2
+			return 1
+		end
+	end
+
 	set -l tmp (__sp_mkuniq --dir --xdg-runtime td-test-cfc)
 	or return 1
 	pushd "$tmp"; or return 1
@@ -463,4 +470,26 @@ function td-test-comma -d \
 	functions -e __td_check
 	test $failed -gt 125; and set failed 125
 	return $failed
+end
+
+function td-test-qssh -d \
+	"Populate qssh with a few local hosts by briefly connecting to them"
+	argparse 'h/help' -- $argv
+	or return 2
+
+	if set -q _flag_help
+		echo (functions --details --verbose (status function))[5]
+		echo "Usage: td test-qssh"
+		echo
+		echo "  Runs qssh against 127.1, 127.2 and 127.3 for one second each,"
+		echo "  so that its host history has entries to try out."
+		set -q _flag_help
+		and return 0
+		or return 1
+	end >&2
+
+	for host in 127.1 127.2 127.3
+		timeout 1 qssh $host &
+	end
+	wait
 end
