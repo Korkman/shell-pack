@@ -103,6 +103,8 @@
 			echo "    qcrypt -e myfile.txt myfile.txt.enc"
 			echo "  qcrypt for a pipe:"
 			echo "    cat myfile.txt | qcrypt -e > myfile.txt.enc"
+			echo "  qcrypt after ssh (use ssh -n, otherwise ssh steals keystrokes from the password prompt):"
+			echo "    ssh -n HOST \"cat /dev/disk\" | qcrypt -e --gpg > disk.gpg"
 			echo 
 		} >&2
 		if [ "$invalid_args" = "yes" ]; then exit 1; fi
@@ -130,11 +132,28 @@
 	
 	# read password from terminal into ENCPASS
 	if [ -z "${ENCPASS:-}" ]; then
+		trap 'stty echo < /dev/tty 2>/dev/null || true' EXIT
 		printf "%s" "Password: " >&2
 		stty -echo < /dev/tty
 		read -r ENCPASS < /dev/tty
 		stty echo < /dev/tty
 		echo >&2
+		if [ "${_flag_decrypt:-}" = "no" ]; then
+			# confirm to catch typos, e.g. keystrokes stolen by another process reading the tty
+			printf "%s" "Repeat password: " >&2
+			stty -echo < /dev/tty
+			read -r _encpass2 < /dev/tty
+			stty echo < /dev/tty
+			echo >&2
+			if [ "$ENCPASS" != "$_encpass2" ]; then
+				echo "Error: Passwords do not match." >&2
+				exit 1
+			fi
+		fi
+		if [ -z "$ENCPASS" ]; then
+			echo "Error: Empty password." >&2
+			exit 1
+		fi
 	fi
 	
 	if [ "$mode" = "gpg" ]; then
