@@ -39,7 +39,7 @@ function __sp_deps_install_fresh
 		return 1
 	end
 	
-	if test $argv[1] = "latest"
+	if test "$argv[1]" = "latest"
 		echo "Looking up latest release tag ..."
 		set tag (dl -q "https://api.github.com/repos/sinelaw/fresh/releases/latest" | string match --regex '"tag_name":\s*"[^"]+"' | string match --regex 'v[0-9][^"]*') || return 1
 		if test "$tag" = ""
