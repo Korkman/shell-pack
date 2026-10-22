@@ -79,9 +79,5 @@ function __sp_pager -d \
 		$pager $opts
 	end
 	
-	# reset tab title to mc
-	# NOTE: MC_SID isn't set when we are launched with F4, hence MC_TMPDIR
-	if set -q MC_TMPDIR
-		set -g tabtitle "mc"
-	end
+	__sp_tabtitle_from_parent
 end

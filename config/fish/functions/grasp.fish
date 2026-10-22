@@ -598,11 +598,7 @@ function grasp -d \
 	
 	set fzf_status $status
 	
-	# reset tab title to mc
-	# NOTE: MC_SID isn't set when we are launched with F4, hence MC_TMPDIR
-	if set -q MC_TMPDIR
-		set -g tabtitle "mc"
-	end
+	__sp_tabtitle_from_parent
 	
 	if status is-interactive && test $fzf_status -eq 50
 		commandline 'cat '(string escape -- $GRASP_DUMPFILE)' '
