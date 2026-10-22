@@ -15,7 +15,12 @@ function __sp_editor -d \
 	if set -q VISUAL
 		set EDITOR $VISUAL
 	end
-
+	
+	# name tab after editor
+	# make sure __update_tab_title is loaded (for when called from non-fish shells)
+	functions -q fish_title
+	set -g tabtitle (path basename "$EDITOR")
+	
 	if set -q _flag_line
 		set line $_flag_line
 		# open the file in the default editor with cursor position for supported editors
@@ -28,5 +33,11 @@ function __sp_editor -d \
 		end
 	else
 		"$EDITOR" "$filename"
+	end
+	
+	# reset tab title to mc
+	# NOTE: MC_SID isn't set when we are launched with F4, hence MC_TMPDIR
+	if set -q MC_TMPDIR
+		set -g tabtitle "mc"
 	end
 end

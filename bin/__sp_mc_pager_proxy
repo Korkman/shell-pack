@@ -1,0 +1,6 @@
+#!/bin/sh
+# helper to switch between editor name and mc as tab title
+{
+export PAGER="$TRUE_PAGER"
+exec fishcall __sp_pager "$@"
+}

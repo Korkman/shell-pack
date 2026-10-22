@@ -23,6 +23,11 @@ function __sp_pager -d \
 		echo "Warning: No \$PAGER configured and no fallbacks found (less, more). Passing through as-is." >&2
 	end
 
+	# name tab after pager
+	# make sure __update_tab_title is loaded (for when called from non-fish shells)
+	functions -q fish_title
+	set -g tabtitle (path basename "$pager")
+	
 	set -l opts
 	switch "$pager"
 		# whitelist of pagers known to accept less-style options
@@ -72,5 +77,11 @@ function __sp_pager -d \
 		$pager $opts $argv
 	else
 		$pager $opts
+	end
+	
+	# reset tab title to mc
+	# NOTE: MC_SID isn't set when we are launched with F4, hence MC_TMPDIR
+	if set -q MC_TMPDIR
+		set -g tabtitle "mc"
 	end
 end

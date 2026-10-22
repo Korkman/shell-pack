@@ -53,6 +53,11 @@ function mc -d \
 		set MC_NERDLEVEL 0
 	end
 	
+	set -x TRUE_PAGER "$PAGER"
+	set -x PAGER __sp_mc_pager_proxy
+	set -x TRUE_EDITOR "$EDITOR"
+	set -x EDITOR __sp_mc_editor_proxy
+	
 	# NOTE: this is fixed in mc for Debian Bookworm, but we're supporting Stretch here
 	# __sp_mc_launcher only handles plain, argument-less "mc" (it enables the
 	# sudo-elevation toggle menu entry); mcview/mcedit/mcdiff and any mc

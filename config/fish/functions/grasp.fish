@@ -138,7 +138,7 @@ function grasp -d \
 		set self ppage
 	end
 	set -x GRASP_SELF $self
-
+	
 	# these keys are only bound while the search input is hidden
 	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o,h'
 	set -x GRASP_PAGER_MODE_KEYS $pager_mode_keys
@@ -547,6 +547,10 @@ function grasp -d \
 		end
 	end
 	
+	# make sure __update_tab_title is loaded (for when called from non-fish shells)
+	functions -q fish_title
+	set -g tabtitle "$self"
+	
 	if set -q _flag_prompt
 		set grasptitle $_flag_prompt
 	end
@@ -593,6 +597,12 @@ function grasp -d \
 	end
 	
 	set fzf_status $status
+	
+	# reset tab title to mc
+	# NOTE: MC_SID isn't set when we are launched with F4, hence MC_TMPDIR
+	if set -q MC_TMPDIR
+		set -g tabtitle "mc"
+	end
 	
 	if status is-interactive && test $fzf_status -eq 50
 		commandline 'cat '(string escape -- $GRASP_DUMPFILE)' '

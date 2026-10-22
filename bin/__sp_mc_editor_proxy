@@ -1,0 +1,6 @@
+#!/bin/sh
+# helper to switch between editor name and mc as tab title
+{
+export EDITOR="$TRUE_EDITOR"
+exec fishcall __sp_editor "$@"
+}
