@@ -41,15 +41,15 @@ function grasp -d \
 		echo "  esc                  Clear query, hide search box"
 		echo "  f, alt-f             Toggle filter showing only matched lines"
 		echo "  o, alt-o             Toggle sort best up (requires filter)"
-		echo "  m, alt-m             Print all matched (filtered) line(s) and exit"
 		echo
 		echo (set_color brwhite --bold)"  SELECTING"(set_color normal)
 		echo "  alt-a                Select all lines"
 		echo "  alt-x                Deselect all lines"
 		echo "  tab                  Toggle selection of current line, move down"
-		echo "  s, alt-s             Print selected line(s) and exit"
-		echo "  S, alt-S             Save selected line(s) to $GRASP_DUMPFILE"
-		echo "  M, alt-M             Select and save all matched lines to $GRASP_DUMPFILE"
+		echo "  s, alt-s             Save lines as file (asks for filename)"
+		echo "  S, alt-S             Save lines to $GRASP_DUMPFILE"
+		echo "  P, alt-P             Print lines and exit"
+		echo "                       (lines: selected, else matches when filtering, else all)"
 		echo "  alt-up/-down         Jump between selected lines"
 		echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
 		echo 
@@ -126,6 +126,9 @@ function grasp -d \
 		# processes and must inherit the same path, not regenerate their own
 		set -x GRASP_JUMP_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-jump)
 	end
+	if not set -q GRASP_EXPORT_FILE
+		set -x GRASP_EXPORT_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-export)
+	end
 
 	set -l argv_copy $argv
 	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'search=' 'then-search=' 'fzf-callback=' help -- $argv
@@ -140,7 +143,7 @@ function grasp -d \
 	set -x GRASP_SELF $self
 	
 	# these keys are only bound while the search input is hidden
-	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,m,M,c,l,b,r,+,a,x,o,h'
+	set -l pager_mode_keys 'n,N,p,:,/,w,t,f,q,space,g,G,s,S,P,c,l,b,r,+,a,x,o,h'
 	set -x GRASP_PAGER_MODE_KEYS $pager_mode_keys
 	
 	if set -q _flag_fzf_callback
@@ -256,10 +259,9 @@ function grasp -d \
 		'f1,alt-h,h:execute('$callback_cmd' help),' \
 		'alt-w,w:toggle-wrap-word,' \
 		'alt-t,t:toggle-track-current,' \
-		'alt-S,S:execute-silent(cat {+f} > "$GRASP_DUMPFILE")+become(printf %s\\\\n "Saved to $GRASP_DUMPFILE"; exit 50),' \
-		'alt-M,M:select-all+execute-silent(cat {+f} > "$GRASP_DUMPFILE")+become(printf %s\\\\n "Saved to $GRASP_DUMPFILE"; exit 50),' \
-		'alt-s,s:accept,' \
-		'alt-m,m:disable-raw+select-all+accept,' \
+		'alt-S,S:transform('$callback_cmd' export_save_action),' \
+		'alt-s,s:transform('$callback_cmd' export_save_as_action),' \
+		'alt-P,P:transform('$callback_cmd' export_print_action),' \
 		'alt-a,a:select-all,' \
 		'alt-x,x:deselect-all,' \
 		'alt-o,o:disable-raw+toggle-sort,' \
@@ -566,7 +568,7 @@ function grasp -d \
 		--header-border=none \
 		--ghost "[fzf query, exact match, F1 or alt-h for help]" \
 		--bind 'focus:transform('$callback_cmd' update_header)' \
-		--bind 'result:bg-transform('$callback_cmd' memory_guard)+transform('$callback_cmd' update_header)'
+		--bind 'result:bg-transform('$callback_cmd' memory_guard)+transform('$callback_cmd' on_result)'
 	# pass options as env vars so that `reload` is simple to implement
 	__sp_quote_args $fzf_defaults | read -z -x FZF_DEFAULT_OPTS
 	
@@ -597,6 +599,7 @@ function grasp -d \
 	end
 	
 	set fzf_status $status
+	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.dest" "$GRASP_EXPORT_FILE.msg"
 	
 	__sp_tabtitle_from_parent
 	
