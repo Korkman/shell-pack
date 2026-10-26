@@ -10,6 +10,13 @@ function grasp -d \
 		set -x GRASP_DUMPFILE "/tmp/grasp-saved.txt"
 	end
 	
+	set -l save_note ""
+	set -l edit_note ""
+	if test "$LESSSECURE" = 1
+		set save_note " (disabled by \$LESSSECURE)"
+		set edit_note " (disabled by \$LESSSECURE)"
+	end
+
 	begin
 		echo (set_color brwhite --bold)"  PAGING"(set_color normal)
 		echo "  up / down            Move line selection up/down"
@@ -23,7 +30,7 @@ function grasp -d \
 		echo "  w, alt-w             Toggle word-wrap"
 		echo "  t, alt-t             Toggle tracking of current line on new input"
 		echo "  ctrl-r, f5           Reload content (when FILE or COMMAND was passed)"
-		echo "  alt-e, f4            Edit file in \$EDITOR (when FILE was passed)"
+		echo "  alt-e, f4            Edit file in \$EDITOR (when FILE was passed)$edit_note"
 		echo "  q, alt-q             Quit"
 		echo "                       (also: esc, f10)"
 		echo
@@ -46,8 +53,8 @@ function grasp -d \
 		echo "  alt-a                Select all lines"
 		echo "  alt-x                Deselect all lines"
 		echo "  tab                  Toggle selection of current line, move down"
-		echo "  s, alt-s             Save lines as file (asks for filename)"
-		echo "  S, alt-S             Save lines to $GRASP_DUMPFILE"
+		echo "  s, alt-s             Save lines as file (asks for filename)$save_note"
+		echo "  S, alt-S             Save lines to $GRASP_DUMPFILE$save_note"
 		echo "  P, alt-P             Print lines and exit"
 		echo "                       (lines: selected, else matches when filtering, else all)"
 		echo "  alt-up/-down         Jump between selected lines"
@@ -700,7 +707,10 @@ function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 			--bind 'r,ctrl-r,f5:become(exec fzf)'
 	end
 
-	if set -q FZF_EDIT_COMMAND
+	if test "$LESSSECURE" = 1
+		set -a fzf_defaults \
+			--bind 'alt-e,f4:execute(__sp_grasp_callback edit_denied)'
+	else if set -q FZF_EDIT_COMMAND
 		__sp_quote_args $FZF_EDIT_COMMAND | read -z -x FZF_EDIT_COMMAND
 		set -a fzf_defaults \
 			--bind 'alt-e,f4:enable-raw+execute(eval $FZF_EDIT_COMMAND)'

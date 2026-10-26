@@ -31,6 +31,7 @@ toggle_raw() {
 }
 
 update_header() {
+	# SGR reset: clear colors and attributes
 	reset=$(printf '\033[0m')
 	pos="$FZF_POS"
 	if [ -z "${GRASP_PAGER:-}" ]; then
@@ -83,6 +84,7 @@ line_jump_read() {
 	rm -f "$GRASP_JUMP_FILE"
 	# switch to the alternate screen (like fzf itself) so the prompt doesn't clutter scrollback
 	# done here rather than in fish's `read`, which leaves the alternate screen on its own
+	# enter alternate screen, cursor home, show cursor
 	printf '\033[?1049h\033[H\033[?25h'
 	if [ -n "${FZF_RAW:-}" ]; then
 		printf 'Jump to line: '
@@ -90,6 +92,7 @@ line_jump_read() {
 		printf 'Jump to match: '
 	fi
 	read -r line
+	# hide cursor, leave alternate screen
 	printf '\033[?25l\033[?1049l'
 	case "$line" in
 		[1-9]*[0-9]|[1-9])
@@ -145,9 +148,31 @@ build_export() {
 }
 
 # lines exported: selected ones, else matches when filtering, else all lines
+denied() {
+	# enter alternate screen, cursor home, clear screen, show cursor
+	printf '\033[?1049h\033[H\033[2J\033[?25h'
+	fishcall __sp_error "$1 is disabled because \$LESSSECURE is set to 1."
+	printf 'Press enter to continue ...'
+	read -r _ || true
+	# hide cursor, leave alternate screen
+	printf '\033[?25l\033[?1049l'
+}
+
+save_denied() {
+	denied "Saving files"
+}
+
+edit_denied() {
+	denied "Editing files"
+}
+
 export_action() {
 	mode="$1"
 	build_export "$mode" keep > /dev/null || return 2
+	if [ "${LESSSECURE:-}" = 1 ] && [ "$mode" != print ]; then
+		echo 'execute(__sp_grasp_callback save_denied)'
+		return 0
+	fi
 	# save_as prompts right away: execute() triggered by an event (see export_pending) can't read the tty reliably
 	prompt=''
 	if [ "${FZF_SELECT_COUNT:-0}" -gt 0 ]; then
@@ -204,6 +229,7 @@ save_as_prompt() {
 	fi
 	rm -f "$GRASP_EXPORT_FILE.dest"
 	# alternate screen keeps the prompt out of the scrollback, like line_jump_read
+	# enter alternate screen, cursor home, clear screen, show cursor
 	printf '\033[?1049h\033[H\033[2J\033[?25h'
 	printf 'Save %s as: ' "$what"
 	dest=''
@@ -240,6 +266,7 @@ save_as_prompt() {
 		printf '%s\nPress enter to continue ...' "$msg"
 		read -r _ || true
 	fi
+	# hide cursor, leave alternate screen
 	printf '\033[?25l\033[?1049l'
 }
 
@@ -262,7 +289,7 @@ save_to() {
 CMD="$1"
 shift
 case "$CMD" in
-	memory_guard|toggle_raw|update_header|on_result|escape|line_jump_read|line_jump_apply|emit_lines|save_as_prompt|save_to|export_save_action|export_save_as_action|export_print_action)
+	memory_guard|toggle_raw|update_header|on_result|escape|line_jump_read|line_jump_apply|emit_lines|save_as_prompt|save_to|save_denied|edit_denied|export_save_action|export_save_as_action|export_print_action)
 		case "$CMD" in
 			export_save_action) export_action save ;;
 			export_save_as_action) export_action save_as ;;
