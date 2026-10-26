@@ -26,8 +26,8 @@
 	ta
 	}"
 
-	# SP_SED_UNBUFFERED is exported by grasp (-u for GNU, -l for BSD, empty for none)
+	# SP_SED_CMD is exported by grasp: sed invocation with line-wise streaming output
 	# shellcheck disable=SC2086
-	sed -E ${SP_SED_UNBUFFERED-} -e "$script" | bat "$@"
+	${SP_SED_CMD:-sed} -E -e "$script" | bat "$@"
 	exit
 }

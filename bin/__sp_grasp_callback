@@ -7,18 +7,36 @@ set -eu
 
 filter_prompt="(alt-f) filter> "
 search_prompt="> "
-memory_guard() {
-	# guard against fzf/search exhausting memory
-	max_fzf_rss_kb="${GRASP_MAX_FZF_RSS_KB:-524288}"
+get_fzf_rss_kb() {
 	# fzf runs transform/execute actions via `$SHELL -c`, so $PPID is that
 	# shell, not fzf itself; walk up one more level to find fzf's real pid
 	fzf_pid="$PPID"
 	if [ "$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')" != "fzf" ]; then
 		fzf_pid=$(ps -o ppid= -p "$PPID" 2>/dev/null | tr -d ' ')
 	fi
-	fzf_rss_kb=$(__sp_mem_usage_pid "$fzf_pid" 2>/dev/null)
-	if [ -n "$fzf_rss_kb" ] && [ "$fzf_rss_kb" -gt "$max_fzf_rss_kb" ]; then
-		echo "unbind(result)+reload(echo 'Memory limit GRASP_MAX_FZF_RSS_KB reached ($fzf_rss_kb kb > $max_fzf_rss_kb kb). Immediate exit.')+show-input+clear-query+wait+accept"
+	__sp_mem_usage_pid "$fzf_pid" 2>/dev/null || true
+}
+
+memory_guard() {
+	# guard against fzf/search exhausting memory
+	max_fzf_rss_kb="${GRASP_MAX_FZF_RSS_KB:-524288}"
+	# throttle: measure at most once per second
+	mem_cache="${GRASP_EXPORT_FILE:-}.mem"
+	now=$(date +%s)
+	if [ -n "${GRASP_EXPORT_FILE:-}" ] && [ -f "$mem_cache" ]; then
+		read -r mem_time _ < "$mem_cache" || true
+		if [ "${mem_time:-0}" = "$now" ]; then
+			return 0
+		fi
+	fi
+	fzf_rss_kb=$(get_fzf_rss_kb)
+	if [ -n "$fzf_rss_kb" ]; then
+		if [ -n "${GRASP_EXPORT_FILE:-}" ]; then
+			printf '%s %s\n' "$now" "$fzf_rss_kb" > "$mem_cache"
+		fi
+		if [ "$fzf_rss_kb" -gt "$max_fzf_rss_kb" ]; then
+			echo "unbind(result)+reload(echo 'Memory limit GRASP_MAX_FZF_RSS_KB reached ($fzf_rss_kb kb > $max_fzf_rss_kb kb). Immediate exit.')+show-input+clear-query+wait+accept"
+		fi
 	fi
 }
 
@@ -59,7 +77,17 @@ update_header() {
 		fi
 	fi
 
-	GRASP_HEADER_TEXT="$pre$GRASP_HEADER_TEXT$ext"
+	# memory_guard (background) keeps this file current
+	mem=''
+	mem_kb=''
+	if [ -n "${GRASP_EXPORT_FILE:-}" ] && [ -f "$GRASP_EXPORT_FILE.mem" ]; then
+		read -r _ mem_kb < "$GRASP_EXPORT_FILE.mem" || true
+	fi
+	if [ -n "$mem_kb" ]; then
+		mem=" [$((mem_kb / 1024)) MiB RAM]"
+	fi
+
+	GRASP_HEADER_TEXT="$pre$GRASP_HEADER_TEXT$ext$mem"
 	printf 'change-header(%s %s %s)\n' "$GRASP_HEADER_BG$GRASP_HEADER_FG" "$GRASP_HEADER_TEXT" "$reset"
 }
 

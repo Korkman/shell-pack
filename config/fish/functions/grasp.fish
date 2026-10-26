@@ -609,7 +609,7 @@ function grasp -d \
 	end
 	
 	set fzf_status $status
-	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.dest" "$GRASP_EXPORT_FILE.msg"
+	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.dest" "$GRASP_EXPORT_FILE.msg" "$GRASP_EXPORT_FILE.mem"
 	
 	__sp_tabtitle_suggestion --restore
 	
@@ -687,13 +687,16 @@ end
 
 function __sp_grasp_set_bat_cmd --no-scope-shadowing
 	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
-		# tell __sp_bat which flag makes sed unbuffered (empty: none, e.g. busybox)
-		if $__cap_sed_has_u
-			set -x SP_SED_UNBUFFERED -u
+		# tell __sp_bat how to run sed with line-wise streaming output. GNU sed -u
+		# also reads input byte by byte (~100x slower), so prefer stdbuf if available.
+		if $__cap_sed_has_u && command -q stdbuf
+			set -x SP_SED_CMD stdbuf -oL sed
+		else if $__cap_sed_has_u
+			set -x SP_SED_CMD sed -u
 		else if $__cap_sed_has_l
-			set -x SP_SED_UNBUFFERED -l
+			set -x SP_SED_CMD sed -l
 		else
-			set -x SP_SED_UNBUFFERED ""
+			set -x SP_SED_CMD sed
 		end
 		set bat_cmd __sp_bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
 		if set -q _flag_no_syntax
