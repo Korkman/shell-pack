@@ -40,6 +40,7 @@ ctrl-a, lift keys, then
   ctrl-a: jump to most recent window
   arrow-left, arrow-right: move window left / right on status bar (may renumber)
   shift-A: rename window
+  shift-P: capture window into pager
   shift-N: show window number and name
   shift-M: monitor window for activity (once)
   _: monitor window for silence (once)

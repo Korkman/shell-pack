@@ -555,6 +555,9 @@ main_phase2() {
 	# c-a 0: select window 10 if no window 0 exists
 	t bind 0 run-shell "$TMUX_CONF_SH_ESC select_win_0"
 	
+	# c-a P: page this pane's scroll buffer in a new window
+	t bind P run-shell "tmux new-window -a -n history -t '#{window_id}' '$TMUX_CONF_SH_ESC page_history #{pane_id}'"
+	
 	# shellcheck disable=SC2086
 	if [ "$__sp_tmux_ver" -ge 204 ]; then
 		# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
@@ -1273,6 +1276,31 @@ toggle_zen_mode() {
 		t set -g status-interval "$D_STATUS_INTERVAL"
 	fi
 	legacy_force_status_update
+}
+
+page_history() {
+	# portable pager invocation
+	if command -v fishcall > /dev/null; then
+		# shell-pack properly installed: pass to fishcall __sp_pager
+		tmux capture-pane -e -S - -p -t "$1" | fishcall __sp_pager --raw
+	elif [ "${PAGER:-}" != "" ] && [ "${PAGER:-}" != "less" ]; then
+		# no fishcall and custom pager which isn't known: pass without escapes to $PAGER
+		tmux capture-pane -S - -p -t "$1" | $PAGER
+	elif command -v less > /dev/null; then
+		# no fishcall and 'less': pass with raw control chars if mentioned in help
+		if less --help 2>&1 | grep -q -- --raw-control-chars; then
+			tmux capture-pane -e -S - -p -t "$1" | less --raw-control-chars
+		else
+			# stripped down implementation of 'less', pass without control chars
+			tmux capture-pane -S - -p -t "$1" | less
+		fi
+	elif command -v more > /dev/null; then
+		# lowering our standards even more with 'more' ...
+		tmux capture-pane -S - -p -t "$1" | more
+	else
+		# last resort: let tmux re-capture our output into a copy buffer
+		tmux capture-pane -e -S - -p -t "$1"
+	fi
 }
 
 client_attached() {
