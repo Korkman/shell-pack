@@ -3,6 +3,9 @@ function __sp_tabtitle_suggestion -d \
 	argparse 'r/restore' 'f/force' -- $argv
 	or return
 
+	# fast exit when no TMUX is present (fetching current tabtitle from screen not implemented)
+	set -q TMUX || return
+	
 	# make sure __update_tab_title is loaded (for when called from non-fish shells)
 	functions -q fish_title
 
