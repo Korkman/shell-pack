@@ -22,13 +22,18 @@ function __sp_tabtitle_suggestion -d \
 
 	# the tmux window name is authoritative: it also reflects titles set by
 	# other processes, while $tabtitle is only known to this shell
-	set -l current "$tabtitle"
-	if set -q TMUX && command -q tmux
+	set -l current
+	if set -q tabtitle
+		set current "$tabtitle"
+	else if command -q tmux
 		set -l target
 		set -q TMUX_PANE
 		and set target -t $TMUX_PANE
 		set -l tmux_title (tmux display-message -p $target '#W' 2>/dev/null)
 		and set current "$tmux_title"
+	else
+		# TMUX set but command missing, very funny
+		return
 	end
 
 	# always push, so every call can be balanced by --restore
