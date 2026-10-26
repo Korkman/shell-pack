@@ -24,9 +24,7 @@ function __sp_pager -d \
 	end
 
 	# name tab after pager
-	# make sure __update_tab_title is loaded (for when called from non-fish shells)
-	functions -q fish_title
-	set -g tabtitle (path basename "$pager")
+	__sp_tabtitle_suggestion (path basename "$pager")
 	
 	set -l opts
 	switch "$pager"
@@ -79,5 +77,5 @@ function __sp_pager -d \
 		$pager $opts
 	end
 	
-	__sp_tabtitle_from_parent
+	__sp_tabtitle_suggestion --restore
 end

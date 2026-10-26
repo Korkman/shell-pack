@@ -17,9 +17,7 @@ function __sp_editor -d \
 	end
 	
 	# name tab after editor
-	# make sure __update_tab_title is loaded (for when called from non-fish shells)
-	functions -q fish_title
-	set -g tabtitle (path basename "$EDITOR")
+	__sp_tabtitle_suggestion (path basename "$EDITOR")
 	
 	if set -q _flag_line
 		set line $_flag_line
@@ -35,5 +33,5 @@ function __sp_editor -d \
 		"$EDITOR" "$filename"
 	end
 	
-	__sp_tabtitle_from_parent
+	__sp_tabtitle_suggestion --restore
 end

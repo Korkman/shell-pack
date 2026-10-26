@@ -556,9 +556,12 @@ function grasp -d \
 		end
 	end
 	
-	# make sure __update_tab_title is loaded (for when called from non-fish shells)
-	functions -q fish_title
-	set -g tabtitle "$self"
+	# executing a command owns the tab, regardless of the current title
+	if test "$processing_mode" = cmd
+		__sp_tabtitle_suggestion --force (path basename "$argv[1]")
+	else
+		__sp_tabtitle_suggestion "$self"
+	end
 	
 	if set -q _flag_prompt
 		set grasptitle $_flag_prompt
@@ -608,7 +611,7 @@ function grasp -d \
 	set fzf_status $status
 	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.dest" "$GRASP_EXPORT_FILE.msg"
 	
-	__sp_tabtitle_from_parent
+	__sp_tabtitle_suggestion --restore
 	
 	if status is-interactive && test $fzf_status -eq 50
 		commandline 'cat '(string escape -- $GRASP_DUMPFILE)' '
