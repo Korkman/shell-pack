@@ -684,7 +684,15 @@ end
 
 function __sp_grasp_set_bat_cmd --no-scope-shadowing
 	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
-		set bat_cmd bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
+		# tell __sp_bat which flag makes sed unbuffered (empty: none, e.g. busybox)
+		if $__cap_sed_has_u
+			set -x SP_SED_UNBUFFERED -u
+		else if $__cap_sed_has_l
+			set -x SP_SED_UNBUFFERED -l
+		else
+			set -x SP_SED_UNBUFFERED ""
+		end
+		set bat_cmd __sp_bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
 		if set -q _flag_no_syntax
 			set -a bat_cmd -l txt
 		else if test -n "$_flag_syntax"

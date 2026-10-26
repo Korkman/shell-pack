@@ -327,6 +327,8 @@ function __sp_tweak_capabilities -d \
 	set -g __cap_mksquashfs_has_xz "__sp_cap_mksquashfs_has_xz"
 	set -g __cap_tar_has_one_fs "__sp_cap_tar_has_one_fs"
 	set -g __cap_ssh_has_g "__sp_cap_ssh_has_g"
+	set -g __cap_sed_has_u "__sp_cap_sed_has_u"
+	set -g __cap_sed_has_l "__sp_cap_sed_has_l"
 end
 
 function __sp_tweak_keybinds \
