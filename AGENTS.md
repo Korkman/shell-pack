@@ -60,6 +60,13 @@ To compare numeric values in fish:
 - Alternatively, delegate the comparison to `awk` or `bc -l` and test the
   resulting string / exit status.
 
+## Portability
+
+Edits should be compatible with fish 3.5.1 up to latest and the following environments:
+- GNU coreutils (Debian)
+- BSD utils (FreeBSD)
+- busybox
+
 ## Other hints
 
 - `wc -c` is not the preferred method to determine filesize, delegate to `__sp_get_filesize` instead
