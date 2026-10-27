@@ -558,6 +558,10 @@ main_phase2() {
 	# c-a P: page this pane's scroll buffer in a new window
 	t bind P run-shell "tmux new-window -a -n history -t '#{window_id}' '$TMUX_CONF_SH_ESC page_history #{pane_id}'"
 	
+	# c-a S: save this pane's scroll buffer to a file (prompts for filename)
+	# the filename travels via a tmux option to avoid shell quoting issues
+	t bind S command-prompt -p "save history to file:" "set -g @sp_save_history_file \"%%%\" ; run-shell \"$TMUX_CONF_SH_ESC save_history #{pane_id}\""
+	
 	# shellcheck disable=SC2086
 	if [ "$__sp_tmux_ver" -ge 204 ]; then
 		# prompt-scrollback with Ctrl-Up/-Dn and Alt-Up/-Dn in copy-modes, and to quick-enter copy mode
@@ -1300,6 +1304,60 @@ page_history() {
 	else
 		# last resort: let tmux re-capture our output into a copy buffer
 		tmux capture-pane -e -S - -p -t "$1"
+	fi
+}
+
+save_history() {
+	# $1: pane id, filename in option @sp_save_history_file
+	SH_FILE="$(tmux show -gqv @sp_save_history_file)"
+	tmux set -gu @sp_save_history_file
+	if [ "$SH_FILE" = "" ]; then
+		return
+	fi
+	SH_FILE="$(save_history_resolve "$1" "$SH_FILE")"
+	if [ -d "$SH_FILE" ]; then
+		tmux display-message "save-history: $SH_FILE is a directory"
+		return
+	fi
+	if [ -e "$SH_FILE" ]; then
+		# keep the resolved path in the option for the confirmed step
+		tmux set -g @sp_save_history_file "$SH_FILE"
+		tmux confirm-before -p "overwrite existing file? (y/n)" "run-shell \"$TMUX_CONF_SH_ESC save_history_ask $1\""
+	else
+		tmux set -g @sp_save_history_file "$SH_FILE"
+		save_history_ask "$1"
+	fi
+}
+
+save_history_ask() {
+	# single keypress, anything but y means keep ANSI codes
+	tmux command-prompt -1 -p "remove ANSI codes? (y/N)" "run-shell \"$TMUX_CONF_SH_ESC save_history_write $1 '%%%'\""
+}
+
+save_history_resolve() {
+	case "$2" in
+		"~") printf '%s\n' "$HOME" ;;
+		"~/"*) printf '%s\n' "$HOME/${2#\~/}" ;;
+		/*) printf '%s\n' "$2" ;;
+		*) printf '%s/%s\n' "$(tmux display-message -p -t "$1" '#{pane_current_path}')" "$2" ;;
+	esac
+}
+
+save_history_write() {
+	SH_FILE="$(tmux show -gqv @sp_save_history_file)"
+	tmux set -gu @sp_save_history_file
+	if [ "$SH_FILE" = "" ]; then
+		return
+	fi
+	SH_ESC_FLAG="-e"
+	case "$2" in
+		y|Y) SH_ESC_FLAG="" ;;
+	esac
+	# shellcheck disable=SC2086
+	if tmux capture-pane $SH_ESC_FLAG -S - -p -t "$1" > "$SH_FILE" 2>/dev/null; then
+		tmux display-message "History saved to $SH_FILE"
+	else
+		tmux display-message "save-history: failed to write $SH_FILE"
 	fi
 }
 

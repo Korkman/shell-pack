@@ -41,6 +41,7 @@ ctrl-a, lift keys, then
   arrow-left, arrow-right: move window left / right on status bar (may renumber)
   shift-A: rename window
   shift-P: capture window into pager
+  shift-S: save window history to a file (asks before overwriting, optionally strips ANSI codes)
   shift-N: show window number and name
   shift-M: monitor window for activity (once)
   _: monitor window for silence (once)
@@ -59,7 +60,6 @@ ctrl-a, lift keys, then
   v: paste previously copied text
   |: split window into panes left and right
   -: split window into panes top and bottom
-     alias: shift-S
   tab: jump to next pane
   ctrl-arrows: resize current pane
   k: kill pane (if confirmed)
