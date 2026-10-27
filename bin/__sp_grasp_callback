@@ -7,13 +7,28 @@ set -eu
 
 filter_prompt="(alt-f) filter> "
 search_prompt="> "
+# print a field of /proc/PID/status (Linux), or fall back to ps (BSD/macOS)
+# NOTE: busybox ps lacks -p, so /proc has to be preferred
+proc_info() {
+	if [ -r "/proc/$1/status" ]; then
+		case "$2" in
+			comm) key="Name:" ;;
+			ppid) key="PPid:" ;;
+		esac
+		awk -v k="$key" '$1 == k { print $2; exit }' "/proc/$1/status" 2>/dev/null
+	else
+		ps -o "$2=" -p "$1" 2>/dev/null | tr -d ' '
+	fi
+}
+
 get_fzf_rss_kb() {
 	# fzf runs transform/execute actions via `$SHELL -c`, so $PPID is that
 	# shell, not fzf itself; walk up one more level to find fzf's real pid
 	fzf_pid="$PPID"
-	if [ "$(ps -o comm= -p "$PPID" 2>/dev/null | tr -d ' ')" != "fzf" ]; then
-		fzf_pid=$(ps -o ppid= -p "$PPID" 2>/dev/null | tr -d ' ')
+	if [ "$(proc_info "$PPID" comm)" != "fzf" ]; then
+		fzf_pid=$(proc_info "$PPID" ppid)
 	fi
+	[ -n "$fzf_pid" ] || return 0
 	__sp_mem_usage_pid "$fzf_pid" 2>/dev/null || true
 }
 
@@ -66,17 +81,6 @@ update_header() {
 		fi
 	fi
 	
-	# briefly show the result of save-as instead of the position
-	msg_file="${GRASP_EXPORT_FILE:-}.msg"
-	if [ -f "$msg_file" ]; then
-		read -r msg_time msg < "$msg_file" || true
-		if [ "$(( $(date +%s) - ${msg_time:-0} ))" -lt 3 ]; then
-			pre="[$(printf %s "$msg" | tr '()' '[]')] "
-		else
-			rm -f "$msg_file"
-		fi
-	fi
-
 	# memory_guard (background) keeps this file current
 	mem=''
 	mem_kb=''
@@ -159,8 +163,9 @@ build_export() {
 	emit="__sp_grasp_callback emit_lines $2 {+f}"
 	case "$1" in
 		save_as)
-			# the filename was already asked for by save_as_prompt
-			printf '%s' "transform(__sp_grasp_callback save_to $2 {+f})"
+			# $3: url-escaped destination, collected by the save_as_prompt dialog (see grasp.fish)
+			# only writes and reports, the tty is not read, so running from an event is fine
+			printf '%s' "execute(__sp_grasp_callback save_to $3 $2 {+f})"
 			;;
 		save)
 			printf '%s' "execute-silent($emit > \"\$GRASP_DUMPFILE\")+become(printf 'Saved to %s\\n' \"\$GRASP_DUMPFILE\"; exit 50)"
@@ -176,56 +181,51 @@ build_export() {
 }
 
 # lines exported: selected ones, else matches when filtering, else all lines
-denied() {
-	# enter alternate screen, cursor home, clear screen, show cursor
-	printf '\033[?1049h\033[H\033[2J\033[?25h'
-	fishcall __sp_error "$1 is disabled because \$LESSSECURE is set to 1."
-	printf 'Press enter to continue ...'
-	read -r _ || true
-	# hide cursor, leave alternate screen
-	printf '\033[?25l\033[?1049l'
-}
-
-save_denied() {
-	denied "Saving files"
-}
-
-edit_denied() {
-	denied "Editing files"
-}
-
 export_action() {
 	mode="$1"
-	build_export "$mode" keep > /dev/null || return 2
+	case "$mode" in
+		save|save_as|print) ;;
+		*) echo "Unknown grasp export action: $mode" >&2; return 2 ;;
+	esac
 	if [ "${LESSSECURE:-}" = 1 ] && [ "$mode" != print ]; then
 		echo 'execute(__sp_grasp_callback save_denied)'
 		return 0
 	fi
-	# save_as prompts right away: execute() triggered by an event (see export_pending) can't read the tty reliably
-	prompt=''
+	# save_as dialogs (see grasp.fish) run at key press: execute() triggered by an event
+	# (see export_pending) can't read the tty reliably
 	if [ "${FZF_SELECT_COUNT:-0}" -gt 0 ]; then
-		[ "$mode" = save_as ] && prompt="execute(__sp_grasp_callback save_as_prompt selected $FZF_SELECT_COUNT)+"
-		printf '%s' "$prompt"
-		build_export "$mode" keep
-		echo
+		if [ "$mode" = save_as ]; then
+			echo "execute(__sp_grasp_callback save_as selected $FZF_SELECT_COUNT keep {+f})"
+		else
+			build_export "$mode" keep
+			echo
+		fi
 	elif [ -n "${FZF_RAW:-}" ] && [ -n "${FZF_QUERY:-}" ]; then
 		# unfiltered view: select-all would only pick matches, so search for everything first.
 		# the export continues in export_pending once the 'result' event fires, then restores the search
-		[ "$mode" = save_as ] && prompt="execute(__sp_grasp_callback save_as_prompt all $FZF_TOTAL_COUNT)+"
 		printf '%s' "$mode" > "$GRASP_EXPORT_FILE"
-		echo "${prompt}search()"
+		if [ "$mode" = save_as ]; then
+			# the prompt stores the destination in the pending export file
+			echo "execute(__sp_grasp_callback save_as_prompt all $FZF_TOTAL_COUNT)+search()"
+		else
+			echo "search()"
+		fi
 	else
+		order=$(all_lines_order)
 		if [ "$mode" = save_as ]; then
 			if [ -n "${FZF_QUERY:-}" ]; then
-				prompt="execute(__sp_grasp_callback save_as_prompt filtered $FZF_MATCH_COUNT)+"
+				kind=filtered
+				count="$FZF_MATCH_COUNT"
 			else
-				prompt="execute(__sp_grasp_callback save_as_prompt all $FZF_TOTAL_COUNT)+"
+				kind=all
+				count="$FZF_TOTAL_COUNT"
 			fi
+			echo "select-all+execute(__sp_grasp_callback save_as $kind $count $order {+f})+deselect-all"
+		else
+			printf '%s' "select-all+"
+			build_export "$mode" "$order"
+			echo
 		fi
-		printf '%s' "${prompt}select-all+"
-		build_export "$mode" "$(all_lines_order)"
-		[ "$mode" = save_as ] && printf '%s' '+deselect-all'
-		echo
 	fi
 }
 
@@ -233,10 +233,17 @@ export_pending() {
 	if [ ! -f "$GRASP_EXPORT_FILE" ]; then
 		return 0
 	fi
-	mode=$(cat "$GRASP_EXPORT_FILE")
+	mode=''
+	dest=''
+	read -r mode dest < "$GRASP_EXPORT_FILE" || true
 	rm -f "$GRASP_EXPORT_FILE"
+	if [ "$mode" = save_as ] && [ -z "$dest" ]; then
+		# dialog cancelled: only restore the search
+		printf '%s\n' 'transform-search(printf %s "$FZF_QUERY")'
+		return 0
+	fi
 	printf '%s' 'select-all+'
-	build_export "$mode" "$(all_lines_order)"
+	build_export "$mode" "$(all_lines_order)" "$dest"
 	printf '%s\n' '+deselect-all+transform-search(printf %s "$FZF_QUERY")'
 }
 
@@ -250,74 +257,10 @@ on_result() {
 	fi
 }
 
-save_as_prompt() {
-	what="$2 $1 lines"
-	if [ "$1" = all ]; then
-		what="all $2 lines"
-	fi
-	rm -f "$GRASP_EXPORT_FILE.dest"
-	# alternate screen keeps the prompt out of the scrollback, like line_jump_read
-	# enter alternate screen, cursor home, clear screen, show cursor
-	printf '\033[?1049h\033[H\033[2J\033[?25h'
-	printf 'Save %s as: ' "$what"
-	dest=''
-	read -r dest || dest=''
-	case "$dest" in
-		"~"|"~/"*) dest="$HOME${dest#"~"}" ;;
-	esac
-	msg=''
-	if [ -z "$dest" ]; then
-		msg="No filename entered; save cancelled."
-	elif [ -d "$dest" ]; then
-		msg="'$dest' is a directory; save cancelled."
-	else
-		answer=y
-		if [ -e "$dest" ]; then
-			printf "'%s' exists. Overwrite? (y/N) " "$dest"
-			read -r answer || answer=n
-		fi
-		case "$answer" in
-			y|Y|yes|YES)
-				# appending nothing checks writability without truncating yet
-				if { : >> "$dest"; } 2>/dev/null; then
-					printf '%s' "$dest" > "$GRASP_EXPORT_FILE.dest"
-				else
-					msg="Cannot write '$dest'; save cancelled."
-				fi
-				;;
-			*)
-				msg="Save cancelled."
-				;;
-		esac
-	fi
-	if [ -n "$msg" ]; then
-		printf '%s\nPress enter to continue ...' "$msg"
-		read -r _ || true
-	fi
-	# hide cursor, leave alternate screen
-	printf '\033[?25l\033[?1049l'
-}
-
-save_to() {
-	if [ ! -f "$GRASP_EXPORT_FILE.dest" ]; then
-		return 0
-	fi
-	dest=$(cat "$GRASP_EXPORT_FILE.dest")
-	rm -f "$GRASP_EXPORT_FILE.dest"
-	lines=$(wc -l < "$2" | tr -d ' ')
-	if emit_lines "$1" "$2" 2>/dev/null > "$dest"; then
-		msg="Saved $lines lines to $dest"
-	else
-		msg="Could not write $dest"
-	fi
-	printf '%s %s\n' "$(date +%s)" "$msg" > "$GRASP_EXPORT_FILE.msg"
-	update_header
-}
-
 CMD="$1"
 shift
 case "$CMD" in
-	memory_guard|toggle_raw|update_header|on_result|escape|line_jump_read|line_jump_apply|emit_lines|save_as_prompt|save_to|save_denied|edit_denied|export_save_action|export_save_as_action|export_print_action)
+	memory_guard|toggle_raw|update_header|on_result|escape|line_jump_read|line_jump_apply|emit_lines|export_save_action|export_save_as_action|export_print_action)
 		case "$CMD" in
 			export_save_action) export_action save ;;
 			export_save_as_action) export_action save_as ;;

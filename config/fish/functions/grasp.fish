@@ -156,7 +156,8 @@ function grasp -d \
 	if set -q _flag_fzf_callback
 		# backwards compatible argument converter 2026-09-23
 		set _flag_fzf_callback (string replace -r -- "^__sp_grasp_callback_" "" "$_flag_fzf_callback")
-		eval "__sp_grasp_callback_$_flag_fzf_callback"
+		set -l callback_func "__sp_grasp_callback_$_flag_fzf_callback"
+		$callback_func $argv
 		return
 	end
 	
@@ -609,7 +610,7 @@ function grasp -d \
 	end
 	
 	set fzf_status $status
-	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.dest" "$GRASP_EXPORT_FILE.msg" "$GRASP_EXPORT_FILE.mem"
+	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.mem"
 	
 	__sp_tabtitle_suggestion --restore
 	
@@ -642,6 +643,123 @@ end
 function __sp_grasp_callback_line_jump_apply --no-scope-shadowing
 	# backwards compatible wrapper 2026-09-23
 	exec __sp_grasp_callback line_jump_apply
+end
+
+# Dialogs below run in fzf execute() at key press (see __sp_grasp_callback).
+# They use the alternate screen to keep the scrollback clean.
+
+function __sp_grasp_dialog_begin
+	# enter alternate screen, cursor home, clear screen, show cursor
+	printf '\033[?1049h\033[H\033[2J\033[?25h'
+end
+
+function __sp_grasp_dialog_end
+	# hide cursor, leave alternate screen
+	printf '\033[?25l\033[?1049l'
+end
+
+function __sp_grasp_dialog_denied -a what
+	__sp_grasp_dialog_begin
+	# part of the prompt: fish repaints over anything printed before `read`
+	set -l err (__sp_error "$what is disabled because \$LESSSECURE is set to 1." 2>&1)
+	read -P "$err"\n'Press enter to continue ...' -l ignored
+	__sp_grasp_dialog_end
+end
+
+function __sp_grasp_callback_save_denied
+	__sp_grasp_dialog_denied "Saving files"
+end
+
+function __sp_grasp_callback_edit_denied
+	__sp_grasp_dialog_denied "Editing files"
+end
+
+function __sp_grasp_save_as_ask -a kind count -d \
+	'Ask for a destination file, sets global __sp_grasp_dest (empty when cancelled)'
+	set -g __sp_grasp_dest
+	set -l what "$count $kind lines"
+	if test "$kind" = all
+		set what "all $count lines"
+	end
+	
+	set -l dest
+	read -P "Save $what as: " -l dest
+	or set dest ''
+	set dest (string replace -r -- '^~(/|$)' "$HOME\$1" "$dest")
+	
+	set -l msg
+	if test -z "$dest"
+		set msg "No filename entered; save cancelled."
+	else if test -d "$dest"
+		set msg "'$dest' is a directory; save cancelled."
+	else
+		set -l answer y
+		if test -e "$dest"
+			read -P "'$dest' exists. Overwrite? (y/N) " -l answer
+			or set answer n
+		end
+		if contains -- (string lower -- "$answer") y yes
+			# appending nothing checks writability without truncating yet
+			if begin; true >> "$dest"; end 2>/dev/null
+				set -g __sp_grasp_dest "$dest"
+			else
+				set msg "Cannot write '$dest'; save cancelled."
+			end
+		else
+			set msg "Save cancelled."
+		end
+	end
+	
+	if test -n "$msg"
+		read -P "$msg"\n'Press enter to continue ...' -l ignored
+	end
+	test -n "$__sp_grasp_dest"
+end
+
+function __sp_grasp_save_lines -a dest order file -d \
+	'Write lines to dest, sets global __sp_grasp_save_msg'
+	set -l lines (wc -l < $file | string trim)
+	if __sp_grasp_callback emit_lines $order $file 2>/dev/null > "$dest"
+		set -g __sp_grasp_save_msg "Saved $lines lines to $dest"
+		return 0
+	end
+	set -g __sp_grasp_save_msg "Could not write $dest"
+	return 1
+end
+
+function __sp_grasp_callback_save_as -d \
+	'Ask for a file and save lines right away: save_as KIND COUNT ORDER LINESFILE'
+	set -l kind $argv[1]
+	set -l count $argv[2]
+	set -l order $argv[3]
+	set -l file $argv[4]
+	__sp_grasp_dialog_begin
+	if __sp_grasp_save_as_ask $kind $count
+		__sp_grasp_save_lines $__sp_grasp_dest $order $file
+		echo $__sp_grasp_save_msg
+		sleep 1
+	end
+	__sp_grasp_dialog_end
+end
+
+function __sp_grasp_callback_save_as_prompt -d \
+	'Ask for a file and hand it over to the pending export: save_as_prompt KIND COUNT'
+	__sp_grasp_dialog_begin
+	if __sp_grasp_save_as_ask $argv[1] $argv[2]
+		# a later 'result' event continues with save_to
+		echo "save_as "(string escape --style=url -- $__sp_grasp_dest) > $GRASP_EXPORT_FILE
+	end
+	__sp_grasp_dialog_end
+end
+
+function __sp_grasp_callback_save_to -d \
+	'Save lines to the url-escaped destination: save_to DEST ORDER LINESFILE'
+	set -l dest (string unescape --style=url -- $argv[1])
+	__sp_grasp_dialog_begin
+	__sp_grasp_save_lines $dest $argv[2] $argv[3]
+	echo $__sp_grasp_save_msg
+	sleep 1
+	__sp_grasp_dialog_end
 end
 
 function __sp_grasp_one_screen_lead -d \
