@@ -560,7 +560,7 @@ main_phase2() {
 	
 	# c-a S: save this pane's scroll buffer to a file (prompts for filename)
 	# the filename travels via a tmux option to avoid shell quoting issues
-	t bind S command-prompt -p "save history to file:" "set -g @sp_save_history_file \"%%%\" ; run-shell \"$TMUX_CONF_SH_ESC save_history #{pane_id}\""
+	t bind S run-shell "$TMUX_CONF_SH_ESC save_history_prompt #{pane_id}"
 	
 	# shellcheck disable=SC2086
 	if [ "$__sp_tmux_ver" -ge 204 ]; then
@@ -1329,6 +1329,25 @@ save_history() {
 	fi
 }
 
+save_history_prompt() {
+	SH_INFO="$(tmux display-message -p -t "$1" '#{history_size} #{pane_height}')"
+	SH_TOTAL=$(( ${SH_INFO% *} + ${SH_INFO#* } ))
+	SH_WHAT="$SH_TOTAL lines of history"
+	if save_history_has_selection "$1"; then
+		SH_SEL="$(tmux display-message -p -t "$1" '#{selection_start_y} #{selection_end_y}')"
+		SH_COUNT=$(( ${SH_SEL#* } - ${SH_SEL% *} ))
+		if [ "$SH_COUNT" -lt 0 ]; then
+			SH_COUNT=$(( -SH_COUNT ))
+		fi
+		SH_WHAT="selection ($(( SH_COUNT + 1 )) of $SH_TOTAL lines of history)"
+	fi
+	tmux command-prompt -p "Save $SH_WHAT to file:" "set -g @sp_save_history_file \"%%%\" ; run-shell \"$TMUX_CONF_SH_ESC save_history $1\""
+}
+
+save_history_has_selection() {
+	[ "$(tmux display-message -p -t "$1" '#{pane_in_mode}#{selection_present}' 2>/dev/null)" = "11" ]
+}
+
 save_history_ask() {
 	# single keypress, anything but y means keep ANSI codes
 	tmux command-prompt -1 -p "remove ANSI codes? (y/N)" "run-shell \"$TMUX_CONF_SH_ESC save_history_write $1 '%%%'\""
@@ -1353,9 +1372,38 @@ save_history_write() {
 	case "$2" in
 		y|Y) SH_ESC_FLAG="" ;;
 	esac
+	SH_RANGE="-S -"
+	if save_history_has_selection "$1"; then
+		if [ "$SH_ESC_FLAG" = "" ]; then
+			# plain text: pipe exactly the selection, keep option for the pipe
+			tmux set -g @sp_save_history_file "$SH_FILE"
+			tmux send-keys -X -t "$1" copy-pipe-no-clear "$TMUX_CONF_SH_ESC save_history_pipe"
+			return
+		fi
+		# with ANSI codes: capture the selected lines in full, column precision is not possible
+		SH_INFO="$(tmux display-message -p -t "$1" '#{selection_start_y} #{selection_end_y} #{history_size}')"
+		set -- "$1" "$2" $SH_INFO
+		SH_FIRST=$(( $3 - $5 ))
+		SH_LAST=$(( $4 - $5 ))
+		if [ "$SH_FIRST" -gt "$SH_LAST" ]; then
+			SH_RANGE="-S $SH_LAST -E $SH_FIRST"
+		else
+			SH_RANGE="-S $SH_FIRST -E $SH_LAST"
+		fi
+	fi
 	# shellcheck disable=SC2086
-	if tmux capture-pane $SH_ESC_FLAG -S - -p -t "$1" > "$SH_FILE" 2>/dev/null; then
+	if tmux capture-pane $SH_ESC_FLAG $SH_RANGE -p -t "$1" > "$SH_FILE" 2>/dev/null; then
 		tmux display-message "History saved to $SH_FILE"
+	else
+		tmux display-message "save-history: failed to write $SH_FILE"
+	fi
+}
+
+save_history_pipe() {
+	SH_FILE="$(tmux show -gqv @sp_save_history_file)"
+	tmux set -gu @sp_save_history_file
+	if [ "$SH_FILE" != "" ] && cat > "$SH_FILE" 2>/dev/null; then
+		tmux display-message "Selection saved to $SH_FILE"
 	else
 		tmux display-message "save-history: failed to write $SH_FILE"
 	fi

@@ -41,7 +41,7 @@ ctrl-a, lift keys, then
   arrow-left, arrow-right: move window left / right on status bar (may renumber)
   shift-A: rename window
   shift-P: capture window into pager
-  shift-S: save window history to a file (asks before overwriting, optionally strips ANSI codes)
+  shift-S: save window history / copy-mode selection to file
   shift-N: show window number and name
   shift-M: monitor window for activity (once)
   _: monitor window for silence (once)
