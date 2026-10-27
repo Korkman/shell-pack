@@ -1322,7 +1322,7 @@ save_history() {
 	if [ -e "$SH_FILE" ]; then
 		# keep the resolved path in the option for the confirmed step
 		tmux set -g @sp_save_history_file "$SH_FILE"
-		tmux confirm-before -p "overwrite existing file? (y/n)" "run-shell \"$TMUX_CONF_SH_ESC save_history_ask $1\""
+		tmux confirm-before -p "overwrite existing file? (y/n)" "run-shell \"$TMUX_CONF_SH_ESC save_history_ask $1\"" || true
 	else
 		tmux set -g @sp_save_history_file "$SH_FILE"
 		save_history_ask "$1"
@@ -1341,7 +1341,7 @@ save_history_prompt() {
 		fi
 		SH_WHAT="selection ($(( SH_COUNT + 1 )) of $SH_TOTAL lines of history)"
 	fi
-	tmux command-prompt -p "Save $SH_WHAT to file:" "set -g @sp_save_history_file \"%%%\" ; run-shell \"$TMUX_CONF_SH_ESC save_history $1\""
+	tmux command-prompt -p "Save $SH_WHAT to file:" "set -g @sp_save_history_file \"%%%\" ; run-shell \"$TMUX_CONF_SH_ESC save_history $1\"" || true
 }
 
 save_history_has_selection() {
@@ -1350,7 +1350,7 @@ save_history_has_selection() {
 
 save_history_ask() {
 	# single keypress, anything but y means keep ANSI codes
-	tmux command-prompt -1 -p "remove ANSI codes? (y/N)" "run-shell \"$TMUX_CONF_SH_ESC save_history_write $1 '%%%'\""
+	tmux command-prompt -1 -p "remove ANSI codes? (y/N)" "run-shell \"$TMUX_CONF_SH_ESC save_history_write $1 '%%%'\"" || true
 }
 
 save_history_resolve() {
