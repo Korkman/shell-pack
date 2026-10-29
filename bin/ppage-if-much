@@ -1,1 +1,4 @@
-fishcall
+#! /usr/bin/env fish
+
+# replaces this process with ppage, so stdin is passed through untouched
+exec ppage --quit-if-one-screen $argv
