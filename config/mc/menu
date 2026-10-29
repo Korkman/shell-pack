@@ -60,7 +60,7 @@ n       New file with template (create)
 + f \.zip$ | f \.tar$ | f \.tar\.[^.]+$ | f \.tgz$ | f \.tb2$ | f \.tbz$ | f \.tbz2$ | f \.tz2$ | f \.taz$ | f \.tlz$ | f \.txz$ | f \.tZ$ | f \.taZ$ | f \.tzst$ | f \.cpio$ | f \.7z$ | f \.gz$ | f \.zst$ | f \.br$ | f \.bz2$ | f \.lz4$ | f \.lz$ | f \.lzma$ | f \.lzo$ | f \.xz$ | f \.Z$ | f \.sqfs$ | f \.squashfs$ & t r
 x       Extract selected items
         for i in %s ; do
-            fishcall cfd "$i" . || exit
+            cfd "$i" . || exit
         done
 
 + t rd & ! f ^\.\.$ & ! f \.zip$ & ! f \.tar\.[^.]+$ & ! f \.tgz$ & ! f \.tb2$ & ! f \.tbz$ & ! f \.tbz2$ & ! f \.tz2$ & ! f \.taz$ & ! f \.tlz$ & ! f \.txz$ & ! f \.tZ$ & ! f \.taZ$ & ! f \.tzst$ & ! f \.cpio$ & ! f \.7z$ & ! f \.gz$ & ! f \.zst$ & ! f \.br$ & ! f \.bz2$ & ! f \.lz4$ & ! f \.lz$ & ! f \.lzma$ & ! f \.lzo$ & ! f \.xz$ & ! f \.Z$ & ! f \.sqfs$ & ! f \.squashfs$
@@ -72,14 +72,14 @@ z       Compress each selected item
             else
                 d="$DEST"
             fi
-            fishcall cfc "$i" "$d" || exit
+            cfc "$i" "$d" || exit
         done
 
 Z       Compress current subdirectory
         Pwd=$(basename %d /)
         DEST=%{New file, format (tar.xz, ...), or space for tar.zst}
         [ "$DEST" = " " ] && DEST=tar.zst
-        cd .. && fishcall cfc "$Pwd" "$DEST"
+        cd .. && cfc "$Pwd" "$DEST"
 
 + t rl
 d       diff tagged / opposing files
@@ -117,12 +117,12 @@ f       Follow selected files with tail | grasp
         echo "following %s"
         set -- %s
         export STDIN_FILENAME=$1
-        tail -n200 -f %s | fishcall grasp --syntax
+        tail -n200 -f %s | grasp --syntax
 
 + t rl
 b       Page file with bat syntax highlighting
         echo "paging %f"
-        fishcall ppage --syntax %f
+        ppage --syntax %f
 
 r       Receive and send files here (localsend)
         DEST=%d

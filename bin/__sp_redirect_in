@@ -1,3 +1,5 @@
+#! /usr/bin/env fish
+
 function __sp_redirect_in \
 	-d "Parametrized redirection from stdin or file" \
 	-a filename
@@ -8,8 +10,10 @@ function __sp_redirect_in \
 	end
 	
 	if test "$filename" = "-"
-		cat
+		exec cat
 	else
-		cat "$filename"
+		exec cat "$filename"
 	end
 end
+
+__sp_redirect_in $argv

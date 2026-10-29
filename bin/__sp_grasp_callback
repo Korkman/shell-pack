@@ -270,7 +270,7 @@ case "$CMD" in
 		;;
 	*)
 		# non-accelerated callback loops back to the original function
-		exec fishcall grasp --fzf-callback "$CMD" "$@"
+		exec grasp --fzf-callback "$CMD" "$@"
 		;;
 esac
 exit

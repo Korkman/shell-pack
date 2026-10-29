@@ -1,1 +1,4 @@
-fishcall
+#! /usr/bin/env fish
+
+# runs as its own process so fish does not buffer the pipeline feeding it
+grasp --pager $argv
