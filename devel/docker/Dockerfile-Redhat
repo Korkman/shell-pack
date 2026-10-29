@@ -28,8 +28,8 @@ RUN [ "${INSTALL_FISH}" = "none" ] || (export INSTALL_FISH=${INSTALL_FISH}; /fis
 ENV LC_NERDLEVEL=3
 
 COPY added/guest-startup.sh /guest-startup.sh
-RUN mkdir -p /etc/fish/functions /etc/fish/completions \
-	&& ln -s /repo/devel/docker/added/td.fish /etc/fish/functions/td.fish \
-	&& ln -s /repo/devel/docker/added/td.completions.fish /etc/fish/completions/td.fish
+RUN mkdir -p /etc/fish/functions /etc/fish/conf.d /etc/fish/completions \
+	&& echo 'set -p fish_function_path /repo/devel/docker/added/td' > /etc/fish/conf.d/td.fish \
+	&& ln -s /repo/devel/docker/added/td/td.completions.fish /etc/fish/completions/td.fish
 WORKDIR /root/Downloads
 ENTRYPOINT [ "/guest-startup.sh" ]

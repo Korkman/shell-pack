@@ -1,7 +1,7 @@
-# Completion for the td function (see devel/docker/added/td.fish)
+# Completion for the td function (see td.fish in this directory)
 
-# force-load td.fish, which (as a side effect) also defines __sp_td_subcommands and all "td-*" functions
-complete -c td -f -n '__fish_use_subcommand' -a '(functions -q td; __sp_td_subcommands)'
+# td-* subcommands are autoloaded from this directory, so functions -a lists them without loading them
+complete -c td -f -n '__fish_use_subcommand' -a '(__sp_td_subcommands)'
 
 function __sp_td_version_tags
 	test -d /repo/.git; or return 1
