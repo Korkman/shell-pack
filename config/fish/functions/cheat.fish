@@ -181,7 +181,7 @@ Toggle full private mode      private
 
 Use bat + fzf as pager             ppage [ OPTS.. ] FILE|CMD
 Search a stream window             grasp [ OPTS.. ] FILE|CMD
-Run CMD once pipe has data         cmd |+ CMD [ ARGS ]  (alias for plus)
+Run CMD once pipe has data         cmd |+ CMD [ ARGS ]  (same as plus)
   (no output = CMD not started)
 List ssh fingerprints              ffingerprints [ host [ port ] ]
 List open network ports            lsports

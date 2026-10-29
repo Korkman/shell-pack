@@ -245,9 +245,10 @@ function __sp_tweak_aliases
 	alias e __sp_editor
 	alias p __sp_pager
 	
-	# spawn command once pipe has data: cmd |+ ppage
-	alias + plus
-
+	# replace "plus" functions with scripts
+	functions -e +
+	functions -e plus
+	
 	mmux --aliases
 end
 
