@@ -96,7 +96,7 @@ function td-test-cfc -d \
 		echo "td test-cfc: missing required binaries: $missing" >&2
 		echo "Install everything in one go with:" >&2
 		echo "  apt:  apt install tar gzip bzip2 xz-utils zstd lzip lzop lz4 brotli ncompress cpio zip unzip p7zip-full squashfs-tools file bsdutils" >&2
-		echo "  apk:  apk add tar gzip bzip2 xz zstd lzip lzop lz4 brotli ncompress cpio zip unzip 7zip squashfs-tools file util-linux-misc" >&2
+		echo "  apk:  apk add tar gzip bzip2 xz zstd lzip lzop lz4 brotli cpio zip unzip 7zip squashfs-tools file util-linux-misc" >&2
 		echo "Or run with --partial to skip formats whose tools are missing." >&2
 		functions -e __td_missing_tools __td_fmt_tools
 		return 1

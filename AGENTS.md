@@ -72,6 +72,35 @@ Edits should be compatible with fish 3.5.1 up to latest and the following enviro
 - `wc -c` is not the preferred method to determine filesize, delegate to `__sp_get_filesize` instead
 - `mktemp` has a richer, more portable equivalent __sp_mkuniq
 
+## Running test-drive and td
+
+`td` (and its `td-test-*` modules, including `td test-all`) is meant to run
+inside containers started with
+[devel/docker/test-drive](devel/docker/test-drive). Do not run `td` tests on the host.
+A good low footprint container can be run with `./test-drive alpine:latest persist`.
+It will persist changes such as `apk add` commands between runs. Answer "y" to all
+dependency questions on first run. Such interactive sessions can be controlled by agents with `tmux`. Do not
+confuse with `test-drive-tmux` which is a wrapper to select images with specific
+`tmux` versions to run inside `test-drive`. Use `td edit-live` inside to link
+the host source repo to `/repo` inside the container and switch over to it for
+the shell-pack runtime. To clear all artifacts, run
+`./test-drive alpine:latest rm persist` to discard the persistence. 
+
+Running `td test-all` non-interactively:
+
+- `test-drive` needs a tmux session.
+- Start the container in a detached tmux session, check its state with
+  `tmux capture-pane -p -t <session>`, and send commands with `tmux send-keys`.
+  Poll every 10 seconds rather than waiting long; the suite takes a few minutes.
+- Run `td install-test-deps` inside the container before `td test-all`. It detects
+  apk, zypper, dnf, pacman or apt-get and installs every binary the test modules
+  need, including `git` for `td-test-grasp-completions`. It finishes by listing
+  any binaries still missing. Minimal images such as Alpine lack several of them.
+  `compress` (.Z) is optional and not installed by default on Alpine, so cfc skips
+  those checks.
+- `td test-all` exits with the number of failed modules, so check `$status`
+  right after it.
+
 ## Repository layout
 
 - [bin/](bin/) — user-facing commands and scripts.
