@@ -1,4 +1,7 @@
 function __update_tab_title -v tabtitle
+	test -t 1
+	or return
+
 	if [ -n "$STY" -o -n "$TMUX" ] # We are in a screen / tmux session
 		echo -ne "\ek""$tabtitle""\e\\\\"
 	end
