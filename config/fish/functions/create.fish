@@ -203,7 +203,7 @@ function create -d "Creates a new text file with a basic template and opens it i
 		read -l -P "Edit it? (Y/n) " REPLY
 		or return 1
 		if test -z $REPLY -o $REPLY = "y"
-			"$EDITOR" "$filename"
+			__sp_editor "$filename"
 			return 0
 		else
 			return 1

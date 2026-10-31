@@ -4,14 +4,14 @@ function __sp_tabtitle_suggestion -d \
 	or return
 
 	# fast exit when no TMUX is present (fetching current tabtitle from screen not implemented)
-	set -q TMUX || return
+	set -q TMUX || return 0
 	
 	# make sure __update_tab_title is loaded (for when called from non-fish shells)
 	functions -q fish_title
 
 	if set -q _flag_restore
 		set -q __sp_tabtitle_stack[1]
-		or return
+		or return 77
 		set -l previous $__sp_tabtitle_stack[-1]
 		set -e __sp_tabtitle_stack[-1]
 		set -g tabtitle $previous
@@ -33,18 +33,18 @@ function __sp_tabtitle_suggestion -d \
 		and set current "$tmux_title"
 	else
 		# TMUX set but command missing, very funny
-		return
+		return 78
 	end
 
 	# always push, so every call can be balanced by --restore
 	set -g __sp_tabtitle_stack $__sp_tabtitle_stack "$current"
 
 	test -n "$proposed"
-	or return
+	or return 0
 
 	if set -q _flag_force
 		set -g tabtitle "$proposed"
-		return
+		return 0
 	end
 
 	# reduce to the command name: strip "!" status and "#tag " session prefixes
@@ -59,4 +59,5 @@ function __sp_tabtitle_suggestion -d \
 			sudo su doas env nice ionice timeout nohup setsid xargs watch script
 			set -g tabtitle "$proposed"
 	end
+	return 0
 end

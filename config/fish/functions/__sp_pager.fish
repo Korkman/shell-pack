@@ -11,23 +11,31 @@ function __sp_pager -d \
 		return 2
 	end
 
-	set -l pager
-	if set -q PAGER
-		set pager $PAGER
-	else if command -q less
-		set pager less
-	else if command -q more
-		set pager more
-	else
-		set pager cat
-		echo "Warning: No \$PAGER configured and no fallbacks found (less, more). Passing through as-is." >&2
+	# $PAGER may carry arguments, e.g. "less -S"
+	set -l pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
+	if ! type -q -- "$pager_cmd[1]"
+		set pager_cmd
 	end
+	if not set -q pager_cmd[1]
+		if type -q ppage
+			set pager_cmd ppage
+		else if command -q less
+			set pager_cmd less
+		else if command -q more
+			set pager_cmd more
+		else
+			set pager_cmd cat
+			echo "Warning: No \$PAGER configured and no fallbacks found (less, more). Passing through as-is." >&2
+		end
+	end
+	set -l pager_bin $pager_cmd[1]
+	set -l pager_args $pager_cmd[2..-1]
 
 	# name tab after pager
-	__sp_tabtitle_suggestion (path basename "$pager")
+	__sp_tabtitle_suggestion (path basename "$pager_bin")
 	
 	set -l opts
-	switch "$pager"
+	switch "$pager_bin"
 		# whitelist of pagers known to accept less-style options
 		case "*less"
 			if set -q _flag_raw
@@ -72,10 +80,12 @@ function __sp_pager -d \
 	end
 
 	if set -q filename[1]
-		$pager $opts $argv
+		$pager_bin $pager_args $opts $argv
 	else
-		$pager $opts
+		$pager_bin $pager_args $opts
 	end
+	set -l pager_status $status
 	
 	__sp_tabtitle_suggestion --restore
+	return $pager_status
 end

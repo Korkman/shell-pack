@@ -1,6 +1,10 @@
 #!/bin/sh
 # helper to switch between editor name and mc as tab title
 {
-export EDITOR="$TRUE_EDITOR"
+if [ "${TRUE_EDITOR:-}" != "" ]; then
+	export EDITOR="$TRUE_EDITOR"
+elif [ "${EDITOR:-}" = "__sp_mc_editor_proxy" ]; then
+	unset PAGER
+fi
 exec fishcall __sp_editor "$@"
 }

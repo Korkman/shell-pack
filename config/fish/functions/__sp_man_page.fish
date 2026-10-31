@@ -51,27 +51,31 @@ function __sp_man_page
 		return
 	end
 	
-	# choose appropriate pager
+	# choose appropriate pager ($MANPAGER/$PAGER may carry arguments, e.g. "less -S")
+	set -l pager_cmd
 	if set -q MANPAGER
-		set pager $MANPAGER
+		set pager_cmd (string split -n -- ' ' (string trim -- "$MANPAGER"))
 	else if set -q PAGER
-		set pager $PAGER
-	else
-		set pager ppage
+		set pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
 	end
+	if not set -q pager_cmd[1]
+		set pager_cmd ppage
+	end
+	set -l pager_bin $pager_cmd[1]
+	set -l pager_args $pager_cmd[2..-1]
 	
-	if test "$pager" = 'ppage'
+	if test "$pager_bin" = 'ppage'
 		if set -q _flag_line_number
-			set -a pager --line-number
+			set -a pager_args --line-number
 		end
-		set -a pager --prompt "Manual page `$argv`"
+		set -a pager_args --prompt "Manual page `$argv`"
 	end
 	
 	if command -q man
 		# test if fish's man preset finds the help
 		# (this introduces a slight latency, sorry. but it catches alternative 'man' use cases well.)
 		if PAGER=cat MANPAGER=cat __sp_man_page_default $argv &> /dev/null
-			if test "$pager" = "less"
+			if test "$pager_bin" = "less"
 				# let man adapt to less
 				__sp_man_page_default $argv
 			else
@@ -80,7 +84,7 @@ function __sp_man_page
 				# as of v26.1. re-encode those as ANSI SGR instead of stripping them.
 				# ask man-db to keep bold/underline formatting even though stdout isn't a tty
 				# (harmless no-op on implementations that don't recognize this var)
-				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | $pager
+				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | $pager_bin $pager_args
 			end
 			return
 		else
@@ -248,7 +252,7 @@ function __sp_man_page
 					echo ""
 					# close STDIN on search_cmd so any interactive input is cancelled
 					echo -n | $search_cmd --help 2>&1
-				end | $pager
+				end | $pager_bin $pager_args
 				set -l cmd_status $status
 				set chosen_method hh
 				set chosen_method_char $_sp_choice
@@ -263,7 +267,7 @@ function __sp_man_page
 					echo ""
 					# close STDIN on search_cmd so any interactive input is cancelled
 					echo -n | $search_cmd -h 2>&1
-				end | $pager
+				end | $pager_bin $pager_args
 				set -l cmd_status $status
 				set chosen_method h
 				set chosen_method_char $_sp_choice
@@ -278,7 +282,7 @@ function __sp_man_page
 					echo ""
 					# close STDIN on search_cmd so any interactive input is cancelled
 					echo -n | $search_cmd help 2>&1
-				end | $pager
+				end | $pager_bin $pager_args
 				set -l cmd_status $status
 				set chosen_method help
 				set chosen_method_char $_sp_choice
