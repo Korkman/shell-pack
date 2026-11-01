@@ -98,6 +98,73 @@ editor.on("buffer_activated", shellpackExitSelectionModeIfActive);
 editor.on("buffer_deactivated", shellpackExitSelectionModeIfActive);
 // END: shellpack_toggle_selection_mode
 
+// START: shellpack_toggle_merge_mode
+// "merge mode": alt-up/alt-down step through differences in a compare view,
+// alt-right copies the change over, alt-left takes it. escape leaves the mode.
+const MERGE_MODE = "shell-pack-merge";
+
+// compare plugin actions live in their own JS realm, so mode bindings cannot
+// name them directly. these handlers run them as global actions instead.
+function shellpack_merge_prev() : void {
+  editor.executeAction('compare_prev_difference');
+};
+
+function shellpack_merge_next() : void {
+  editor.executeAction('compare_next_difference');
+};
+
+function shellpack_merge_copy() : void {
+  editor.executeAction("compare_copy_change");
+};
+
+function shellpack_merge_take() : void {
+  editor.executeAction("compare_take_change");
+};
+
+registerHandler("shellpack_merge_prev", shellpack_merge_prev);
+registerHandler("shellpack_merge_next", shellpack_merge_next);
+registerHandler("shellpack_merge_copy", shellpack_merge_copy);
+registerHandler("shellpack_merge_take", shellpack_merge_take);
+
+editor.defineMode(
+  MERGE_MODE,
+  [
+    ["M-Up", "shellpack_merge_prev"],
+    ["M-Down", "shellpack_merge_next"],
+    ["M-Right", "shellpack_merge_copy"],
+    ["M-Left", "shellpack_merge_take"],
+    ["escape", "shellpack_toggle_merge_mode"],
+  ],
+  false, // readOnly
+  false, // allowTextInput
+  true, // inheritNormalBindings - everything else behaves as normal
+);
+
+function shellpack_toggle_merge_mode() : void {
+  if (editor.getEditorMode() === MERGE_MODE) {
+    editor.setEditorMode(null);
+    editor.setStatus("");
+  } else {
+    editor.setEditorMode(MERGE_MODE);
+    editor.setStatus("-- MERGE --");
+  }
+};
+
+registerHandler("shellpack_toggle_merge_mode", shellpack_toggle_merge_mode);
+editor.registerCommand("Toggle merge mode", "Toggles merge mode: alt-up/down navigate differences, alt-right/left copy or take changes", "shellpack_toggle_merge_mode");
+
+// SHELL_PACK_MERGE_MODE=1 starts the editor in merge mode. "ready" fires after
+// startup, when the window exists to hold the mode.
+function shellpack_merge_mode_on_startup() : void {
+  if (editor.getEnv("SHELL_PACK_MERGE_MODE") === "1") {
+    shellpack_toggle_merge_mode();
+  }
+};
+
+registerHandler("shellpack_merge_mode_on_startup", shellpack_merge_mode_on_startup);
+editor.on("ready", "shellpack_merge_mode_on_startup");
+// END: shellpack_toggle_merge_mode
+
 // START: shellpack_close_tab_if_not_term
 // there's no bindKey/unbindKey API to attach ctrl-w to close_tab only on
 // non-terminal buffers, so ctrl-w is bound statically (config.json) to this

@@ -230,7 +230,8 @@
         { "modifiers": ["ctrl"], "key": "k" },
         { "key": "tab" }
       ],
-      "action": "dedent_selection"
+      "action": "dedent_selection",
+      "when": "global"
     },
     // more keys to quick_open_files (default is cumbersome on german layout)
     {
@@ -238,7 +239,8 @@
         { "modifiers": ["ctrl"], "key": "k" },
         { "key": "o" }
       ],
-      "action": "quick_open_files"
+      "action": "quick_open_files",
+      "when": "global"
     },
     {
       "modifiers": ["ctrl", "alt"], "key": "o",
@@ -250,7 +252,17 @@
         { "modifiers": ["ctrl"], "key": "k" },
         { "key": "d" }
       ],
-      "action": "detach"
+      "action": "detach",
+      "when": "global"
+    },
+    // toggles merge mode (see init.ts), where alt-up/down/left/right drive compare
+    {
+      "keys": [
+        { "modifiers": ["ctrl"], "key": "k" },
+        { "key": "g" }
+      ],
+      "action": "shellpack_toggle_merge_mode",
+      "when": "global"
     }
   ],
   "languages": {
