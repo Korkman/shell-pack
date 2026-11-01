@@ -1,0 +1,23 @@
+# shell-pack git settings, loaded via GIT_CONFIG_SYSTEM (set in __sp_tweak_user_defaults)
+# GIT_CONFIG_SYSTEM replaces /etc/gitconfig, so include it first
+[include]
+	path = /etc/gitconfig
+
+[diff]
+	tool = shellpack
+
+[pager]
+	diff = fishcall __sp_pager --quit-if-one-screen --syntax=diff -R
+
+[difftool "shellpack"]
+	cmd = fishcall __sp_git_difftool \"$LOCAL\" \"$REMOTE\"
+
+[difftool]
+	prompt = true
+
+[merge]
+	tool = shellpack
+
+[mergetool "shellpack"]
+	cmd = fishcall __sp_git_mergetool \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+	trustExitCode = true

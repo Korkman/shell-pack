@@ -131,6 +131,7 @@ function __sp_tweak_user_defaults -d \
 		LESSOPEN LESSCLOSE \
 		VIRTUAL_ENV_DISABLE_PROMPT \
 		RIPGREP_CONFIG_PATH \
+		GIT_CONFIG_SYSTEM \
 		SYSTEMD_PAGER \
 	;
 	
@@ -193,6 +194,9 @@ function __sp_tweak_user_defaults -d \
 				set -g VIRTUAL_ENV_DISABLE_PROMPT yes
 			case RIPGREP_CONFIG_PATH
 				set -x -g RIPGREP_CONFIG_PATH $__sp_config_fish_dir"/../ripgrep.conf"
+			case GIT_CONFIG_SYSTEM
+				# git reads shell-pack's tool settings from here instead of /etc/gitconfig
+				set -x -g GIT_CONFIG_SYSTEM "$__sp_config_dir/gitconfig"
 		end
 		# add user intervention watchdog (stop tweaking var when user changes it)
 		function "__sp_untweak_var_$var" -v "$var"

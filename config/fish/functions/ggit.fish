@@ -45,7 +45,7 @@ function ggit -d \
 	"alt-c:print(commit)+accept,"\
 	"alt-p:print(commit_and_push)+accept,"\
 	"alt-a:print(add)+accept,"\
-	"alt-d:print(diff)+accept,"\
+	"alt-d:execute(fishcall ggit difftool {}),"\
 	"alt-x:print(reset)+accept,"\
 	"alt-i:print(ignore)+accept,"\
 	"f5:print(refresh)+accept,"\
@@ -61,7 +61,7 @@ function ggit -d \
 
 	begin
 		echo 'enter:append-message'
-		echo 'alt-a:add alt-x:reset alt-c:commit alt-p:commit+push'
+		echo 'alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-d:difftool'
 		echo "alt-m:edit-message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	end | __sp_fzf_header
 	__sp_fzf_defaults "ggit"
@@ -124,11 +124,6 @@ function ggit -d \
 				else
 					echo "Aborted"
 				end
-			case "diff"
-				__ggit_msg_hold
-				__ggit_set_filename "$results[3]" || return 2 
-				git diff --color=always "$filename" | __sp_pager -R
-				continue
 			case "add"
 				__ggit_msg_hold
 				for line in $results[3..]
@@ -249,17 +244,31 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	end
 	# file: does still exist?
 	if [ -e "$filename" ]
-		git diff --color=always -- "$filename"
+		git diff --color=always -- "$filename" | __sp_pager --syntax=diff -R
 	end
 end
 
-function __ggit_diff_full
-	__ggit_set_filename "$argv[1]" || return
-	git diff --color=always -- "$filename" | __sp_pager -R
+function __ggit_difftool -d "Open git difftool for each git status line in argv"
+	for line in $argv
+		set -l filename (echo "$line" | __ggit_file_from_status)
+		git difftool --no-prompt -- "$filename"
+	end
 end
 
 function __ggit_file_from_status -d "Strip git status from beginning of line"
-	cat | string replace --regex -- "^ ?[^ ]+ +" "" | string replace --regex -- ".* -> " ""
+	cat | string replace --regex -- "^ ?[^ ]+ +" "" | string replace --regex -- ".* -> " "" | __ggit_unquote_path
+end
+
+function __ggit_unquote_path -d "Decode a path quoted by git status"
+	read -l name
+	if ! string match -q -- '"*"' "$name"
+		printf %s "$name"
+		return
+	end
+	set name (string sub --start 2 --end -1 -- "$name")
+	# \" is not decoded by printf %b, so turn it into \x22 first
+	set name (string replace --all -- '\"' '\x22' "$name")
+	printf %b "$name"
 end
 
 
