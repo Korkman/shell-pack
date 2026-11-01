@@ -82,29 +82,16 @@ Z       Compress current subdirectory
         cd .. && cfc "$Pwd" "$DEST"
 
 + t rl
-d       diff tagged / opposing files
+d       diff or merge tagged / opposing files
         set -- %t
         if [ $# -gt 2 ]; then
             echo "Tag at most two files to diff" >&2
             exit 1
         fi
         if [ $# -eq 2 ]; then
-            diff --ignore-all-space --color=always -u "$1" "$2" | ${PAGER:-less}
+            fishcall __sp_merge_editor "$1" "$2"
         else
-            diff --ignore-all-space --color=always -u %f %D/%F | ${PAGER:-less}
-        fi
-
-+ t rl
-m       merge tagged / opposing files with mcdiff
-        set -- %t
-        if [ $# -gt 2 ]; then
-            echo "Tag at most two files to diff" >&2
-            exit 1
-        fi
-        if [ $# -eq 2 ]; then
-            fishcall mcdiff -u "$1" "$2"
-        else
-            fishcall mcdiff -u %f %D/%F
+            fishcall __sp_merge_editor %f %D/%F
         fi
 
 + t rdl
