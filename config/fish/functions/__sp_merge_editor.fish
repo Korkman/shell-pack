@@ -8,7 +8,11 @@ function __sp_merge_editor -d \
 
 	if command -q fresh
 		SHELL_PACK_MERGE_MODE=1 fresh --diff $argv[1] $argv[2]
-	else
+	else if command -q mcdiff
 		mcdiff -u $argv[1] $argv[2]
+	else if command -q diff
+		diff $argv[1] $argv[2]
+	else
+		__sp_error "No diff tool found"
 	end
 end

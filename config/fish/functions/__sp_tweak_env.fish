@@ -244,8 +244,9 @@ function __sp_tweak_aliases
 	# edit and page
 	alias e __sp_editor
 	alias p __sp_pager
+	alias ddiff __sp_merge_editor
 	
-	# replace "plus" functions with scripts
+	# migration: replace "plus" functions with scripts
 	functions -e +
 	functions -e plus
 	

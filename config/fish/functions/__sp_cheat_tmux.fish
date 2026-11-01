@@ -1,10 +1,11 @@
 function __sp_cheat_tmux
 	echo "
-TMUX AS CONFIGURED BY SHELL-PACK
+TMUX
+(as configured by shell-pack)
  
 # THE STATUS BAR
  
-left side:
+LEFT SIDE:
   mode indicator (hidden when tight):
     NORM: normal input
     COPY: copy-mode active (scrolled, selected text)
@@ -13,7 +14,7 @@ left side:
   user@hostname
   session name
  
-center: window tabs
+CENTER: window tabs
   1:tab = the first tab (ctrl-a 1)
   tab* = the current tab
   tab- = the previous tab (ctrl-a ctrl-a)
@@ -21,7 +22,7 @@ center: window tabs
   tab# = activity monitor triggered (ctrl-a shift-m)
   tab~ = silence monitor triggered (ctrl-a _)
   
-right side:
+RIGHT SIDE:
   load average (hidden when tight)
   clock
   date (hidden when tight)

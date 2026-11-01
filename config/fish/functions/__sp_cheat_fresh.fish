@@ -1,9 +1,9 @@
 function __sp_cheat_fresh
 	echo "
-fresh editor
+FRESH EDITOR
 (as configured by shell-pack)
 
-navigation:
+NAVIGATION:
   Ctrl-L, Alt-L, Ctrl-G: go to line
   Ctrl-Left, Ctrl-Right: move cursor by words
   Ctrl-Home, Ctrl-End: start / end of file
@@ -12,13 +12,13 @@ navigation:
   Alt-Up, Alt-Down: move line / selection up / down
   Alt-Left, Alt-Right: navigation history
 
-search & replace:
+SEARCH & REPLACE:
   Ctrl-F, F7: search / find in file
   F3, Alt-N: find next match
   Shift-F3, Alt-Shift-N, Alt-P: find previous match
   Ctrl-R, Ctrl-H, F4: query replace
 
-editing:
+EDITING:
   Ctrl-S, F2: save file
   Ctrl-Z, Ctrl-Y: undo / redo
   Ctrl-C, Ctrl-V, Ctrl-X: copy, paste, cut
@@ -28,7 +28,7 @@ editing:
   Ctrl-K /, Ctrl-/: toggle line / selection comment
   Tab, Shift-Tab, Ctrl-K Tab: indent / dedent selection
 
-selection mode:
+SELECTION MODE:
   Alt-Space, Alt-Y: toggle selection mode (-- SELECT --)
     Arrows, PgUp, PgDn: expand selection
     Ctrl-Left, Ctrl-Right: expand by word
@@ -38,7 +38,14 @@ selection mode:
   Shift-Arrows: standard text selection
   Esc: dismiss secondary cursors, or quit
 
-tabs, buffers & terminal:
+MERGE MODE:
+  Activated by mc menu, invoking SHELL_PACK_MERGE_MODE=1 fresh --diff FileA FileB
+  Toggle: Ctrl-K G
+  Alt-Up/-Down: Jump between diffs
+  Alt-Left/-Right: Accept modifications from other / current file
+    Attention: Orientation is only intuitive when cursor is in left file!
+  
+TABS, BUFFERS & TERMINAL:
   Ctrl-O: open file
   Ctrl-Alt-O: quick open file (recursive file finder)
   Alt-T: switch tab by name
@@ -51,7 +58,7 @@ tabs, buffers & terminal:
   Ctrl-W: close tab ('delete word' in terminal tabs)
   Ctrl-K Left, Ctrl-K Right: switch to previous / next buffer
 
-panels & UI:
+PANELS & UI:
   Ctrl-E, Ctrl-B: toggle / focus file explorer
   Alt-O: toggle orchestrator dock
   F9: activate menu bar
@@ -59,12 +66,12 @@ panels & UI:
   Ctrl-K Ctrl-S: open keybinding editor
   Ctrl-K M: set syntax language
 
-quit:
+QUIT:
   Esc, F10, Alt-Q, Ctrl-Q: quit editor
   Alt-Shift-Q: force quit without prompt (will restore)
   Ctrl-K D: detach when started as daemon
 
-CLI & remote usage:
+CLI & REMOTE USAGE:
   fresh file:12                 open at line 12
   fresh file:10-25              open with lines 10 to 25 selected
   fresh -a [NAME]               create / attach to detachable daemon (background session)
