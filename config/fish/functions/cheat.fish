@@ -203,6 +203,7 @@ Fetch man page from internet       onman [ --os DISTRO:VER ] [ SECTION ] PAGE
 Download with curl or wget         dl URL [ FILENAME ]
 Compressed file creation           cfc FILE|DIR [ FILE|ALGO ]
 Compressed file decompression      cfd [ FILE|- ] [ DESTINATION ]
+Install packages for tools         need [ --ask | --remove ] COMMAND...
 Copy to client clipboard           cclip FILE
 SSH, but managed                   qssh [ ssh-params ]
 git add + commit with review       ggit

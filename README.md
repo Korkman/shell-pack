@@ -41,6 +41,7 @@ tl;dr see [the docs](docs/index.md) on [how to install shell-pack](docs/installa
  * `ddiff`, start `fresh` in merge mode (fallback `mcdiff`)
  * `plus` (also `+`), start a command only once data arrives on the pipe, e.g. `qcrypt -d file |+ ppage`
  * `fishcall`, to call any fish alias from non-fish shells
+ * `need`, install (or `--remove`) the packages providing given tools via apt, apk, pacman, dnf, yum, zypper, pkg, emerge, brew or nix, tools are command names (`--ask` to confirm first)
  * Linux only
    * `lsports`: list open ports in compact manner or perform nmap scan (see --help)
    * `lsnet`: list active network connections in compact manner
