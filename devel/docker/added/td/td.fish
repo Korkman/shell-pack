@@ -1,3 +1,5 @@
+#!/usr/bin/env fish
+
 function td -d \
 	"Test-drive functions for development"
 	argparse --stop-nonopt 'h/help' -- $argv
@@ -22,4 +24,21 @@ function td -d \
 		or return 1
 	end >&2
 	$fname $argv[2..-1]
+end
+
+begin
+	# add td path on-demand, also load completions
+	set -l __td_dir (cd (status dirname); and pwd)
+	if ! contains -- "$__td_dir" $fish_function_path
+		set -g --append fish_function_path "$__td_dir"
+		# also, completions are probably missing
+		source $__td_dir/td.completions.fish
+	end
+	
+	# The stack trace is empty only when this file is the top-level program,
+	# i.e. executed as a script rather than sourced or autoloaded.
+	if not status stack-trace | string match -q -r .
+		load_shell_pack
+		td $argv
+	end
 end
