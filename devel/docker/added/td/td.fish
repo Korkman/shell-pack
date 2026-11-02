@@ -28,7 +28,7 @@ end
 
 begin
 	# add td path on-demand, also load completions
-	set -l __td_dir (cd (status dirname); and pwd)
+	set -l __td_dir (status dirname)
 	if ! contains -- "$__td_dir" $fish_function_path
 		set -g --append fish_function_path "$__td_dir"
 		# also, completions are probably missing
