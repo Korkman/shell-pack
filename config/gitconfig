@@ -18,6 +18,12 @@
 [merge]
 	tool = shellpack
 
+[mergetool]
+	# no *.orig files please
+	keepBackup = false
+	# don't clutter the worktree
+	writeToTemp = true
+
 [mergetool "shellpack"]
 	cmd = fishcall __sp_git_mergetool \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
 	trustExitCode = true

@@ -45,7 +45,7 @@ function ggit -d \
 	"alt-c:print(commit)+accept,"\
 	"alt-p:print(commit_and_push)+accept,"\
 	"alt-a:print(add)+accept,"\
-	"alt-d:execute(fishcall ggit difftool {}),"\
+	"alt-d:execute(fishcall ggit difftool {})+reload(git status --porcelain),"\
 	"alt-x:print(reset)+accept,"\
 	"alt-i:print(ignore)+accept,"\
 	"f5:print(refresh)+accept,"\
@@ -61,7 +61,8 @@ function ggit -d \
 
 	begin
 		echo 'enter:append-message'
-		echo 'alt-a:add alt-x:reset alt-c:commit alt-p:commit+push alt-d:difftool'
+		echo 'alt-a:add alt-x:reset alt-c:commit alt-p:commit+push'
+		echo 'alt-d:diff/merge'
 		echo "alt-m:edit-message alt-i:ignore alt-s:full-status f5:refresh esc:cancel"
 	end | __sp_fzf_header
 	__sp_fzf_defaults "ggit"
@@ -248,10 +249,15 @@ function __ggit_diff_preview -d "Show state of file and diff"
 	end
 end
 
-function __ggit_difftool -d "Open git difftool for each git status line in argv"
+function __ggit_difftool -d "Open git difftool (or mergetool for unmerged files) for each git status line in argv"
 	for line in $argv
 		set -l filename (echo "$line" | __ggit_file_from_status)
-		git difftool --no-prompt -- "$filename"
+		# unmerged files have no difftool-able state, they need a merge
+		if test -n "$(git ls-files -u -- "$filename")"
+			git mergetool --no-prompt -- "$filename"
+		else
+			git difftool --no-prompt -- "$filename"
+		end
 	end
 end
 
