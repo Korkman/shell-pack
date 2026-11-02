@@ -20,19 +20,20 @@ function td-test-cfc -d \
 		or return 1
 	end >&2
 
-	# prints the tools among the arguments which are not installed or lack the needed features
-	# (busybox lzma only decompresses)
-	function __td_missing_tools
-		for tool in $argv
-			switch $tool
-				case 7z
-					not command -q 7z; and not command -q 7zz; and not command -q 7za; and not command -q 7zr; and echo 7z
+	# prints the requirements among the arguments which are not met as tool names
+	# alternatives like '7z|7zz' are met by any of them (busybox lzma only decompresses)
+	function __td_missing_requirements
+		for req in $argv
+			switch $req
 				case lzma
-					if not command -q lzma; or not printf x | lzma -c >/dev/null 2>&1
-						echo "lzma (compressing)"
-					end
+					command -vq lzma; and printf x | lzma -c >/dev/null 2>&1; or echo "lzma (compressing)"
 				case '*'
-					command -q $tool; or echo $tool
+					set -l alts (string split '|' -- $req)
+					set -l found 0
+					for alt in $alts
+						command -vq $alt; and set found 1; and break
+					end
+					test $found = 1; or echo $alts[1]
 			end
 		end
 	end
@@ -75,7 +76,7 @@ function td-test-cfc -d \
 			case zst; set -a tools zstd
 			case br; set -a tools brotli
 			case zip; set -a tools zip unzip
-			case 7z; set -a tools 7z
+			case 7z; set -a tools '7z|7zz|7za|7zr'
 			case squashfs; set -a tools mksquashfs unsquashfs
 		end
 		printf '%s\n' $tools
@@ -83,22 +84,20 @@ function td-test-cfc -d \
 
 	# every tool cfc / cfd can use, so that all formats get tested; compress (.Z) is optional
 	# because it is not shipped by default on all systems, e.g. Alpine, and its formats are skipped
-	set -l all_tools tar gzip gunzip bzip2 xz lzma zstd lzip lzop lz4 brotli cpio zip unzip mksquashfs unsquashfs 7z file script
-	set -l missing (__td_missing_tools $all_tools)
-	if set -q _flag_partial
-		set -l hard (__td_missing_tools gzip)
-		if test (count $hard) -gt 0
-			echo "td test-cfc: missing binaries needed even with --partial: $hard" >&2
-			functions -e __td_missing_tools __td_fmt_tools
-			return 1
-		end
-	else if test (count $missing) -gt 0
+	set -l requirements tar gzip gunzip bzip2 xz lzma zstd lzip lzop lz4 brotli cpio zip unzip mksquashfs unsquashfs '7z|7zz|7za|7zr' file script
+	# with --partial only gzip is required, formats whose tools are missing are skipped below
+	set -l required $requirements
+	set -q _flag_partial; and set required gzip
+	need --ask $required
+	or begin
+		functions -e __td_missing_requirements __td_fmt_tools
+		return 1
+	end
+	set -l missing (__td_missing_requirements $required)
+	if test (count $missing) -gt 0
 		echo "td test-cfc: missing required binaries: $missing" >&2
-		echo "Install everything in one go with:" >&2
-		echo "  apt:  apt install tar gzip bzip2 xz-utils zstd lzip lzop lz4 brotli ncompress cpio zip unzip p7zip-full squashfs-tools file bsdutils" >&2
-		echo "  apk:  apk add tar gzip bzip2 xz zstd lzip lzop lz4 brotli cpio zip unzip 7zip squashfs-tools file util-linux-misc" >&2
 		echo "Or run with --partial to skip formats whose tools are missing." >&2
-		functions -e __td_missing_tools __td_fmt_tools
+		functions -e __td_missing_requirements __td_fmt_tools
 		return 1
 	end
 
@@ -146,7 +145,7 @@ function td-test-cfc -d \
 
 	# single file compressors: file and stdin sources, via stdout
 	for fmt in $file_formats
-		set -l miss (__td_missing_tools (__td_fmt_tools $fmt))
+		set -l miss (__td_missing_requirements (__td_fmt_tools $fmt))
 		if test (count $miss) -gt 0
 			__td_skip "single file round trip ($fmt)" $miss
 			continue
@@ -157,7 +156,7 @@ function td-test-cfc -d \
 		__td_check "stdin to stdout, cfd by extension ($fmt)" hello (cfd s.out.$fmt - 2>/dev/null)
 	end
 	for fmt in $magic_formats
-		set -l miss (__td_missing_tools file (__td_fmt_tools $fmt))
+		set -l miss (__td_missing_requirements file (__td_fmt_tools $fmt))
 		if test (count $miss) -gt 0
 			__td_skip "stdin magic detection ($fmt)" $miss
 			continue
@@ -167,7 +166,7 @@ function td-test-cfc -d \
 
 	# directory archivers: compress to a named file, extract, compare content
 	for fmt in $tar_formats $other_dir_formats
-		set -l miss (__td_missing_tools script (__td_fmt_tools $fmt))
+		set -l miss (__td_missing_requirements script (__td_fmt_tools $fmt))
 		if test (count $miss) -gt 0
 			__td_skip "directory round trip ($fmt)" $miss
 			continue
@@ -180,7 +179,7 @@ function td-test-cfc -d \
 
 	# compressed cpio is decompressed by cfd to a plain cpio first, which is then extracted
 	for fmt in $cpio_formats
-		set -l miss (__td_missing_tools script (__td_fmt_tools $fmt) gzip gunzip)
+		set -l miss (__td_missing_requirements script (__td_fmt_tools $fmt) gzip gunzip)
 		if test (count $miss) -gt 0
 			__td_skip "directory round trip ($fmt)" $miss
 			continue
@@ -197,7 +196,7 @@ function td-test-cfc -d \
 	end
 
 	# cfd detects the format of stdin by magic, which needs file
-	set -l miss (__td_missing_tools file)
+	set -l miss (__td_missing_requirements file)
 	if test (count $miss) -gt 0
 		__td_skip "stdin | cfc | cfd - (default format)" $miss
 		__td_skip "stdin | cfc - - (explicit dashes)" $miss
@@ -212,7 +211,7 @@ function td-test-cfc -d \
 	__td_check "invalid compressor args fail" 1 $status
 
 	# directories
-	set -l miss (__td_missing_tools tar)
+	set -l miss (__td_missing_requirements tar)
 	if test (count $miss) -gt 0
 		__td_skip "directory to stdout as tar.gz" $miss
 		__td_skip "cfd extracts directory archive" $miss
@@ -233,7 +232,7 @@ function td-test-cfc -d \
 	__td_check "cfd FILE - (stdout)" hello (cfd a.txt.gz - 2>/dev/null)
 	cfd a.txt.gz copy.txt >/dev/null 2>&1
 	__td_check "cfd FILE DEST" hello (cat copy.txt 2>/dev/null)
-	if test (count (__td_missing_tools file)) -gt 0
+	if test (count (__td_missing_requirements file)) -gt 0
 		__td_skip "cfd - FILE (stdin)" file
 	else
 		__td_check "cfd - FILE (stdin)" hello (cfd - < a.txt.gz 2>/dev/null)
@@ -273,7 +272,7 @@ function td-test-cfc -d \
 	__td_check "cfd - DIR writes stdin output as stdin" 0 $status
 
 	# file destination with stdin (needs a terminal on stdout, emulated with script)
-	if test (count (__td_missing_tools script)) -gt 0
+	if test (count (__td_missing_requirements script)) -gt 0
 		__td_skip "stdin to file destination" script
 	else
 		printf 'piped\n' | script -qec "fish -c 'cfc - from-stdin.gz'" /dev/null >/dev/null 2>&1
@@ -289,7 +288,7 @@ function td-test-cfc -d \
 	echo "$__td_test_total checks, $__td_test_failed failed, $__td_test_skipped skipped"
 	set -l failed $__td_test_failed
 	set -e __td_test_failed __td_test_total __td_test_skipped
-	functions -e __td_check __td_cfc_to_file __td_skip __td_missing_tools __td_fmt_tools
+	functions -e __td_check __td_cfc_to_file __td_skip __td_missing_requirements __td_fmt_tools
 	test $failed -gt 125; and set failed 125
 	return $failed
 end

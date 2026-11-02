@@ -14,13 +14,7 @@ function td-test-qssh -d \
 		or return 1
 	end >&2
 
-	if not command -vq ssh
-		echo "td test-qssh: missing required binary: ssh" >&2
-		echo "Install with:" >&2
-		echo "  apt:  apt install openssh-client" >&2
-		echo "  apk:  apk add openssh-client" >&2
-		return 1
-	end
+	need --ask ssh; or return 1
 
 	for host in 127.1 127.2 127.3
 		timeout 1 qssh $host &

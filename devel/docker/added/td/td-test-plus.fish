@@ -17,13 +17,7 @@ function td-test-plus -d \
 		or return 1
 	end >&2
 
-	if not command -vq pv
-		echo "td test-plus: missing required binary: pv" >&2
-		echo "Install with:" >&2
-		echo "  apt:  apt install pv" >&2
-		echo "  apk:  apk add pv" >&2
-		return 1
-	end
+	need --ask pv; or return 1
 
 	set -l tmp (__sp_mkuniq --dir --xdg-runtime td-test-plus)
 	or return 1
