@@ -108,11 +108,11 @@ function lsports
 	set procWidth (math $COLUMNS-58)
 	if $__cap_ss
 		if test "$procWidth" -gt 20
-			ss -nlp -A inet | tail -n+2 | ss_procfilter | awk "{ print \$5,substr(\$7, 0, $procWidth),\$1}" | sort -k2 | awk 'BEGIN { print "Listen", "Processes", "Type"} { print $0 }' | __sp_column_t | uniq
+			__lsports_ss_rows $procWidth | sort -k2 | awk 'BEGIN { print "Listen", "Processes", "Type", "UID", "Container"} { print $0 }' | __sp_column_t | uniq
 		else
 			# narrow display
 			set procWidth (math $COLUMNS-3)
-			ss -nlp -A inet | tail -n+2 | ss_procfilter | awk "{ print \$5,\$1; print \" \", substr(\$7, 0, $procWidth)}" | awk 'BEGIN { print "Listen", "Type"; print "Processes"} { print $0 }' | uniq
+			__lsports_ss_rows $procWidth | awk '{ print $1,$3,$4; print " ", $2; if ($5 != "-") print "  Container:", $5 }' | awk 'BEGIN { print "Listen", "Type", "UID"; print "Processes"} { print $0 }' | uniq
 		end
 	else
 		# netstat (macos) edition
@@ -134,3 +134,13 @@ function __lsports_netstat
 	netstat -anv -f inet | grep -i listen | awk "{ print \$4,\$9,\$1 }"
 	netstat -anv -f inet6 | grep -i listen | awk "{ print \$4,\$9,\$1 }"
 end
+
+# one line per listening socket: address, processes, type, uid, container
+function __lsports_ss_rows -a width
+	# ss prints a harmless "RTNETLINK answers: Invalid argument" on stderr; the socket list is complete
+	ss -nlp -A inet 2>/dev/null | tail -n+2 | ss_procfilter | awk -v w=$width '{ pid = "-"; if (match($7, /\[[0-9]+/)) pid = substr($7, RSTART + 1, RLENGTH - 1); print $5, ($7 == "" ? "-" : substr($7, 0, w)), $1, pid }' | while read -l addr proc type pid
+		set -l uid (awk '/^Uid:/ { print $2; exit }' /proc/$pid/status 2>/dev/null)
+		echo "$addr $proc $type "(test -n "$uid"; and echo $uid; or echo -)" "(__sp_container $pid (string replace -r '.*:' '' -- $addr))
+	end
+end
+

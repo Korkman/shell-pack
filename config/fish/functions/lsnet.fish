@@ -13,15 +13,26 @@ function lsnet -d \
   set -l procWidth (math $COLUMNS-110)
   if $__cap_ss
     if test "$procWidth" -gt 20
-      ss -np -A inet | tail -n+2 | ss_procfilter | awk "{print \$5,\$6,substr(\$7, 0, $procWidth),\$1}" | sort -k3 | awk 'BEGIN { print "Local", "Remote", "Processes", "Type"} {print $0}' | __sp_column_t
+      __lsnet_ss_rows $procWidth | sort -k3 | awk 'BEGIN { print "Local", "Remote", "Processes", "Type", "UID", "Container"} {print $0}' | __sp_column_t
     else
       # narrow display
       set procWidth (math $COLUMNS-3)
-      ss -np -A inet | tail -n+2 | ss_procfilter | awk "{print \$5,\$6,\$1; print \" \", substr(\$7, 0, $procWidth)}" | awk 'BEGIN { print "Local", "Remote", "Type"; print "Processes" } {print $0}'
+      __lsnet_ss_rows $procWidth | awk '{ print $1,$2,$4,$5; print " ", $3; if ($6 != "-") print "  Container:", $6 }' | awk 'BEGIN { print "Local", "Remote", "Type", "UID"; print "Processes" } {print $0}'
     end
   else
 		# netstat (macos) edition
 		__lsnet_netstat_headered | __sp_column_t
+  end
+end
+
+# one line per connection: local, remote, processes, type, uid, container
+function __lsnet_ss_rows -a width
+  # ss prints a harmless "RTNETLINK answers: Invalid argument" on stderr; the connection list is complete
+  ss -np -A inet 2>/dev/null | tail -n+2 | ss_procfilter | awk -v w=$width '{ pid = "-"; if (match($7, /\[[0-9]+/)) pid = substr($7, RSTART + 1, RLENGTH - 1); print $5, $6, ($7 == "" ? "-" : substr($7, 0, w)), $1, pid }' | while read -l local remote proc type pid
+    set -l ctr (__sp_container $pid (string replace -r '.*:' '' -- $local))
+    test "$ctr" = -; and set ctr (__sp_container_remote $pid $remote)
+    set -l uid (awk '/^Uid:/ { print $2; exit }' /proc/$pid/status 2>/dev/null)
+    echo "$local $remote $proc $type "(test -n "$uid"; and echo $uid; or echo -)" $ctr"
   end
 end
 
