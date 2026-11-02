@@ -33,7 +33,9 @@ function td-git-diff -d \
 	echo "Diff repo created: $tmp"
 	echo
 	echo "Run the difftool with:"
-	echo "  cd $tmp && git difftool"
+	echo "  git difftool"
 	echo
 	echo "Remove the directory when done: rm -rf $tmp"
+	
+	cd -- "$tmp"
 end
