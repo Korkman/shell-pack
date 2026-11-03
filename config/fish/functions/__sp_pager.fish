@@ -1,7 +1,7 @@
 function __sp_pager -d \
 	'Invoke the configured pager, adapt flags if possible'
 	
-	argparse --stop-nonopt 'F/quit-if-one-screen' 'man' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
+	argparse --stop-nonopt 'F/quit-if-one-screen' 'get-bin' 'man' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
 	or return
 	
 	set -l filename $argv[1]
@@ -47,6 +47,11 @@ function __sp_pager -d \
 	end
 	set -l pager_bin $pager_cmd[1]
 	set -l pager_args $pager_cmd[2..-1]
+	
+	if set -q _flag_get_bin
+		echo "$pager_bin"
+		return
+	end
 	
 	# name tab after pager
 	__sp_tabtitle_suggestion (path basename "$pager_bin")

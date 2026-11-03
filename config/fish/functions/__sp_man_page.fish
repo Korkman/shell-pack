@@ -51,13 +51,7 @@ function __sp_man_page
 		return
 	end
 	
-	set -l pager_bin __sp_pager
-	set -l pager_args --man
-	if set -q _flag_line_number
-		set -a pager_args --line
-	end
-	set -a pager_args --prompt "Manual page `$argv`"
-	
+	set -l pager_bin (__sp_pager --get-bin --man)
 	if command -q man
 		# test if fish's man preset finds the help
 		# (this introduces a slight latency, sorry. but it catches alternative 'man' use cases well.)
@@ -67,12 +61,18 @@ function __sp_man_page
 				# let man adapt to less
 				__sp_man_page_default $argv
 			else
+				set -l __sp_pager_args --man
+				if set -q _flag_line_number
+					set -a __sp_pager_args --line
+				end
+				set -a __sp_pager_args --prompt "Manual page `$argv`"
+				
 				# some 'man' implementations (FreeBSD, Debian Jessie) add overstrike
 				# sequences to apply bold/underline, which bat doesn't merge correctly
 				# as of v26.1. re-encode those as ANSI SGR instead of stripping them.
 				# ask man-db to keep bold/underline formatting even though stdout isn't a tty
 				# (harmless no-op on implementations that don't recognize this var)
-				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | $pager_bin $pager_args
+				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | __sp_pager $__sp_pager_args
 			end
 			__sp_tabtitle_suggestion --restore
 			return
