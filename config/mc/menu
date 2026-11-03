@@ -97,7 +97,14 @@ d       diff or merge tagged / opposing files
 + t rdl
 g       Search text in selected items
         PATTERN=%{Search pattern (regex)}
-        fishcall rrg %s -- "$PATTERN"
+        set -- %s
+        SEL="$1"
+        if [ "$SEL" = ".." ]; then
+            # selecting ".." means search pwd
+            fishcall rrg "$PWD" -- "$PATTERN"
+        else
+            fishcall rrg %s -- "$PATTERN"
+        fi
 
 + t rl
 f       Follow selected files with tail | grasp
