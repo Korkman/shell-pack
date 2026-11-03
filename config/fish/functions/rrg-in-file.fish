@@ -30,7 +30,12 @@ lines with context.
 	set query "$argv"
 	set -l extra_opts
 	if set -q RG_EXTRA
-		set extra_opts (string split ' ' -- $RG_EXTRA)
+		# drop search paths: rg ignores stdin once a path is given, which bypasses the excerpt
+		for opt in (string split ' ' -- $RG_EXTRA)
+			if not test -e "$opt"
+				set -a extra_opts $opt
+			end
+		end
 	end
 	
 	set startpoint 1
@@ -125,7 +130,7 @@ lines with context.
 		-v cr=(set_color normal) \
 		'BEGIN { OFS="" } { print (i == l ? lh "!" : ln " ") cr " " ln i cr " " $0; i++ }'
 		if set -q _flag_rrg_preview
-			echo (set_color -b ff00ff; set_color black)' End of match preview with context | alt-p to hide pane '(set_color normal)
+			echo (set_color -b ff00ff; set_color black)' End of match preview with context | v or alt-v to hide pane '(set_color normal)
 		end
 	end
 	

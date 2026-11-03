@@ -42,14 +42,16 @@ Ripgrep PATTERN syntax is mostly PCRE compatible. For full syntax help, see
 === results filter ===
 $fzf_query_help
 === rrg keybinds ===
-   exit                             alt-q        esc
-   toggle pane                      alt-p
-   show content in pane (default)   alt-o
-   show result line in pane         alt-i
-   start less on matched line       alt-l
-   start editor on matched line     f4
-   start pager on file              f3
-   read all matches in file         enter
+   exit                             q            alt-q     esc (input hidden)
+   show blank filter input          space
+   edit current filter              +
+   hide query input                 esc (input shown)
+   toggle preview                   v            alt-v
+   start pager on matched line      enter*       f3        p          alt-p
+   start editor on matched line     e            f4        alt-e
+   show help                        h            f1        alt-h
+   preview matched file             default
+   *Enter hides the query input when it is visible.
 
 === rrg-in-file usage ===
 

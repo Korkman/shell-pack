@@ -37,23 +37,26 @@ function rrg -d \
 	set -x query "$query"
 	set -x QUERY_ESC (__sp_quote_args $query)
 	
+	set -l rrg_navigation_keys 'p,v,e,h,q,space,+'
 	set -l fzf_binds (printf %s \
-		'alt-p:toggle-preview,'\
-		'f3,alt-l:execute(nullerror fishcall __sp_pager --line {2} {1}),'\
-		'f4,alt-e:execute(nullerror fishcall __sp_editor --line {2} {1}),'\
-		'f1,alt-h:execute(fishcall rrg-help),'\
+		'start:hide-input,'\
+		'v,alt-v:toggle-preview,'\
+		'f3,alt-p,p:execute(nullerror fishcall __sp_pager --line {2} {1}),'\
+		'f4,alt-e,e:execute(nullerror fishcall __sp_editor --line {2} {1}),'\
+		'f1,alt-h,h:execute(fishcall rrg-help),'\
 		'alt-q:abort,'\
+		'q:abort,'\
 		'f10:abort,'\
-		'esc:cancel,'\
-		'alt-i:change-preview(printf "Result line #{n}:\nLine %s in file %s\nMatched content:\n%s" {2} {1} {3..})+change-preview-window(wrap:nohidden:bottom:60%:~1)+refresh-preview,'\
-		'alt-o:change-preview(fishcall rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query)+change-preview-window(wrap:nohidden:right:80%:~1)+refresh-preview,'\
-		'enter:execute(fishcall rrg-in-file -f {1} -l {2} -- $query),'\
+		'esc:transform(fishcall __sp_rrg_key escape),'\
+		'enter:transform(fishcall __sp_rrg_key enter),'\
+		'+:hide-header+show-input+change-prompt(Filter> )+unbind('$rrg_navigation_keys'),'\
+		'space:hide-header+show-input+change-prompt(Filter> )+clear-query+unbind('$rrg_navigation_keys'),'\
 		'right-click:toggle-preview,'\
 		'home:pos(0),end:pos(-1)'\
 	)
 	
 
-	printf 'f1:help enter:results-in-file a-p:pane\nf3,a-l:page f4,a-e:edit a-i:line a-o:content' | __sp_fzf_header
+	printf 'h:help enter,p,f3:page e,f4:edit v:preview\nq:quit space:filter +:edit-filter' | __sp_fzf_header
 	# without extra options rg searches the current directory
 	set -l search_scope '"'"$PWD"'"'
 	if set -q extra_opts[1]
@@ -103,13 +106,12 @@ function rrg -d \
 			#set main_rg_status $status
 		end \
 		| head -n 100000 2> /dev/null \
-		# remove all low unprintable ASCII characters from match field (they cannot occur in UTF8, too)
-		# with the notable exception of ESC so control sequences (colors!) survive.
-		# currently, the one bad character really is the NUL byte which if passed through,
-		# sabotages the ability to pass the line from fzf as argument to other tools down the line.
-		# fzf sanitizes control sequences, so we (thankfully) don't have to deal with them here.
-		# spawning filter as a fish subprocess to get instant results (fish 3.3.1 buffering issue)
-		| fishex-replace '[\x00-\x1A\x1C-\x1F]' '' \
+		# Strip indentation tabs from the match field, replace remaining tabs with a visible arrow,
+		# and remove other low control characters while preserving ANSI color sequences.
+		# spawning filters as fish subprocesses to get instant results (fish 3.3.1 buffering issue)
+		| fishex-replace '^(.*?//(?:\x1b\[[0-9;]*m)*[0-9]+(?:\x1b\[[0-9;]*m)*//)\t+' '$1' \
+		| fishex-replace '\t' '→' \
+		| fishex-replace '[\x00-\x08\x0B-\x1A\x1C-\x1F]' '' \
 		# will buffer all content until stdin closed?
 		#| string replace --all --regex '[\x00-\x1A\x1C-\x1F]' '' \
 		# sed on macos Monterey does not support escapes in brackets
@@ -117,10 +119,11 @@ function rrg -d \
 		| fzf \
 			$fzf_defaults \
 			--no-multi \
+			--no-hscroll \
 			--bind "$fzf_binds" \
 			--preview 'clear; rrg-in-file --rrg-preview {} -f {1} -l {2} -t -- $query' \
-			--preview-window 'hidden:wrap:right:80%:~1' \
-			--preview-label 'Preview pane - toggle with alt-p' \
+			--preview-window 'wrap:right:80%:~1' \
+			--preview-label 'Preview pane - toggle with v or alt-v' \
 			--height (math $LINES-1) \
 			--delimiter '//' \
 			--ansi \

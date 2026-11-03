@@ -160,9 +160,9 @@ Untag current directory       untagdir
 List tagged directories       lsdirtags
 
 Search files for content      rrg REGEX
-... pass rg options           rrg --option ... -- REGEX
+... pass rg options           rrg [ --arg ] [ FILE ... ] -- REGEX
 ... see also                  rrg-help
-Search in file for content    rrg-in-file -f FILE REGEX
+Search one file for content   rrg-in-file -f FILE REGEX
 
 (Re)open tmux / screen
   for user X                  $__multiplexer_names
