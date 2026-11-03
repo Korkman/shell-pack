@@ -51,27 +51,12 @@ function __sp_man_page
 		return
 	end
 	
-	# choose appropriate pager ($MANPAGER/$PAGER may carry arguments, e.g. "less -S")
-	set -l pager_cmd
-	if set -q MANPAGER
-		set pager_cmd (string split -n -- ' ' (string trim -- "$MANPAGER"))
-	else if set -q TRUE_PAGER
-		set pager_cmd (string split -n -- ' ' (string trim -- "$TRUE_PAGER"))
-	else if set -q PAGER
-		set pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
+	set -l pager_bin __sp_pager
+	set -l pager_args --man
+	if set -q _flag_line_number
+		set -a pager_args --line
 	end
-	if not set -q pager_cmd[1]
-		set pager_cmd ppage
-	end
-	set -l pager_bin $pager_cmd[1]
-	set -l pager_args $pager_cmd[2..-1]
-	
-	if test "$pager_bin" = 'ppage'
-		if set -q _flag_line_number
-			set -a pager_args --line-number
-		end
-		set -a pager_args --prompt "Manual page `$argv`"
-	end
+	set -a pager_args --prompt "Manual page `$argv`"
 	
 	if command -q man
 		# test if fish's man preset finds the help

@@ -1,7 +1,7 @@
 function __sp_pager -d \
 	'Invoke the configured pager, adapt flags if possible'
 	
-	argparse --stop-nonopt 'F/quit-if-one-screen' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
+	argparse --stop-nonopt 'F/quit-if-one-screen' 'man' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
 	or return
 	
 	set -l filename $argv[1]
@@ -21,8 +21,15 @@ function __sp_pager -d \
 		set -ge PAGER
 	end
 	
+	set -l pager_cmd
+	# allow MANPAGER if --man was passed
+	if set -q _flag_man && test -n "$MANPAGER"
+		set pager_cmd "$MANPAGER"
+	else
+		set pager_cmd "$PAGER"
+	end
 	# $PAGER may carry arguments, e.g. "less -S"
-	set -l pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
+	set pager_cmd (string split -n -- ' ' (string trim -- "$pager_cmd"))
 	if ! type -q -- "$pager_cmd[1]"
 		set pager_cmd
 	end
