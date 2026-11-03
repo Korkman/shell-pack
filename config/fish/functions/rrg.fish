@@ -28,6 +28,23 @@ function rrg -d \
 		return 5
 	end
 	
+	# strip the current directory from path arguments so results stay relative
+	if test "$PWD" != /
+		set -l pwd_prefix "$PWD/"
+		set -l pwd_prefix_len (string length -- "$pwd_prefix")
+		set -l rel_opts
+		for arg in $extra_opts
+			if test (string sub --length $pwd_prefix_len -- "$arg") = "$pwd_prefix"
+				set -a rel_opts (string sub --start (math $pwd_prefix_len + 1) -- "$arg")
+			else if test "$arg" = "$PWD"
+				set -a rel_opts .
+			else
+				set -a rel_opts "$arg"
+			end
+		end
+		set extra_opts $rel_opts
+	end
+	
 	if test "$extra_opts" != ""
 		# pass extra_opts down to rrg-in-file
 		set -x RG_EXTRA $extra_opts
