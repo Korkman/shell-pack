@@ -1,8 +1,10 @@
 function rrg-help
 	PAGER="cat" cheat --fzf-query | read -zl fzf_query_help
 	echo "
-=== rrg usage ===
+"(set_color brwhite --bold)"RAPID RIPGREP"(set_color normal)"
+(rrg)
 
+"(set_color brwhite --bold)"USAGE"(set_color normal)"
 rrg PATTERN
 rrg [ OPTIONS ...  ] -- PATTERN
 
@@ -39,27 +41,26 @@ Ripgrep PATTERN syntax is mostly PCRE compatible. For full syntax help, see
 
    rg --help | less
 
-=== results filter ===
-$fzf_query_help
-=== rrg keybinds ===
-   exit                             q            alt-q     esc (input hidden)
+"(set_color brwhite --bold)"KEYS"(set_color normal)"
+   exit                             q            alt-q     f10       esc
+   clear query                      esc
    show blank filter input          space
    edit current filter              +
-   hide query input                 esc (input shown)
-   toggle preview                   v            alt-v
-   start pager on matched line      enter*       f3        p          alt-p
+   hide query input                 enter
+   toggle preview                   v            alt-v     right-click
+   start pager on matched line      enter        f3        p          alt-p
    start editor on matched line     e            f4        alt-e
    show help                        h            f1        alt-h
-   preview matched file             default
-   *Enter hides the query input when it is visible.
+   jump to start/end of filter      home         end
 
-=== rrg-in-file usage ===
-
+"(set_color brwhite --bold)"MATCHED LINES CAN BE FILTERED WITH"(set_color normal)"
+$fzf_query_help
+"(set_color brwhite --bold)"RRG-IN-FILE"(set_color normal)"
 rrg-in-file -f FILE PATTERN
 
 Same search engine as rrg, but shows all matches in specified file.
 
-For more help, see
+For more help on this, see
    rrg-in-file --help
 
 " | __sp_pager --clear-screen --prompt "rrg help | less - q to quit, h for help"

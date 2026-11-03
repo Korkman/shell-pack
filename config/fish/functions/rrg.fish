@@ -76,11 +76,17 @@ function rrg -d \
 	printf 'h:help enter,p,f3:page e,f4:edit v:preview\nq:quit space:filter +:edit-filter' | __sp_fzf_header
 	# without extra options rg searches the current directory
 	set -l search_scope '"'"$PWD"'"'
-	if set -q extra_opts[1]
+	if set -q extra_opts[1] && test "$extra_opts" != "."
 		set search_scope '"'(string join '", "' -- $extra_opts)'"'
 	end
-	__sp_fzf_defaults "Rapid Ripgrep in $search_scope"
-	
+	__sp_fzf_defaults
+	set -a fzf_defaults \
+		--header-border=inline \
+		--input-border=none \
+		--list-border=none \
+		--border=rounded \
+		--footer="Rapid Ripgrep \"$query\" in $search_scope" \
+    ;
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
 	# mcview caused escape sequence mess at times
