@@ -11,9 +11,25 @@ function __sp_editor -d \
 		set filename '-'
 	end
 	
+	# unwrap proxied variables
+	if test -n "$TRUE_EDITOR"
+		set -gx EDITOR "$TRUE_EDITOR"
+		set -e TRUE_EDITOR
+	end
+	if test -n "$TRUE_VISUAL"
+		set -gx VISUAL "$TRUE_VISUAL"
+		set -e TRUE_VISUAL
+	end
+	# discard invalid values
+	if test "$EDITOR" = "__sp_mc_editor_proxy"
+		set -ge EDITOR
+	end
+	if test "$VISUAL" = "__sp_mc_editor_proxy"
+		set -ge VISUAL
+	end
 	
 	if test -n "$VISUAL"
-		set EDITOR $VISUAL
+		set -f EDITOR $VISUAL
 	end
 	
 	# $EDITOR may carry arguments, e.g. "code --wait"

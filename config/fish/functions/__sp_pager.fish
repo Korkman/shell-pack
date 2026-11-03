@@ -1,16 +1,26 @@
 function __sp_pager -d \
 	'Invoke the configured pager, adapt flags if possible'
-
+	
 	argparse --stop-nonopt 'F/quit-if-one-screen' 'line=' 'search=' 'P/prompt=' 'R/raw' 'clear-screen' 'syntax=?' 'line-number' -- $argv
 	or return
-
+	
 	set -l filename $argv[1]
-
+	
 	if set -q _flag_line && ! string match -qr '^[1-9][0-9]*$' -- $_flag_line
 		echo "Error: --line requires a positive integer argument" >&2
 		return 2
 	end
-
+	
+	# unwrap proxied variables
+	if test -n "$TRUE_PAGER"
+		set -gx PAGER "$TRUE_PAGER"
+		set -e TRUE_PAGER
+	end
+	# discard invalid values
+	if test "$PAGER" = "__sp_mc_pager_proxy"
+		set -ge PAGER
+	end
+	
 	# $PAGER may carry arguments, e.g. "less -S"
 	set -l pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
 	if ! type -q -- "$pager_cmd[1]"
@@ -30,7 +40,7 @@ function __sp_pager -d \
 	end
 	set -l pager_bin $pager_cmd[1]
 	set -l pager_args $pager_cmd[2..-1]
-
+	
 	# name tab after pager
 	__sp_tabtitle_suggestion (path basename "$pager_bin")
 	
@@ -78,7 +88,7 @@ function __sp_pager -d \
 			# -R/--raw and --clear-screen are no-ops here: ansi colors are always on and
 			# fzf owns screen redraws
 	end
-
+	
 	if set -q filename[1]
 		$pager_bin $pager_args $opts $argv
 	else

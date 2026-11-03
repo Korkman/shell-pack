@@ -53,8 +53,15 @@ function mc -d \
 		set MC_NERDLEVEL 0
 	end
 	
+	# when EDITOR is `fresh`, mc will invoke `fresh` directly with no one setting
+	# the tmux tab name (we usually do that indirectly when fish_title is called).
+	# Injecting __sp_editor into the chain fixes that. Strictly EDITOR must be a
+	# binary name and must not have options, so we can't just use fishcall here and
+	# add proxy shell scripts for that. Same goes for VISUAL and PAGER.
 	set -lx TRUE_PAGER "$PAGER"
 	set -lx PAGER __sp_mc_pager_proxy
+	set -lx TRUE_VISUAL "$VISUAL"
+	set -lx VISUAL __sp_mc_editor_proxy
 	set -lx TRUE_EDITOR "$EDITOR"
 	set -lx EDITOR __sp_mc_editor_proxy
 	
