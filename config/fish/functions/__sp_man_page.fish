@@ -55,6 +55,8 @@ function __sp_man_page
 	set -l pager_cmd
 	if set -q MANPAGER
 		set pager_cmd (string split -n -- ' ' (string trim -- "$MANPAGER"))
+	else if set -q TRUE_PAGER
+		set pager_cmd (string split -n -- ' ' (string trim -- "$TRUE_PAGER"))
 	else if set -q PAGER
 		set pager_cmd (string split -n -- ' ' (string trim -- "$PAGER"))
 	end
@@ -75,6 +77,7 @@ function __sp_man_page
 		# test if fish's man preset finds the help
 		# (this introduces a slight latency, sorry. but it catches alternative 'man' use cases well.)
 		if PAGER=cat MANPAGER=cat __sp_man_page_default $argv &> /dev/null
+			__sp_tabtitle_suggestion man
 			if test "$pager_bin" = "less"
 				# let man adapt to less
 				__sp_man_page_default $argv
@@ -86,6 +89,7 @@ function __sp_man_page
 				# (harmless no-op on implementations that don't recognize this var)
 				MAN_KEEP_FORMATTING=1 PAGER=cat MANPAGER=cat __sp_man_page_default $argv | __sp_man_colorize | $pager_bin $pager_args
 			end
+			__sp_tabtitle_suggestion --restore
 			return
 		else
 			set man_status $status
