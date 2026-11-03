@@ -54,7 +54,12 @@ function rrg -d \
 	
 
 	printf 'f1:help enter:results-in-file a-p:pane\nf3,a-l:page f4,a-e:edit a-i:line a-o:content' | __sp_fzf_header
-	__sp_fzf_defaults 'Rapid Ripgrep'
+	# without extra options rg searches the current directory
+	set -l search_scope '"'"$PWD"'"'
+	if set -q extra_opts[1]
+		set search_scope '"'(string join '", "' -- $extra_opts)'"'
+	end
+	__sp_fzf_defaults "Rapid Ripgrep in $search_scope"
 	
 	# this causes display error in microsoft terminal
 	#set -x TERM screen-256color
