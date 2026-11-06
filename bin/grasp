@@ -185,19 +185,23 @@ function __sp_grasp_one_screen_lead -d \
 	end
 end
 
+function __sp_grasp_set_sed_cmd --no-scope-shadowing
+	# export sed invocation with line-wise streaming output for POSIX sh helpers.
+	# GNU sed -u also reads input byte by byte (~100x slower), so prefer stdbuf if available.
+	if $__cap_sed_has_u && command -q stdbuf
+		set -x SP_SED_CMD stdbuf -oL sed
+	else if $__cap_sed_has_u
+		set -x SP_SED_CMD sed -u
+	else if $__cap_sed_has_l
+		set -x SP_SED_CMD sed -l
+	else
+		set -x SP_SED_CMD sed
+	end
+end
+
 function __sp_grasp_set_bat_cmd --no-scope-shadowing
 	if command -q bat && begin; test $skip_bat -eq 0; or set -q _flag_syntax; or set -q _flag_line_number; end
-		# tell __sp_bat how to run sed with line-wise streaming output. GNU sed -u
-		# also reads input byte by byte (~100x slower), so prefer stdbuf if available.
-		if $__cap_sed_has_u && command -q stdbuf
-			set -x SP_SED_CMD stdbuf -oL sed
-		else if $__cap_sed_has_u
-			set -x SP_SED_CMD sed -u
-		else if $__cap_sed_has_l
-			set -x SP_SED_CMD sed -l
-		else
-			set -x SP_SED_CMD sed
-		end
+		__sp_grasp_set_sed_cmd
 		set bat_cmd __sp_bat --strip-ansi=auto --color=always --wrap=never --style=plain --tabs=3
 		if set -q _flag_no_syntax
 			set -a bat_cmd -l txt
@@ -213,7 +217,7 @@ function __sp_grasp_set_bat_cmd --no-scope-shadowing
 end
 
 function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
-	set grasptitle "Viewing output of `$cmd`"
+	set grasptitle "Viewing `$cmd`"
 
 	if test -t 0
 		# only bind reload when we have no stdin piped to the command
@@ -232,7 +236,9 @@ function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 
 	# leave cmd execution (and killing of it) to fzf
 	__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
-	set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
+	# stderr is marked red, stdout keeps its fd 3 route to the same pipe
+	__sp_grasp_set_sed_cmd
+	set FZF_DEFAULT_COMMAND "{ $FZF_DEFAULT_COMMAND 2>&1 >&3 | __sp_stderr_red; } 3>&1"
 end
 
 function __sp_grasp_inline_header
@@ -286,19 +292,19 @@ begin
 	echo "  q, alt-q             Quit"
 	echo "                       (also: esc, f10)"
 	echo
-	echo (set_color brwhite --bold)"  MATCHING"(set_color normal)
+	echo (set_color brwhite --bold)"  HITS"(set_color normal)
 	echo "  space, /             New fzf search (see also FZF QUERY SYNTAX below)"
 	echo "                       (also: ctrl-f)"
 	echo "  +                    Edit search input"
 	echo "  alt-up/-down         Recall search history"
 	echo "                       (also: alt-., alt-,)"
 	echo "  enter                Hide search input"
-	echo "  n, alt-n             Jump to next match"
+	echo "  n, alt-n             Jump to next hit"
 	echo "                       (also: f3, ctrl-g)"
-	echo "  p, N, alt-N          Jump to previous match"
+	echo "  p, N, alt-N          Jump to previous hit"
 	echo "                       (also: f2, alt-p)"
 	echo "  esc                  Clear query, hide search box"
-	echo "  f, alt-f             Toggle filter showing only matched lines"
+	echo "  f, alt-f             Toggle filter showing only hit lines"
 	echo "  o, alt-o             Toggle sort best up (requires filter)"
 	echo
 	echo (set_color brwhite --bold)"  SELECTING"(set_color normal)
@@ -308,7 +314,7 @@ begin
 	echo "  s, alt-s             Save lines as file (asks for filename)$save_note"
 	echo "  S, alt-S             Save lines to $GRASP_DUMPFILE$save_note"
 	echo "  P, alt-P             Print lines and exit"
-	echo "                       (lines: selected, else matches when filtering, else all)"
+	echo "                       (lines: selected, else hits when filtering, else all)"
 	echo "  alt-up/-down         Jump between selected lines"
 	echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
 	echo

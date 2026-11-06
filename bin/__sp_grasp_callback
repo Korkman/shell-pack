@@ -75,9 +75,9 @@ update_header() {
 	ext=' (`'"${GRASP_SELF:-ppage}"'`, press h for help or q to quit)'
 	if [ -n "${FZF_QUERY:-}" ]; then
 		if [ -n "${FZF_RAW:-}" ]; then
-			pre="[$FZF_MATCH_COUNT matches, line $pos/$FZF_TOTAL_COUNT, alt-f to filter] "
+			pre="[$FZF_MATCH_COUNT hits, line $pos/$FZF_TOTAL_COUNT, alt-f to filter] "
 		else
-			pre="[FILTERING, match $pos/$FZF_MATCH_COUNT, alt-f to unfilter] "
+			pre="[FILTERING, hit $pos/$FZF_MATCH_COUNT, alt-f to unfilter] "
 		fi
 	fi
 	
@@ -121,7 +121,7 @@ line_jump_read() {
 	if [ -n "${FZF_RAW:-}" ]; then
 		printf 'Jump to line: '
 	else
-		printf 'Jump to match: '
+		printf 'Jump to hit: '
 	fi
 	read -r line
 	# hide cursor, leave alternate screen

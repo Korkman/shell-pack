@@ -137,9 +137,9 @@ lines with context.
 	function rrg-in-file-desc --no-scope-shadowing
 		switch "$starting"
 			case 'start-with-cat'
-				echo -n "n = next, N = prev match - all matches shown"
+				echo -n "n = next, N = prev hit - all hits shown"
 			case 'start-with-tail'
-				echo -n "showing only one match"
+				echo -n "showing only one hit"
 			case '*'
 				echo -n "Unknown input"
 		end
