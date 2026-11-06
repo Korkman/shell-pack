@@ -4,6 +4,7 @@ complete -c cheat -d "Show glyphs cheatsheet" -a "--glyphs" --no-files
 complete -c cheat -d "Show 256-color chart" -a "--colors" --no-files
 complete -c cheat -d "Show 256-color chart" -a "--colours" --no-files
 complete -c cheat -d "Show color INDEX as RGB/hex" -a "--color=" --no-files
+complete -c cheat -d "Show __spt theme colors" -a "--spt-colors" --no-files
 complete -c cheat -d "Show mc cheatsheet" -a "--mc" --no-files
 complete -c cheat -d "Show tmux cheatsheet" -a "--tmux" --no-files
 complete -c cheat -d "Show fresh-editor cheatsheet" -a "--fresh" --no-files

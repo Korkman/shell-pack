@@ -14,6 +14,11 @@ function cheat
 		return
 	end
 
+	if [ "$argv[1]" = "--spt-colors" ]
+		__sp_cheat_spt_colors
+		return
+	end
+
 	if string match -q -- "--color=*" "$argv[1]"
 		__sp_cheat_color_value (string split -m1 "=" -- $argv[1])[2]
 		return
@@ -85,6 +90,7 @@ Show fresh editor cheatsheet  cheat --fresh
 Show fzf query syntax         cheat --fzf-query
 Show 256-color chart          cheat --colors (--colours)
 Show color INDEX as RGB/hex   cheat --color=INDEX
+Show __spt theme colors       cheat --spt-colors
 Query cheat.sh for TOPIC      cheat TOPIC
   More information            cheat --chtsh
 
