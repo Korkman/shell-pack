@@ -236,13 +236,20 @@ function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 
 	# leave cmd execution (and killing of it) to fzf
 	__sp_quote_args $cmd | read -z -x FZF_DEFAULT_COMMAND
-	if not set -q _flag_no_inline_stderr
-		# stderr is marked red and piped into fzf, stdout keeps its fd 3 route to the same pipe
+	set -q _flag_stderr; or set -l _flag_stderr prefix
+	switch $_flag_stderr
+	case plain
+		# stderr is merged synchronously into stdout without the red 'E' marker
+		set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
+	case postpone
+		# stderr keeps its first lines, compressed into a file that grasp prints after fzf closes
+		set FZF_DEFAULT_COMMAND "{ $FZF_DEFAULT_COMMAND 2>&1 >&3 | awk 'NR<=100000' | cfc - zst - > "(string escape -- $GRASP_STDERR_FILE)"; } 3>&1"
+	case hide
+		# fzf discards stderr of its default command
+	case '*'
+		# stderr is marked and asynchronously piped into fzf, stdout keeps its fd 3 route to the same pipe
 		__sp_grasp_set_sed_cmd
 		set FZF_DEFAULT_COMMAND "{ $FZF_DEFAULT_COMMAND 2>&1 >&3 | __sp_stderr_red; } 3>&1"
-	else
-		# fzf discards stderr of its default command, so write it straight to the terminal
-		set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND"
 	end
 end
 
@@ -369,8 +376,12 @@ begin
 	echo "  --no-syntax"
 	echo "      Disable bat syntax highlighting."
 	echo
-	echo "  --no-inline-stderr"
-	echo "      When passing COMMAND, do not show its STDERR output (prefixed 'E')."
+	echo "  --stderr=MODE"
+	echo "      When passing COMMAND, choose how its STDERR is shown. MODE is one of:"
+	echo "        prefix    mark STDERR lines with a red 'E' (default)"
+	echo "        plain     show STDERR as regular STDOUT, keeps ordering"
+	echo "        postpone  print up to 100000 lines of STDERR after fzf closes"
+	echo "        hide      discard STDERR"
 	echo
 	echo "  --quit-if-one-screen, -F"
 	echo "      Output content without pager when it fits one screen"
@@ -402,13 +413,21 @@ end
 if not set -q GRASP_EXPORT_FILE
 	set -x GRASP_EXPORT_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-export)
 end
+if not set -q GRASP_STDERR_FILE
+	# same reasoning as GRASP_JUMP_FILE: reload re-executes fzf and must reuse this path
+	set -x GRASP_STDERR_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-stderr)
+end
 
 set -l argv_copy $argv
-argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax no-inline-stderr 'search=' 'then-search=' 'fzf-callback=' help -- $argv
+argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'stderr=' 'search=' 'then-search=' 'fzf-callback=' help -- $argv
 or begin
 	echo "grasp --help for usage"
 	exit 1
 end >&2
+if set -q _flag_stderr; and not contains -- $_flag_stderr prefix plain postpone hide
+	echo "grasp: --stderr must be one of: prefix, plain, postpone, hide" >&2
+	exit 2
+end
 set -l self grasp
 if set -q _flag_pager
 	set self ppage
@@ -877,6 +896,11 @@ end
 
 set fzf_status $status
 rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.mem"
+
+if test -s "$GRASP_STDERR_FILE"
+	cfd "$GRASP_STDERR_FILE" - >&2
+end
+rm -f "$GRASP_STDERR_FILE"
 
 __sp_tabtitle_suggestion --restore
 
