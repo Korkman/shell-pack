@@ -72,7 +72,7 @@ function td-test-grasp-completions -d \
 	for prefix in grasp ppage 'grasp --cmd' 'grasp --' 'grasp -np' \
 		'grasp --search query' 'grasp --search="two words"' 'grasp --prompt prompt' \
 		'grasp -l 3' 'grasp -l3' 'grasp --tail' 'grasp --tail=20' 'grasp -t20' \
-		'grasp --syntax' 'grasp --syntax=json' 'grasp --no-syntax' 'grasp -F'
+		'grasp --syntax' 'grasp --syntax=json' 'grasp --no-syntax' 'grasp --no-inline' 'grasp -F'
 		__td_expect_completion "$prefix __sp_grasp_completion_command --del" --delegated yes
 	end
 

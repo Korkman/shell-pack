@@ -1,7 +1,7 @@
 #! /bin/sh
 {
 	set -eu
-	# colors every line of STDIN red, used by grasp to mark stderr in its fzf pipeline
+	# prepends every line of STDIN with a red 'E', used by grasp to mark stderr in its fzf pipeline
 	#
 	# Plain POSIX sh on purpose: fzf spawns this for each command run.
 	# sed does the work: a shell read loop is ~100x slower on large streams.
@@ -9,6 +9,6 @@
 
 	ESC=$(printf '\033')
 	# shellcheck disable=SC2086
-	${SP_SED_CMD:-sed} -e "s/^/${ESC}[31m|${ESC}[0m/"
+	${SP_SED_CMD:-sed} -e "s/^/${ESC}[31mE ${ESC}[0m/"
 	exit
 }

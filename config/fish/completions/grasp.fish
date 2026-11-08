@@ -4,7 +4,7 @@ function __sp_complete_grasp
 	set -l tokens (commandline -opc)
 	set -l argv $tokens[2..-1]
 	# Keep option parsing in sync with grasp, including where command arguments begin.
-	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'search=' 'then-search=' 'fzf-callback=' help -- $argv 2>/dev/null
+	argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax no-inline-stderr 'search=' 'then-search=' 'fzf-callback=' help -- $argv 2>/dev/null
 	or return 1
 
 	if test "$action" = options
@@ -47,6 +47,7 @@ complete -c grasp -n '__sp_complete_grasp options' -s l -l line -x -d "Jump to l
 complete -c grasp -n '__sp_complete_grasp options' -f -s p -l pager -d "Use as pager - implied when invoked as 'ppage'"
 complete -c grasp -n '__sp_complete_grasp options' -f -l syntax -d "Force bat syntax highlighting, optionally indicate language"
 complete -c grasp -n '__sp_complete_grasp options' -f -l no-syntax -d "Disable bat syntax highlighting"
+complete -c grasp -n '__sp_complete_grasp options' -f -l no-inline-stderr -d "Do not inline STDERR of COMMAND"
 complete -c grasp -n '__sp_complete_grasp options' -l search -x -d "Pre-fill the search box with QUERY on startup"
 complete -c grasp -n '__sp_complete_grasp options' -f -s F -l quit-if-one-screen -d "Output content without pager when it fits one screen"
 complete -c grasp -n '__sp_complete_grasp options' -f -l cmd -d "Passed argument is strictly a command"
