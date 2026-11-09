@@ -328,7 +328,7 @@ begin
 	echo "  P, alt-P             Print lines and exit"
 	echo "                       (lines: selected, else hits when filtering, else all)"
 	echo "  alt-up/-down         Jump between selected lines"
-	echo "  alt-y, double-click  Copy selected/current line(s) to clipboard"
+	echo "  c, alt-c, dbl-click  Copy selected/current line(s) to clipboard"
 	echo
 	echo (set_color brwhite --bold)"  OTHER"(set_color normal)
 	echo "  f1, h, alt-h            Show keybinds"
@@ -589,7 +589,7 @@ set -l fzf_binds (printf %s \
 	'enter:show-header+hide-input+rebind('$pager_mode_keys')'$write_history_cmd',' \
 	'/,space,ctrl-f,f7:hide-header+show-input+clear-query+unbind('$pager_mode_keys'),' \
 	'+:hide-header+show-input+unbind('$pager_mode_keys'),' \
-	'alt-y,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))' \
+	'c,alt-c,double-click:execute(printf "\033]52;c;%s\a" $(for i in {+}; do echo "$i"; done | base64 | tr -d "\n"))' \
 )
 
 # add keybinds and more to list of args
@@ -633,7 +633,7 @@ else
 	set -a fzf_defaults --tac --no-reverse
 	# swap first / last, stop tracking on first
 	set -a fzf_defaults --bind 'alt-shift-up,shift-page-up,alt-page-up,g:last+track-current,alt-shift-down,shift-page-down,alt-page-down,G:first'
-	set -a fzf_defaults --bind 'home:transform('$callback_cmd' jump_key last+track-current beginning-of-line),end:transform('$callback_cmd' jump_key first+track-current end-of-line)'
+	set -a fzf_defaults --bind 'home:transform('$callback_cmd' jump_key last+track-current beginning-of-line),end:transform('$callback_cmd' jump_key first end-of-line)'
 	# start in compact mode with visible search
 	#set -a fzf_defaults --bind 'start:trigger(space)+hide-header'
 	if set -q _flag_line
