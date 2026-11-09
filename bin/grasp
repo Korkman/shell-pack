@@ -243,7 +243,7 @@ function __sp_grasp_set_fzf_default_cmd --no-scope-shadowing
 		set FZF_DEFAULT_COMMAND "$FZF_DEFAULT_COMMAND 2>&1"
 	case postpone
 		# stderr keeps its first lines, compressed into a file that grasp prints after fzf closes
-		set FZF_DEFAULT_COMMAND "{ $FZF_DEFAULT_COMMAND 2>&1 >&3 | awk 'NR<=100000' | cfc - zst - > "(string escape -- $GRASP_STDERR_FILE)"; } 3>&1"
+		set FZF_DEFAULT_COMMAND "{ $FZF_DEFAULT_COMMAND 2>&1 >&3 | awk 'NR<=100000' > "(string escape -- $GRASP_STDERR_FILE)"; } 3>&1"
 	case hide
 		# fzf discards stderr of its default command
 	case '*'
@@ -898,7 +898,7 @@ set fzf_status $status
 rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.mem"
 
 if test -s "$GRASP_STDERR_FILE"
-	cfd "$GRASP_STDERR_FILE" - >&2
+	cat "$GRASP_STDERR_FILE" >&2
 end
 rm -f "$GRASP_STDERR_FILE"
 

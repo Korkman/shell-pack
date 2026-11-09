@@ -53,9 +53,9 @@ E 456
 
 ## postpone
 
-STDERR is kept in a temporary file, compressed with `cfc`. Only the first 100000 lines
+STDERR is kept in a temporary file as plain text. Only the first 100000 lines
 are kept. Lines beyond that are read and dropped, so the command is not interrupted.
-After fzf closes, grasp decompresses the file with `cfd` onto STDERR and deletes it.
+After fzf closes, grasp prints the file to STDERR and deletes it.
 
 The file path is exported as `GRASP_STDERR_FILE`, so `reload` in fzf keeps using the same file.
 

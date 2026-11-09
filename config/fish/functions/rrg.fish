@@ -52,7 +52,6 @@ function rrg -d \
 	
 	# export query
 	set -x query "$query"
-	set -x QUERY_ESC (__sp_quote_args $query)
 	
 	set -l rrg_navigation_keys 'p,v,e,h,q,space,+'
 	set -l fzf_binds (printf %s \
