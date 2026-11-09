@@ -95,6 +95,15 @@ update_header() {
 	printf 'change-header(%s %s %s)\n' "$GRASP_HEADER_BG$GRASP_HEADER_FG" "$GRASP_HEADER_TEXT" "$reset"
 }
 
+# home/end scroll unless the search input is visible, then edit the query
+jump_key() {
+	if [ "$FZF_INPUT_STATE" = "enabled" ]; then
+		echo "$2"
+	else
+		echo "$1"
+	fi
+}
+
 escape() {
 	if [ "$FZF_INPUT_STATE" = "enabled" ]; then
 		if [ "$FZF_QUERY" = "" ]; then
@@ -260,7 +269,7 @@ on_result() {
 CMD="$1"
 shift
 case "$CMD" in
-	memory_guard|toggle_raw|update_header|on_result|escape|line_jump_read|line_jump_apply|emit_lines|export_save_action|export_save_as_action|export_print_action)
+	memory_guard|toggle_raw|update_header|on_result|escape|jump_key|line_jump_read|line_jump_apply|emit_lines|export_save_action|export_save_as_action|export_print_action)
 		case "$CMD" in
 			export_save_action) export_action save ;;
 			export_save_as_action) export_action save_as ;;

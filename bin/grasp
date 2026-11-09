@@ -293,9 +293,9 @@ begin
 	echo "  pgup/-dn             Page up/down"
 	echo "                       (also: shift-up/-down)"
 	echo "  g, alt-g             Jump to first line"
-	echo "                       (also: alt-shift-up, shift-page-up, alt-page-up)"
+	echo "                       (also: home, alt-shift-up, shift-page-up, alt-page-up)"
 	echo "  G, alt-G             Jump to last line (and follow new input)"
-	echo "                       (also: alt-shift-down, shift-page-down, alt-page-down)"
+	echo "                       (also: end, alt-shift-down, shift-page-down, alt-page-down)"
 	echo "  l, alt-l, :          Prompt for a line number to jump to"
 	echo "  w, alt-w             Toggle word-wrap"
 	echo "  t, alt-t             Toggle tracking of current line on new input"
@@ -571,6 +571,8 @@ set -l fzf_binds (printf %s \
 	'shift-up:page-up+track-current,shift-down:page-down+track-current,' \
 	'alt-shift-up,shift-page-up,alt-page-up,g,alt-g:first+track-current,' \
 	'alt-shift-down,shift-page-down,alt-page-down,G,alt-G:last+track-current,' \
+	'home:transform('$callback_cmd' jump_key first+track-current beginning-of-line),' \
+	'end:transform('$callback_cmd' jump_key last+track-current end-of-line),' \
 	'up:up+track-current,down:down+track-current,' \
 	'page-up:page-up+track-current,page-down:page-down+track-current,' \
 	'alt-up:up-selected+track-current,alt-down:down-selected+track-current,' \
@@ -631,6 +633,7 @@ else
 	set -a fzf_defaults --tac --no-reverse
 	# swap first / last, stop tracking on first
 	set -a fzf_defaults --bind 'alt-shift-up,shift-page-up,alt-page-up,g:last+track-current,alt-shift-down,shift-page-down,alt-page-down,G:first'
+	set -a fzf_defaults --bind 'home:transform('$callback_cmd' jump_key last+track-current beginning-of-line),end:transform('$callback_cmd' jump_key first+track-current end-of-line)'
 	# start in compact mode with visible search
 	#set -a fzf_defaults --bind 'start:trigger(space)+hide-header'
 	if set -q _flag_line
