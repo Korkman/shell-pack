@@ -418,6 +418,16 @@ if not set -q GRASP_STDERR_FILE
 	set -x GRASP_STDERR_FILE (__sp_mkuniq --xdg-runtime --dry-run grasp-stderr)
 end
 
+# fish does not run fish_exit on signal termination (e.g. ctrl-c), so signals are hooked too
+function __sp_grasp_cleanup --on-event fish_exit --on-signal INT --on-signal TERM --on-signal HUP --on-signal QUIT
+	rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.mem" "$GRASP_STDERR_FILE"
+	if set -q argv[1]
+		# remove this handler and re-raise the signal so fish applies its default action
+		functions -e __sp_grasp_cleanup
+		kill -s (string replace SIG '' -- $argv[1]) $fish_pid
+	end
+end
+
 set -l argv_copy $argv
 argparse --stop-nonopt 'P/prompt=' cmd file F/quit-if-one-screen p/pager 't/tail=?' n/line-number 'l/line=' 'syntax=?' no-syntax 'stderr=' 'search=' 'then-search=' 'fzf-callback=' help -- $argv
 or begin
@@ -895,12 +905,9 @@ else
 end
 
 set fzf_status $status
-rm -f "$GRASP_EXPORT_FILE" "$GRASP_EXPORT_FILE.mem"
-
 if test -s "$GRASP_STDERR_FILE"
 	cat "$GRASP_STDERR_FILE" >&2
 end
-rm -f "$GRASP_STDERR_FILE"
 
 __sp_tabtitle_suggestion --restore
 
