@@ -509,6 +509,7 @@ main_phase2() {
 			'#{@host_details}' '#{host}' '#{USER}' '#S' '#{window_width}' \
 			'#{@socket_name}' '#{client_key_table}' '#{scroll_position}' \
 			'#{pane_synchronized}' '#{client_flags}' '#{client_termfeatures}'\
+			'#{window_id}' \
 		)"
 	else
 		t set -g status-left "#($TMUX_CONF_SH_ESC left_status)"
@@ -789,8 +790,17 @@ main_phase2() {
 	
 	
 	
-	t set -g -w pane-border-style fg=$COLOR_PANE_BORDER_FG
-	t set -g -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	# dynamic styles follow #{pane_synchronized} even when sync is set natively
+	# (e.g. "setw synchronize-panes on"), not only via c-a B
+	if [ "$__sp_tmux_ver" -ge 305 ]; then
+		t set -g -w pane-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_BORDER_FG}"
+		t set -g -w pane-active-border-style "#{?pane_synchronized,bg=$COLOR_MODE_SYNC_BG#,fg=$COLOR_MODE_SYNC_FG,fg=$COLOR_PANE_ACTIVE_BORDER_FG}"
+	else
+		t set -g -w pane-border-style fg=$COLOR_PANE_BORDER_FG
+		t set -g -w pane-active-border-style fg=$COLOR_PANE_ACTIVE_BORDER_FG
+	fi
+	# plain label; tmux's default format would reverse the active pane's index
+	[ "$__sp_tmux_ver" -lt 203 ] || t set -g -w pane-border-format "#{pane_index} #T"
 	
 	custom_main
 	
@@ -876,7 +886,6 @@ toggle_broadcast() {
 	else
 		SYNC="off"
 	fi
-	[ "$__sp_tmux_ver" -lt 203 ] || t set -w pane-border-format "#{pane_index} #T"
 	t set -w synchronize-panes "$SYNC"
 	style_msg "Synchronize-panes is now $SYNC"
 	t display-message "$MSG"
@@ -953,6 +962,16 @@ move_window_to_session() {
 	legacy_force_status_update
 }
 
+sync_pane_border_status() {
+	# called from the status-left #() job; runs on window switch and sync change
+	# the server evaluates #{pane_synchronized} when running the branch, so a late
+	# job can't overwrite a newer state with a value read earlier
+	[ "$__sp_tmux_ver" -ge 203 ] || return 0
+	t if-shell -F -t "$1" '#{pane_synchronized}' \
+		"set -w -t '$1' pane-border-status top" \
+		"set -w -t '$1' pane-border-status off"
+}
+
 left_status() {
 	# cut hostname at first dot
 	if [ "${1:-}" = "" ]; then
@@ -968,6 +987,7 @@ left_status() {
 		PANE_SYNC="$(tmux display -p '#{pane_synchronized}')"
 		CLIENT_FLAGS="$(tmux display -p '#{client_flags}')"
 		CLIENT_FEATURES="$(tmux display -p '#{client_termfeatures}')"
+		WINDOW_ID="$(tmux display -p '#{window_id}')"
 	else
 		STYLE="$1"
 		TMUX_HOST="${2%%.*}"
@@ -980,7 +1000,9 @@ left_status() {
 		PANE_SYNC="$9"
 		CLIENT_FLAGS="${10}"
 		CLIENT_FEATURES="${11}"
+		WINDOW_ID="${12:-}"
 	fi
+	[ -z "$WINDOW_ID" ] || sync_pane_border_status "$WINDOW_ID"
 	if [ "$STYLE" = "0" ] && [ "$TMUX_USER" = "root" ] && [ "$COLUMNS" -lt 120 ]; then
 		TMUX_USER="√"
 	fi
