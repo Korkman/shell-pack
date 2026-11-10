@@ -76,12 +76,17 @@ function qssh -d \
 		
 		if contains -- --qssh-multipick $argv
 			set -e argv[(contains --index -- --qssh-multipick $argv)]
-			set -x __qssh_multipick_cli_argv $argv
-			__qssh_multipick
-			if test $status -eq 2
-				return 2
+			set -l multipick_opts
+			if contains -- --qssh-one-window $argv
+				set -e argv[(contains --index -- --qssh-one-window $argv)]
+				set -a multipick_opts --one-window
 			end
-			return	
+			if contains -- --qssh-mirror-keyboard $argv
+				set -e argv[(contains --index -- --qssh-mirror-keyboard $argv)]
+				set -a multipick_opts --mirror-keyboard
+			end
+			__qssh_multipick $multipick_opts -- $argv
+			return $status
 		end
 		
 		# expand :qssh suffixed string
@@ -165,10 +170,6 @@ function qssh -d \
 					exit $ssh_exit
 				end
 			end
-			return
-		else if contains -- --qssh-multipick-preview $argv
-			set -e argv[(contains --index -- --qssh-multipick-preview $argv)]
-			__qssh_multipick_help
 			return
 		else if contains -- --qssh-autocomplete-host $argv
 			if __qssh_cache_valid "$__qssh_db_autocomplete_cache_file"
@@ -328,57 +329,34 @@ function qssh -d \
 	end
 end
 
-function __qssh_multipick_help
-	echo (__spt warning_bg bg)(__spt warning_fg)"Multipick Mode"(set_color normal)
-	echo
-	#cho "Alt-T: Cycle host key modes (normal / alt / none) |"
-	echo "In Multipick Mode you can select multiple hosts"
-	echo "with [tab]. Most notably this allows opening "
-	echo "connections to all selected hosts at once, with"
-	echo "keyboard input mirrored to all of them."
-	echo
-	echo "tmux is used for window management."
-	echo 
-	echo "qssh multipick keybinds:"
-	echo "f1: display this help (q to exit)"
-	echo "alt-m: connect to all, one window, mirror keyboard"
-	echo "alt-o: connect to all, one window"
-	echo "alt-s: sort"
-	echo "enter: connect to all in dedicated windows"
-	echo "tab: toggle selection"
-	# TODO: echo "F8: Remove connection"
-	# TODO: echo "Alt-X: Terminate running conn"
-	# TODO: echo "Alt-K: Remove all host keys for this conn"
-	# TODO: echo "Alt-T: Cycle host key modes (normal / alt / none)"
-	# TODO: echo "Alt-P: Toggle persistent control connection"
-	echo "esc: clear query / exit multipick"
-	echo "f10: exit multipick"
-	echo
-	PAGER=cat cheat --fzf-query
-end
-
 function __qssh_mru_pick_help
 	echo
 	echo "qssh keybinds:"
 	echo "f1: display this help (q to exit)"
-	echo "enter: connect"
+	echo "enter: connect to highlighted host (ignores selection)"
+	echo "alt-4: connect highlighted host via IPv4 only (once)"
+	echo "alt-6: connect highlighted host via IPv6 only (once)"
+	echo "tab: select / deselect host"
 	echo "alt-n: new connection"
-	echo "f3: sftp with mc"
-	echo "f4: edit connection"
-	echo "f5: duplicate connection"
-	echo "f6: set nickname"
-	echo "f8: remove connection"
-	echo "alt-a: connect with agent forwarding"
-	echo "alt-x: terminate running conn"
-	echo "alt-k: remove all host keys for this conn"
+	echo "f3, alt-f: sftp with mc"
+	echo "f4, alt-e: edit connection"
+	echo "f5, alt-d: duplicate connection"
+	echo "f6, alt-N: set nickname"
+	echo "f8: remove connection(s)"
+	echo "alt-m: connect selection, one window, mirror keyboard"
+	echo "alt-o: connect selection, separate windows"
+	echo "alt-a: connect selection, one window, mirror keyboard, agent forwarding"
+	echo "alt-x: terminate running conn(s)"
+	echo "alt-k: remove all host keys for selection"
 	echo "alt-t: cycle host key modes (normal / alt / none)"
 	echo "alt-p: toggle persistent control connection"
 	echo "alt-s: sort"
-	echo "alt-m: multipick"
 	echo "ctrl-r: reload qssh"
 	echo "ctrl-o: open local shell"
 	echo "esc: clear query / exit"
 	echo "f10: exit"
+	echo
+	echo "Selection: marked hosts, or the highlighted host if none are marked."
 	echo
 	#echo "Legend:"
 	#echo "[A]ctive peristent connection"
@@ -676,7 +654,9 @@ function __qssh_parse_connect_args --no-scope-shadowing
 	else
 		set -e opt_A
 	end
-	if set -q _flag_ip46
+	if set -q __qssh_ip46_override
+		set opt_ip46 $__qssh_ip46_override
+	else if set -q _flag_ip46
 		set opt_ip46 -$_flag_ip46
 	else
 		set -e opt_ip46
@@ -1196,6 +1176,11 @@ function __qssh_mru_pick_data
 	end
 end
 
+function __qssh_picked_hostdef -d 'Escaped hostdef of a line emitted by the qssh picker'
+	set -l fields (string split -- \t $argv[1])
+	string replace --regex -- '^-- ' '' $fields[1]
+end
+
 function __qssh_mru_pick -d \
 	'Menu to work on MRU ssh list'
 	set -x query
@@ -1214,39 +1199,46 @@ function __qssh_mru_pick -d \
 		end
 		
 		set -l fzf_binds (printf %s \
-			'enter:become(echo {q}; echo {1})+abort,'\
+			'enter:become(echo {q}; echo ""; echo {1})+abort,'\
 			'alt-n:become(echo {q}; echo --new)+abort,'\
 			'f1:become(echo {q}; echo --help)+abort,'\
-			'f3:become(echo {q}; echo --scp {1})+abort,'\
-			'f4:become(echo {q}; echo --edit {1})+abort,'\
-			'f5:become(echo {q}; echo --duplicate {1})+abort,'\
-			'f6:become(echo {q}; echo --nickname {1})+abort,'\
-			'f8:become(echo {q}; echo --remove {1})+abort,'\
-			'alt-a:become(echo {q}; echo --agent-connect {1})+abort,'\
-			'alt-x:become(echo {q}; echo --exit {1})+abort,'\
-			'alt-k:become(echo {q}; echo --clear-keys {1})+abort,'\
-			'alt-t:become(echo {q}; echo --toggle-key-check {1})+abort,'\
-			'alt-m:become(echo {q}; echo --multipick {1})+abort,'\
-			'alt-p:become(echo {q}; echo --toggle-persist {1})+abort,'\
+			'f3:become(echo {q}; echo --scp; echo {1})+abort,'\
+			'alt-f:become(echo {q}; echo --scp; echo {1})+abort,'\
+			'f4:become(echo {q}; echo --edit; echo {1})+abort,'\
+			'alt-e:become(echo {q}; echo --edit; echo {1})+abort,'\
+			'f5:become(echo {q}; echo --duplicate; echo {1})+abort,'\
+			'alt-d:become(echo {q}; echo --duplicate; echo {1})+abort,'\
+			'f6:become(echo {q}; echo --nickname; echo {1})+abort,'\
+			'alt-N:become(echo {q}; echo --nickname; echo {1})+abort,'\
+			'alt-k:print(--clear-keys)+accept,'\
 			'alt-s:become(echo {q}; echo --sort)+abort,'\
 			'ctrl-r:become(echo {q}; echo --reload)+abort,'\
 			'ctrl-o:become(echo {q}; echo --local-shell)+abort,'\
-			'alt-q:become(echo ""; echo --quit)+abort,'\
-			'ctrl-c:become(echo ""; echo --quit)+abort,'\
-			'ctrl-d:become(echo ""; echo --quit)+abort,'\
+			'alt-q:become(echo {q}; echo --quit)+abort,'\
+			'ctrl-c:become(echo {q}; echo --quit)+abort,'\
+			'ctrl-d:become(echo {q}; echo --quit)+abort,'\
+			'f10:become(echo {q}; echo --quit)+abort,'\
+			'f8:print(--remove)+accept,'\
+			'alt-x:print(--exit)+accept,'\
+			'alt-t:print(--toggle-key-check)+accept,'\
+			'alt-p:print(--toggle-persist)+accept,'\
+			'alt-m:print(--multi-mirror)+accept,'\
+			'alt-o:print(--multi-one-window)+accept,'\
+			'alt-a:print(--multi-agent)+accept,'\
+			'alt-4:print(--ipv4)+accept,'\
+			'alt-6:print(--ipv6)+accept,'\
 			'esc:cancel,'\
-			'f10:become(echo ""; echo --quit)+abort,'\
 			'home:pos(0),end:pos(-1)'\
 		)
 		
-		echo 'f1:help alt-n:new f10:exit' | __sp_fzf_header
+		echo 'f1:help tab:select alt-n:new f10:exit' | __sp_fzf_header
 		__sp_fzf_defaults "qssh"
 		set -l answer (\
 			__qssh_mru_pick_data | \
 			$opt_sort | \
 			fzf $fzf_defaults \
 				$opt_query \
-				--no-multi \
+				--multi \
 				--bind "$fzf_binds" \
 				--delimiter '\t' \
 				--ghost "[fzf query or new hostname]" \
@@ -1258,40 +1250,101 @@ function __qssh_mru_pick -d \
 				--with-nth 2,1,3 \
 				--nth 2,3 \
 		)
-		set -l fzf_exit $status
-		
+		# fzf output: query, key (empty on enter), then the picked lines
 		echo "$answer[1]" | read --export query
-		#set -x query (string unescape -- $answer[1])
-		set -l answer (string split -- \t $answer[2])
-		#set -l answer (string split -- ' ' $answer[1])
-		echo "$answer[1]" | read --tokenize --list answer
-		
-		if string match -q -- '--sort' $answer
-			if [ "$_flag_sort" = "yes" ]
-				set _flag_sort "no"
-			else
-				set _flag_sort "yes"
-			end
-			continue
+		set -l key ""
+		if test (count $answer) -ge 2
+			set key $answer[2]
 		end
-		#echo "X:$fzf_exit"
-		#echo "Q:$query"
-		#echo "A:"
-		#echo (string escape -- $answer)
-		#read -P "debug"
-		#return 1
-		
-		if [ "$answer" = "" -a "$query" != "" ]
-			set answer "$query"
+		set -l picked
+		if test (count $answer) -ge 3
+			set picked $answer[3..-1]
 		end
-		
-		if [ "$answer" = "" ]
-			break
-		end
-		
-		__qssh_exec $answer
-		if [ $status -ne 0 ]
-			return $status
+
+		switch "$key"
+			case --sort
+				if [ "$_flag_sort" = "yes" ]
+					set _flag_sort "no"
+				else
+					set _flag_sort "yes"
+				end
+				continue
+
+			case '' --ipv4 --ipv6
+				set -l tok
+				if test -n "$picked[1]"
+					__qssh_picked_hostdef $picked[1] | read --tokenize --list tok
+				else if test -n "$query"
+					echo $query | read --tokenize --list tok
+				end
+				if test (count $tok) -eq 0
+					break
+				end
+				# one-off address family for this connection only, not stored in the MRU
+				switch $key
+					case --ipv4
+						set -gx __qssh_ip46_override -4
+					case --ipv6
+						set -gx __qssh_ip46_override -6
+				end
+				__qssh_exec -- $tok
+				set -l exec_status $status
+				set -e __qssh_ip46_override
+				if test $exec_status -ne 0
+					return $exec_status
+				end
+
+			case --help --new --reload --local-shell --quit
+				__qssh_exec $key
+				if test $status -ne 0
+					return $status
+				end
+
+			case --scp --edit --duplicate --nickname
+				if test -z "$picked[1]"
+					continue
+				end
+				set -l tok
+				__qssh_picked_hostdef $picked[1] | read --tokenize --list tok
+				__qssh_exec $key -- $tok
+				if test $status -ne 0
+					return $status
+				end
+
+			case --remove --exit --toggle-key-check --toggle-persist
+				set -l tok
+				for line in $picked
+					__qssh_picked_hostdef $line | read --tokenize --list tok
+					__qssh_exec $key -- $tok
+				end
+
+			case --clear-keys
+				set -l tok
+				for line in $picked
+					__qssh_picked_hostdef $line | read --tokenize --list tok
+					__qssh_exec $key -- $tok
+				end
+				__qssh_pause
+
+			case --multi-mirror --multi-one-window --multi-agent
+				set -l hostlist
+				for line in $picked
+					set -a hostlist (__qssh_picked_hostdef $line)
+				end
+				if test (count $hostlist) -eq 0
+					continue
+				end
+				switch $key
+					case --multi-mirror
+						__qssh_multipick --mirror-keyboard -- $hostlist
+					case --multi-one-window
+						__qssh_multipick -- $hostlist
+					case --multi-agent
+						__qssh_multipick --mirror-keyboard --agent -- $hostlist
+				end
+				if test $status -ne 0
+					return $status
+				end
 		end
 	end
 end
@@ -1300,21 +1353,14 @@ function __qssh_exec --no-scope-shadowing
 	argparse 'h/help' 'c/connect' 'x/exit' 'e/edit' 'd/duplicate' \
 	  'q/quit' 'r/remove' 'n/new' 'i/instant-new' 'k/clear-keys' \
 		't/toggle-key-check' 'p/toggle-persist' \
-		'l/local-shell' 'R/reload' 's/scp' 'a/agent-connect' \
-		'N/nickname' 'm/multipick' -- $argv
+		'l/local-shell' 'R/reload' 's/scp' \
+		'N/nickname' -- $argv
 	#echo (count $argv)
 	#return 1
 	set -l hostdef $argv
 	set -l input_ssh_prefix "> ssh "
 	
-	if set -q _flag_multipick
-		__qssh_multipick $query
-		if test $status -eq 2
-			return 2
-		end
-		return 0
-		
-	else if set -q _flag_clear_keys
+	if set -q _flag_clear_keys
 		if __qssh_parse_hostdef $hostdef
 			__qssh_db_mru_read mru $hostdef
 			__qssh_echo_interactive "Clearing known host keys for $hostdef_hostname $hostdef ..."
@@ -1327,7 +1373,6 @@ function __qssh_exec --no-scope-shadowing
 			__qssh_echo_interactive "Unable to parse hostdef $hostdef" 1>&2
 			return 1
 		end
-		__qssh_pause
 		return 0
 		
 	else if set -q _flag_new || set -q _flag_instant_new || set -q _flag_duplicate
@@ -1483,13 +1528,7 @@ function __qssh_exec --no-scope-shadowing
 	
 		__qssh_echo_interactive "Connecting to $hostdef ..."
 		set -l __conn_start_time (__sp_getnanoseconds)
-		if set -q _flag_agent_connect
-			set -lx __qssh_disable_history yes
-			set -lx __qssh_no_persist yes
-			__qssh_mru_connect $hostdef -A
-		else
-			__qssh_mru_connect $hostdef
-		end
+		__qssh_mru_connect $hostdef
 		set -l qssh_exit $status
 		set -l qssh_duration (math "round(("(__sp_getnanoseconds)" - $__conn_start_time ) / 1000 / 1000)")
 		# on *CLEAN* exit, show prompt to give user a chance to read bad messages from remote
@@ -1509,125 +1548,26 @@ function __qssh_exec --no-scope-shadowing
 end
 
 function __qssh_multipick -d \
-	'Menu to pick multiple hosts, ssh in tmux sync panes'
-	set -x query $argv[1]
+	'Connect to multiple hosts in tmux windows or panes, optionally mirroring keyboard input'
+	argparse 'o/one-window' 'm/mirror-keyboard' 'A/agent' -- $argv
+	or return 1
+	set -l hostlist $argv
 	# trick status current-command into thinking "qssh" was
 	# the most recent command run so fish_title works as expected.
 	qssh --qssh-noop && set -l window_title (fish_title qssh)
 	# update window title
 	echo -ne "\e]0;$window_title\a"
-	set -l fzf_answer
-	set -l hostlist
-	set -l _flag_one_window "no"
-	set -l _flag_mirror_keyboard "no"
-	set -l _flag_sort "no"
-	if [ "$__qssh_multipick_cli_argv" = "" ]
-		while true
-			if [ "$query" != "" ]
-				set opt_query "--query=$query"
-			else
-				set opt_query "--query="
-			end
-			if [ "$_flag_sort" = "yes" ]
-				set opt_sort sort
-			else
-				set opt_sort cat
-			end
-			set -l fzf_binds (printf %s \
-				'f1:become(echo {q}; echo --help)+abort,'\
-				'esc:cancel,'\
-				'f10:become(echo ""; echo --quit)+abort,'\
-				'alt-m:print(--mirror-keyboard)+accept,'\
-				'alt-o:print(--one-window)+accept,'\
-				'alt-s:print(--sort)+accept,'\
-				'home:pos(0),end:pos(-1)'\
-			)
-			
-			echo (__spt warning_bg bg)(__spt warning_fg)'Multipick Mode!'(set_color normal)' f1:help' | __sp_fzf_header
-			__sp_fzf_defaults "qssh"
-			set fzf_answer (\
-				__qssh_mru_pick_data | \
-				$opt_sort | \
-				fzf \
-					$fzf_defaults \
-					$opt_query \
-					--multi \
-					--bind "$fzf_binds" \
-					--delimiter '\t' \
-					--ghost "[fzf query or new hostname]" \
-					--height 100% \
-					--ansi \
-					--print-query \
-					--preview "export __sp_load=yes; echo qssh --qssh-multipick-preview {1} | fish" \
-					--preview-window "right:50%:wrap" \
-					--with-nth 2,1,3 \
-					--nth 2,3 \
-			)
-			
-			set fzf_exit $status
-			set query $fzf_answer[1]
-			set -e fzf_answer[1]
-			
-			#for item in $fzf_answer
-			#	echo "i:"
-			#	echo $item
-			#end
-			#return
-			
-			if string match -q -- '--sort' $fzf_answer[1]
-				if [ "$_flag_sort" = "yes" ]
-					set _flag_sort "no"
-				else
-					set _flag_sort "yes"
-				end
-				continue
-			end
-			
-			set _flag_one_window "no"
-			if string match -q -- '--one-window' $fzf_answer[1]
-				set -e fzf_answer[1]
-				set _flag_one_window "yes"
-			end
-			
-			set _flag_mirror_keyboard "no"
-			if string match -q -- '--mirror-keyboard' $fzf_answer[1]
-				set -e fzf_answer[1]
-				set _flag_mirror_keyboard "yes"
-				set _flag_one_window "yes"
-			end
-			
-			if string match -q -- '--quit' $fzf_answer[1]
-				return
-			else if string match -q -- '--help' $fzf_answer[1]
-				__qssh_multipick_help | __sp_pager
-				continue
-			else
-				set -e hostlist
-				for answer in $fzf_answer
-					set -l answer (string split -- \t $answer)
-					set -l answer[1] (string replace --regex -- '^-- ' '' $answer[1])
-					set -a hostlist "$answer[1]"
-				end
-				break
-			end
-		end
-	else
-		# cli version of multipick
-		if contains -- --qssh-one-window $__qssh_multipick_cli_argv
-			set -e __qssh_multipick_cli_argv[(contains --index -- --qssh-one-window $__qssh_multipick_cli_argv)]
-			set _flag_one_window "yes"
-		end
-		if contains -- --qssh-mirror-keyboard $__qssh_multipick_cli_argv
-			set -e __qssh_multipick_cli_argv[(contains --index -- --qssh-mirror-keyboard $__qssh_multipick_cli_argv)]
-			set _flag_one_window "yes"
-			set _flag_mirror_keyboard "yes"
-		end
-		set hostlist $__qssh_multipick_cli_argv
+	# mirroring the keyboard only makes sense within one window
+	set -l one_window no
+	if set -q _flag_one_window; or set -q _flag_mirror_keyboard
+		set one_window yes
+	end
+	set -l mirror_keyboard no
+	if set -q _flag_mirror_keyboard
+		set mirror_keyboard yes
 	end
 	
 	if [ (count $hostlist) -gt 0 ]
-		#echo "$answer[1]" | read --tokenize --list answer
-		
 		set -l tmux_arglist
 		set -l i 0
 		#	Introducing a slight delay for each connection to prevent some race
@@ -1676,9 +1616,14 @@ function __qssh_multipick -d \
 			# method 6: do simply run qssh as in method 2, but run it via commandline manipulation, see below
 			# this is the most straight-forward way I could think of to break out of the input confusion (who gets ctrl-c?) 
 			set -l tmux_arg (string escape -- $answer)
-			set -l --prepend tmux_arg qssh
-			
-			#echo "Multipick launcher is currently broken, sorry :-("
+			if set -q _flag_agent
+				# agent forwarding must not reuse a shared control master, history is skipped
+				set --prepend tmux_arg env __qssh_no_persist=yes qssh --qssh-no-history
+				set tmux_arg $tmux_arg -A
+			else
+				set --prepend tmux_arg qssh
+			end
+
 			#__qssh_pause
 			#return
 			
@@ -1699,7 +1644,7 @@ function __qssh_multipick -d \
 				end
 			else
 				# all other connections are part of what was decided earlier
-				if [ "$_flag_one_window" = "yes" ]
+				if [ "$one_window" = "yes" ]
 					set -a tmux_arglist split-window
 				else
 					set -a tmux_arglist new-window
@@ -1708,20 +1653,18 @@ function __qssh_multipick -d \
 			
 			set -a tmux_arglist $tmux_arg \; 
 			
-			if [ "$_flag_one_window" = "yes" ]
+			if [ "$one_window" = "yes" ]
 				set -a tmux_arglist select-layout tiled \; 
 			end
 		end
 		
 		#set -a tmux_arglist \
-		if [ "$_flag_one_window" = "yes" ]
-			set -a tmux_arglist setw pane-border-format '#{pane_index} #T' \; \
-				rename-window "qssh multipick" \; \
-				setw allow-rename off \; setw automatic-rename off \; setw pane-border-status top \;
+		if [ "$one_window" = "yes" ]
+			set -a tmux_arglist rename-window "qssh multipick" \; \
+				setw allow-rename off \; setw automatic-rename off \;
 		end
-		if [ "$_flag_mirror_keyboard" = "yes" ]
-			set -a tmux_arglist setw synchronize-panes yes \; \
-				setw pane-active-border-style bg=\#aaaa00,fg=\#000000 \; setw pane-border-style bg=\#aaaa00,fg=\#000000 \;
+		if [ "$mirror_keyboard" = "yes" ]
+			set -a tmux_arglist setw synchronize-panes yes \;
 		end
 		
 		if test $return_mode -eq 0
