@@ -23,7 +23,8 @@
     "rainbow_brackets": false,
     "highlight_matching_brackets": true,
     "auto_create_empty_buffer_on_last_buffer_close": false,
-    "restore_previous_session": false
+    "restore_previous_session": false,
+    "auto_hide_tab_bar": true
   },
   "file_explorer": {
     "auto_open_on_last_buffer_close": false,
