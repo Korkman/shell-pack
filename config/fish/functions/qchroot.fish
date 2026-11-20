@@ -86,23 +86,30 @@ Do not speficy DIRECTORY to use current directory.
 	if ! set -q _flag_mount_only
 		echo "Chroot ..."
 		set -l debian_chroot (string split -r -m1 / -- $targetDir)[2]
-		# su --login clears the environment and --whitelist-environment is not portable,
-		# so su runs env inside the target to set the variables, then the shell
-		set -l inner (__sp_quote_args exec env "debian_chroot=$debian_chroot" "LC_NERDLEVEL=$LC_NERDLEVEL" "TERM=$TERM" "LANG=$LANG" "$chroot_shell")
-		set -l su_args -s "$chroot_shell"
-		if test -n "$chroot_cmd"
-			# COMMAND is shell code for the chroot shell, so it is single-quoted to keep $ and friends unexpanded here
-			set inner (string join " " -- $inner) -c "'"(string replace -a "'" "'\\''" -- $chroot_cmd)"'"
-			set su_args $su_args -c (string join " " -- $inner)
+		set -l chroot_vars "debian_chroot=$debian_chroot" "LC_NERDLEVEL=$LC_NERDLEVEL" "TERM=$TERM" "LANG=$LANG" "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+		if test -z "$chroot_cmd"; and not set -q _flag_user
+			# root login shell: run it directly, so /etc/profile and ~/.profile load and the TTY is kept
+			env -i (command -v chroot) "$targetDir" \
+				env $chroot_vars "HOME=/root" "USER=root" "SHELL=$chroot_shell" \
+				"$chroot_shell" -l \
+			;
 		else
-			# -c makes su create a new session without a controlling tty, which breaks the interactive shell
-			set inner (string join " " -- $inner) -l
-			set su_args $su_args --login --session-command (string join " " -- $inner)
+			# su keeps the environment without --login and creates no session, so COMMAND runs
+			# keep their variables. Interactive -u shells use --login, which clears them except TERM
+			set -l su_args -s "$chroot_shell"
+			if test -n "$chroot_cmd"
+				set su_args $su_args -c "$chroot_cmd"
+			else
+				set su_args $su_args --login
+			end
+			if set -q _flag_user
+				set su_args $su_args "$_flag_user"
+			end
+			env -i (command -v chroot) "$targetDir" \
+				env $chroot_vars \
+				su $su_args \
+			;
 		end
-		if set -q _flag_user
-			set su_args $su_args "$_flag_user"
-		end
-		env -i (command -v chroot) "$targetDir" su $su_args
 		if ! set -q _flag_keep
 			qunchroot "$targetDir"
 		end
