@@ -89,17 +89,16 @@ Do not speficy DIRECTORY to use current directory.
 		# su --login clears the environment and --whitelist-environment is not portable,
 		# so su runs env inside the target to set the variables, then the shell
 		set -l inner (__sp_quote_args exec env "debian_chroot=$debian_chroot" "LC_NERDLEVEL=$LC_NERDLEVEL" "TERM=$TERM" "LANG=$LANG" "$chroot_shell")
+		set -l su_args -s "$chroot_shell"
 		if test -n "$chroot_cmd"
 			# COMMAND is shell code for the chroot shell, so it is single-quoted to keep $ and friends unexpanded here
 			set inner (string join " " -- $inner) -c "'"(string replace -a "'" "'\\''" -- $chroot_cmd)"'"
+			set su_args $su_args -c (string join " " -- $inner)
 		else
-			set inner $inner -l
+			# -c makes su create a new session without a controlling tty, which breaks the interactive shell
+			set inner (string join " " -- $inner) -l
+			set su_args $su_args --login --session-command (string join " " -- $inner)
 		end
-		set -l su_args -s "$chroot_shell"
-		if test -z "$chroot_cmd"
-			set su_args $su_args --login
-		end
-		set su_args $su_args -c (string join " " -- $inner)
 		if set -q _flag_user
 			set su_args $su_args "$_flag_user"
 		end
