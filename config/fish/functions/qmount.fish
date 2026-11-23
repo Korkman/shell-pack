@@ -10,14 +10,14 @@ function qmount -d \
 	or return 1
 
 	if test (count $argv) -eq 0 || set -q _flag_help
-		echo "Usage: qmount [--ro|--rw|--tmp-rw] FILE|DEVICE"
+		echo "Usage: qmount --ro|--rw|--tmp-rw FILE|DEVICE"
 		echo
 		echo -e (functions -vD (status current-function))[5]
 		echo
 		echo "qmount will mount FILE|DEVICE to /run/q/[device name]"
 		echo "The path '/dev/' can be omitted."
 		echo
-		echo "  --ro      Mount read-only at block device (nbd) level (default)"
+		echo "  --ro      Mount read-only at block device (nbd) level"
 		echo "  --rw      Mount read-write at block device (nbd) level"
 		echo "  --tmp-rw[=FILE]  Redirect writes to a temporary overlay (original unchanged)"
 		echo "                  Without FILE, a temporary file in /tmp is used."
@@ -33,6 +33,11 @@ function qmount -d \
 
 	if test (count $argv) -gt 1
 		echo "no more than 1 argument allowed"
+		return 1
+	end
+
+	if not set -q _flag_ro; and not set -q _flag_rw; and not set -q _flag_tmp_rw
+		echo "qmount: one of --ro, --rw or --tmp-rw is required" >&2
 		return 1
 	end
 
@@ -132,7 +137,7 @@ function qmount -d \
 			or echo "failed to find image format in output" && return 1
 		end
 		
-		# Default to read-only at block device level; --rw/--tmp-rw override
+		# --ro (read-only at block device level) unless --rw/--tmp-rw override
 		set -l qemu_extra_flags --read-only
 		set -l qemu_connect_file "$devdisk"
 		set -l qemu_connect_format $qemu_img_format
